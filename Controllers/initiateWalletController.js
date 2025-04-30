@@ -89,7 +89,7 @@ async function initializeWalletsForUsers() {
 
     console.log('✅ Wallet initialization completed.');
   } catch (error) {
-    console.error('❌ Error initializing wallets:', error.message);
+    console.error('❌ Error initializing wallet:', error.message);
   }
 }
 
