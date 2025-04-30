@@ -27,6 +27,8 @@ function generateTokens(user) {
   return { accessToken, refreshToken };
 }
 exports.login = async (req, res) => {
+  console.log('POST body:', req.body);
+
   const { email, password } = req.body;
 
   if (!email || !password) {
