@@ -20,7 +20,7 @@ router.post('/register', register);
 router.post('/login', login);
 router.post('/logout',verifyToken, logout);
 router.put('/update-user/:id', verifyToken, updateUser)
-router.get('/getallUsers', getallUsers);
+router.get('/getallUsers',verifyToken, getallUsers);
 router.get('/getuser/:id', getuserbyid);
 router.get('/getuserone',verifyToken, getuser);
 router.get('/getstudentbyid',verifyToken, getAllStudentsInSchool);
