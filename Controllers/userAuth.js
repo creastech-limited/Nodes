@@ -127,14 +127,14 @@ exports.login = async (req, res) => {
       })
       .catch((error) => {
         console.error('Failed to send login email:', error.response?.body || error.message);
-        res.status(500).json({
+        return res.status(500).json({
           message: 'Failed to send login email',
         }); 
       });
 
   } catch (err) {
     console.error('Login error:', err.message);
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 }
 
