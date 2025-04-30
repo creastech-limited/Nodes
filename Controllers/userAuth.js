@@ -74,7 +74,7 @@ exports.login = async (req, res) => {
     });
 
     console.log("Access token generated:", accessToken);
-    console.log("User detail:", {
+    console.log("User details:", {
       id: user._id,});
     // Send response
    return res.status(200).json({
