@@ -77,7 +77,7 @@ exports.login = async (req, res) => {
     console.log("User details:", {
       id: user._id,});
     // Send response
-    res.status(200).json({
+   return res.status(200).json({
       message: 'Login successful',
       accessToken,
       user: {
@@ -128,7 +128,7 @@ exports.login = async (req, res) => {
       .catch((error) => {
         console.error('Failed to send login email:', error.response?.body || error.message);
         return res.status(500).json({
-          message: 'Failed to send login emails',
+          message: 'Failed to send login email',
         }); 
       });
 
