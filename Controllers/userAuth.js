@@ -40,8 +40,6 @@ exports.login = async (req, res) => {
     const user = await regUser.findOne({ email });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    console.log("Login attempt:", email);
-
     // Check if user has a password
     if (!user.password) {
       return res.status(500).json({ message: 'User has no password set' });
@@ -54,7 +52,6 @@ exports.login = async (req, res) => {
 
     // Check status
     if (user.status !== 'Active') {
-      console.log("User is not active:", user.status);
       return res.status(403).json({ message: 'User is not active' });
     }
 
@@ -76,7 +73,6 @@ exports.login = async (req, res) => {
       maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     });
 
-    console.log("Refresh token set in cookie:", refreshToken);
     console.log("Access token generated:", accessToken);
     console.log("User details:", {
       id: user._id,});
@@ -125,9 +121,15 @@ exports.login = async (req, res) => {
     sgMail.send(emailDetails)
       .then(() => {
         console.log('Login email sent successfully to', user.email);
+        res.status(200).json({
+          message: 'Login email sent successfully',
+        });
       })
       .catch((error) => {
         console.error('Failed to send login email:', error.response?.body || error.message);
+        res.status(500).json({
+          message: 'Failed to send login email',
+        }); 
       });
 
   } catch (err) {
@@ -357,7 +359,6 @@ exports.login = async (req, res) => {
     try {
       // Find user by the refreshToken or req.user.id (ensure that req.user is populated, if using auth middleware)
       const user = await regUser.findById(req.user.id); 
-      console.log("Logout attempt for user:", user.email);
   
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
@@ -377,7 +378,6 @@ exports.login = async (req, res) => {
       // Send a success response
       res.status(200).json({ message: 'Logout successful' });
     } catch (err) {
-      console.error('Logout error:', err);
       res.status(500).json({ message: 'Internal server error' });
     }
   };
