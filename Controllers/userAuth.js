@@ -557,3 +557,16 @@ exports.resetWithToken = async (req, res) => {
           res.status(500).json({ message: error.message });
       }
   }
+
+  exports.deleteAllUsers = async (req, res) => {
+    try {
+      const result = await regUser.deleteMany({}); // No filter: deletes ALL users
+      if (result.deletedCount === 0) {
+        return res.status(404).json({ message: 'No users found to delete' });
+      }
+      res.status(200).json({ message: `${result.deletedCount} users deleted successfully` });
+    } catch (error) {
+      res.status(500).json({ message: 'Error deleting users', error });
+    }
+  };
+  
