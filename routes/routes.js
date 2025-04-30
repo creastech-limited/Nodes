@@ -7,6 +7,7 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const regUser = require('../Models/registeration');
 const disputeData = require('../Models/dispute');
+const {createDispute} = require('../Controllers/dispute');
 const {getallUsers, getuserbyid} = require('../Controllers/getAllusers');
 const { initiateTransaction, verifyTransaction} = require('../Controllers/transactionController');
 const jwt = require('jsonwebtoken');
@@ -64,44 +65,7 @@ router.get('/activated/:id', async (req, res) => {
 
 
 //Create a new dispute
-router.post('/createDispute', async (req, res) => {
-    const { userId, disputeType, description,status,disputeDate,resolvedBy,resolutionDetails,resolvedDate,paymentCategory,amount,supportingDocuments } = req.body;
-    const dispute = new disputeData({
-        userId,
-        disputeType,
-        description,
-        status: 'Pending', // Default status
-        disputeDate: new Date(), // Current date
-        resolvedBy, // Initially null
-        resolutionDetails, // Initially 
-        resolvedDate, // Initially null
-        paymentCategory, // Initially null
-        amount, // Initially null
-        supportingDocuments // Initially empty array
-
-    });
-    try {
-      // Check if the user exists and is active
-    const user = await regUser.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    if (user.status !== 'Active') {
-      // If the user is not active, return a 403 Forbidden response
-      return res.status(403).json({ message: 'User is not active' });
-    }
-        const savedDispute = await dispute.save();
-        res.status(200).json({
-          
-            message: 'Dispute created successfully',
-            savedDispute
-          
-        });
-    } catch (error) {
-        res.status(400).json({ message: error.message });
-    }
-});
+// router.post('/createDispute', createDispute);
 
 
 //Get all data from the database
@@ -162,19 +126,7 @@ router.patch('/deactive/:id', async (req, res) => {
 //Patch API
 
 //delete API
-router.delete('/delete/:id', async (req, res) => {
-    try {
-        const id = req.params.id;
-        const result = await regUser.findByIdAndDelete(req.params.id);
-        if (!result) {
-            return res.status(404).json({ message: `${result.name} not found` });
-        }
-        res.status(200).json({ message: `${result.firstName} has deleted successfully` });
-    }
-    catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
+
 //Post data to the database
 router.post('/post', async(req, res) => {
     const data = new Model(

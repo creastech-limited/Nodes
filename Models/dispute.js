@@ -29,8 +29,10 @@ const disputeSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User', // Reference to the admin or user resolving the dispute
   },
-  resolutionDetails: {
-    type: String, // Details about how the dispute was resolved
+  transactionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Transaction',
+    required: true,
   },
   resolvedDate: {
     type: Date,

@@ -544,4 +544,16 @@ exports.resetWithToken = async (req, res) => {
   }
 };
 
-  
+  exports.deleteUser = async (req, res) => {
+      try {
+          const id = req.params.id;
+          const result = await regUser.findByIdAndDelete(req.params.id);
+          if (!result) {
+              return res.status(404).json({ message: `${result.name} not found` });
+          }
+          res.status(200).json({ message: `${result.firstName} has deleted successfully` });
+      }
+      catch (error) {
+          res.status(500).json({ message: error.message });
+      }
+  }

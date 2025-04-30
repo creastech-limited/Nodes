@@ -10,7 +10,7 @@ const bcrypt = require('bcrypt');
 const regUser = require('../Models/registeration');
 const disputeData = require('../Models/dispute');
 const {getallUsers, getAllStudentsInSchool, getUserByFilter, getAllStoreInSchool, getAllAgentsInSchool, getAllStudentsCountInSchool, getAllStoreInSchoolCount, getAllAgentsInSchoolCount, getuserbyid,getuser} = require('../Controllers/getAllusers');
-const {login, register,logout,updateUser, forgotPassword,resetWithToken} = require('../Controllers/userAuth');
+const {login, register,logout,updateUser, forgotPassword,resetWithToken, deleteUser} = require('../Controllers/userAuth');
 const { initiateTransaction, verifyTransaction} = require('../Controllers/transactionController');
 const verifyToken = require('./verifyToken');
 
@@ -32,6 +32,7 @@ router.get('/getagentbyidcount',verifyToken, getAllAgentsInSchoolCount);
 router.get('/getUserByFilter/:userid',verifyToken, getUserByFilter);
 router.post('/forgotpaswoord', forgotPassword);
 router.post('/reset-password/:token', resetWithToken);
+router.delete('/delete/:id', deleteUser);
 
 
 module.exports = router

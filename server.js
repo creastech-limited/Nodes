@@ -45,6 +45,7 @@ db.on('error', (error) => console.error('MongoDB connection error:', error));
 
 // routes
 const authRoute = require('./routes/auth');
+const disputeRoute = require('./routes/dispute'); // ✅ Correct route file
 const r = require('./routes/routes'); // ✅ Correct route file
 const walletRoute = require('./routes/wallets'); // ✅ Correct route file
 const transactionRoute = require('./routes/transactions')// ✅ Correct route file
@@ -53,6 +54,7 @@ const transactionRoute = require('./routes/transactions')// ✅ Correct route fi
 app.use('/api/transaction', transactionRoute) // ✅ Correct route file
 app.use('/api/users', authRoute)// ✅ Correct route file
 app.use('/api', r); // e.g., /api/feedback will work
+app.use('/api/dispute', disputeRoute); // e.g., /api/dispute will work
 app.use('/api/wallet', walletRoute); // e.g., /api/wallet will work
 // const registerRoute = require('./routes/register'); // ✅ Correct route file
 // app.use('/api', registerRoute); // e.g., /api/register will work
