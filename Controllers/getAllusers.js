@@ -131,7 +131,7 @@ switch (role.toLowerCase()) {
           data,
           schoolLink: dynamicSchoolLink
         },
-       
+
       });
   }
   catch (error) {
