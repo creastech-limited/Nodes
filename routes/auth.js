@@ -21,7 +21,7 @@ router.post('/login', login);
 router.post('/logout',verifyToken, logout);
 router.put('/update-user/:id', verifyToken, updateUser)
 router.get('/getallUsers',verifyToken, getallUsers);
-router.get('/getuser/:id', getuserbyid);
+router.get('/getuser/:id',verifyToken, getuserbyid);
 router.get('/getuserone',verifyToken, getuser);
 router.get('/getstudentbyid',verifyToken, getAllStudentsInSchool);
 router.get('/getstudentbyidcount',verifyToken, getAllStudentsCountInSchool);

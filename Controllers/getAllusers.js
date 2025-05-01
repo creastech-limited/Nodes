@@ -64,7 +64,8 @@ exports.getuserbyid = async (req, res) => {
       }
       res.status(200).json({
         message: `user found with the role: ${data.role}`,
-       data
+       data,
+       dynamicSchoolLink
       });
   }
   catch (error) {
@@ -106,10 +107,31 @@ exports.getuser = async (req, res) => {
       if (!data) {
           return res.status(404).json({ message: 'Data not found' });
       }
+      let role = data.role.toLowerCase();
+      let generatedSchoolId = data.schoolId || data.store_id || data.agent_id; // Use the appropriate ID based on role
+      let schoolName = data.schoolName || data.storeName || data.agentName;
+      let schoolAddress = data.schoolAddress || data.storeAddress || data.agentAddress;
+      let schoolType = data.schoolType || data.storeType || data.agentType;
+      let ownership = data.ownership || data.storeOwnership || data.agentOwnership;
+      let dynamicSchoolLink = '';
+
+switch (role.toLowerCase()) {
+  
+  case 'store':
+    dynamicSchoolLink = `/?store_id=${encodeURIComponent(store_id)}&storeName=${encodeURIComponent(storeName)}&storeType=${encodeURIComponent(storeType)}`;
+    break;
+  case 'school':
+    dynamicSchoolLink = `/?schoolId=${encodeURIComponent(generatedSchoolId)}&schoolName=${encodeURIComponent(schoolName)}&schoolAddress=${encodeURIComponent(schoolAddress)}&schoolType=${encodeURIComponent(schoolType)}&ownership=${encodeURIComponent(ownership)}`;
+    break;
+}
 
       res.status(200).json({
         message: `User found with the role: ${data.role}`,
-        data
+        user: {
+          data,
+          schoolLink: dynamicSchoolLink
+        },
+       
       });
   }
   catch (error) {

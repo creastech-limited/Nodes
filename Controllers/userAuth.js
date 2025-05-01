@@ -233,6 +233,46 @@ exports.login = async (req, res) => {
       // Hash password
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
+
+      // Role-based ID generation
+      // let roleSpecificId = {};
+      // let dynamicSchoolLink = '';
+  
+  //   switch (role.toLowerCase()) {
+  //   case 'student':
+  //     roleSpecificId = { student_id: `${newUser.schoolId}/${newUser._id}` };
+  //     break;
+  //   case 'agent':
+  //     roleSpecificId = { agent_id: `${newUser.store_id}/${newUser._id}` };
+  //     break;
+  //   case 'store':
+  //     roleSpecificId = { store_id: `${newUser.schoolId}/${newUser._id}` };
+  //     dynamicSchoolLink = `/?store_id=${encodeURIComponent(newUser.store_id)}&storeName=${encodeURIComponent(newUser.storeName)}&storeType=${encodeURIComponent(newUser.storeType)}`;
+  //     break;
+  //   case 'school':
+  //     roleSpecificId = { schoolId: newUser.schoolId };
+  //     dynamicSchoolLink = `/?schoolId=${encodeURIComponent(newUser.schoolId)}&schoolName=${encodeURIComponent(newUser.schoolName)}&schoolAddress=${encodeURIComponent(newUser.schoolAddress)}&schoolType=${encodeURIComponent(newUser.schoolType)}&ownership=${encodeURIComponent(newUser.ownership)}`;
+  //     break;
+  // }
+  let roleSpecificId = {};
+let dynamicSchoolLink = '';
+
+switch (role.toLowerCase()) {
+  case 'student':
+    roleSpecificId = { student_id: `${generatedSchoolId}/${'TEMP_ID'}` }; // Use a temp placeholder, can update after save
+    break;
+  case 'agent':
+    roleSpecificId = { agent_id: `${store_id}/${'TEMP_ID'}` };
+    break;
+  case 'store':
+    roleSpecificId = { store_id: `${generatedSchoolId}/${'TEMP_ID'}` };
+    dynamicSchoolLink = `/?store_id=${encodeURIComponent(store_id)}&storeName=${encodeURIComponent(storeName)}&storeType=${encodeURIComponent(storeType)}`;
+    break;
+  case 'school':
+    roleSpecificId = { schoolId: generatedSchoolId };
+    dynamicSchoolLink = `/?schoolId=${encodeURIComponent(generatedSchoolId)}&schoolName=${encodeURIComponent(schoolName)}&schoolAddress=${encodeURIComponent(schoolAddress)}&schoolType=${encodeURIComponent(schoolType)}&ownership=${encodeURIComponent(ownership)}`;
+    break;
+}
   
       // Create user
       const newUser = new regUser({
@@ -262,7 +302,7 @@ exports.login = async (req, res) => {
         email: email.toLowerCase().trim(),
         phone,
         profilePicture,
-        schoolRegistrationLink,
+        schoolRegistrationLink: dynamicSchoolLink,
         boarding,
         accountNumber,
         password: hashedPassword,
@@ -275,26 +315,7 @@ exports.login = async (req, res) => {
   
       await newUser.save();
   
-      // Role-based ID generation
-      let roleSpecificId = {};
-      let dynamicSchoolLink = '';
-  
-    switch (newUser.role.toLowerCase()) {
-    case 'student':
-      roleSpecificId = { student_id: `${newUser.schoolId}/${newUser._id}` };
-      break;
-    case 'agent':
-      roleSpecificId = { agent_id: `${newUser.store_id}/${newUser._id}` };
-      break;
-    case 'store':
-      roleSpecificId = { store_id: `${newUser.schoolId}/${newUser._id}` };
-      dynamicSchoolLink = `/?store_id=${encodeURIComponent(newUser.store_id)}&storeName=${encodeURIComponent(newUser.storeName)}&storeType=${encodeURIComponent(newUser.storeType)}`;
-      break;
-    case 'school':
-      roleSpecificId = { schoolId: newUser.schoolId };
-      dynamicSchoolLink = `/?schoolId=${encodeURIComponent(newUser.schoolId)}&schoolName=${encodeURIComponent(newUser.schoolName)}&schoolAddress=${encodeURIComponent(newUser.schoolAddress)}&schoolType=${encodeURIComponent(newUser.schoolType)}&ownership=${encodeURIComponent(newUser.ownership)}`;
-      break;
-  }
+      
   // Create wallet for the new user
   const userWallet = await Wallet.create({
         userId: newUser._id,
