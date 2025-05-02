@@ -10,7 +10,7 @@ const bcrypt = require('bcrypt');
 const regUser = require('../Models/registeration');
 const disputeData = require('../Models/dispute');
 const {getallUsers, getAllStudentsInSchool, getUserByFilter, getAllStoreInSchool, getAllAgentsInSchool, getAllStudentsCountInSchool, getAllStoreInSchoolCount, getAllAgentsInSchoolCount, getuserbyid,getuser} = require('../Controllers/getAllusers');
-const {login, register,logout,updateUser, forgotPassword,resetWithToken, deleteUser,deleteAllUsers} = require('../Controllers/userAuth');
+const {login, register,logout,updateUser, forgotPassword,resetWithToken, deleteUser,deleteAllUsers, updatePassword} = require('../Controllers/userAuth');
 const { initiateTransaction, verifyTransaction} = require('../Controllers/transactionController');
 const verifyToken = require('./verifyToken');
 
@@ -19,7 +19,7 @@ const verifyToken = require('./verifyToken');
 router.post('/register', register);
 router.post('/login', login);
 router.post('/logout',verifyToken, logout);
-router.put('/update-user/:id', verifyToken, updateUser)
+router.patch('/update-user/:id', verifyToken, updateUser)
 router.get('/getallUsers',verifyToken, getallUsers);
 router.get('/getuser/:id',verifyToken, getuserbyid);
 router.get('/getuserone',verifyToken, getuser);
@@ -30,8 +30,9 @@ router.get('/getstorebyidcount',verifyToken, getAllStoreInSchoolCount);
 router.get('/getagentbyid',verifyToken, getAllAgentsInSchool);
 router.get('/getagentbyidcount',verifyToken, getAllAgentsInSchoolCount);
 router.get('/getUserByFilter/:userid',verifyToken, getUserByFilter);
-router.post('/forgotpaswoord', forgotPassword);
+router.post('/forgotpasword', forgotPassword);
 router.post('/reset-password/:token', resetWithToken);
+router.post('/updatePassword', verifyToken, updatePassword);
 router.delete('/delete/:id', deleteUser);
 router.delete('/delete', deleteAllUsers);
 

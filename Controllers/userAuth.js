@@ -404,83 +404,183 @@ switch (role.toLowerCase()) {
   };
 
   //Update user by id
-  exports.updateUser = async (req, res) => {
-    try {
-      const userId = req.params.id; // Target user to update
-      console.log("User ID to update:", userId);
-      const currentUserId = req.user?.id; // User making the request
-      const currentUser = await regUser.findById(currentUserId); // Fetch current user details
-      if (!currentUser) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-  
-      const isSelf = currentUser.id === userId;
-      const allowedByRole = ['student', 'store', 'agent'].includes(currentUser.role.toLowerCase());
-  
-      if (allowedByRole && !isSelf) {
-        return res.status(403).json({ message: "Forbidden: You can only update your own record" });
-      }
-  
-      if (currentUser.role.toLowerCase() !== 'school' && !isSelf) {
-        return res.status(403).json({ message: "Forbidden: You are not authorized to update this user" });
-      }
-  
-      const updates = req.body;
-  
-      if (!updates || Object.keys(updates).length === 0) {
-        return res.status(400).json({ message: "No fields provided for update" });
-      }
-  
-      const allFieldsEmpty = Object.values(updates).every(value => {
-        if (typeof value === 'object' && value !== null) {
-          return Object.values(value).every(v => v === null || v === '');
+    // exports.updateUser = async (req, res) => {
+    //   try {
+    //     const updates = req.body; // Get updates from request body
+    //     console.log("Updates received:", updates);
+    //     const userId = req.params.id; // Target user to update
+    //     console.log("User ID to update:", userId);
+    //     const currentUserId = req.user?.id; // User making the request
+    //     const currentUser = await regUser.findById(currentUserId); // Fetch current user details
+    //     if (!currentUser) {
+    //       return res.status(401).json({ message: "Unauthorized" });
+    //     }
+    
+    //     const isSelf = currentUser.id === userId;
+    //     const allowedByRole = ['student', 'store', 'agent'].includes(currentUser.role.toLowerCase());
+    
+    //     if (allowedByRole && !isSelf) {
+    //       return res.status(403).json({ message: "Forbidden: You can only update your own record" });
+    //     }
+    
+    //     if (currentUser.role.toLowerCase() !== 'school' && !isSelf) {
+    //       return res.status(403).json({ message: "Forbidden: You are not authorized to update this user" });
+    //     }
+    
+        
+    
+    //     if (!updates || Object.keys(updates).length === 0) {
+    //       return res.status(400).json({ message: "No fields provided for update" });
+    //     }
+    
+    //     const allFieldsEmpty = Object.values(updates).every(value => {
+    //       if (typeof value === 'object' && value !== null) {
+    //         return Object.values(value).every(v => v === null || v === '');
+    //       }
+    //       return value === null || value === '';
+    //     });
+    
+    //     if (allFieldsEmpty) {
+    //       return res.status(400).json({ message: "All fields are empty" });
+    //     }
+    
+    //     const updateData = { ...updates };
+    
+    //     // Nest object updates
+    //     if (updates.academicDetails) {
+    //       updateData.academicDetails = {
+    //         classAdmittedTo: updates.academicDetails.classAdmittedTo,
+    //         section: updates.academicDetails.section,
+    //         previousSchool: updates.academicDetails.previousSchool,
+    //         admissionDate: updates.academicDetails.admissionDate,
+    //         boarding: updates.academicDetails.boarding
+    //       };
+    //     }
+    
+    //     const updatedUser = await regUser.findByIdAndUpdate(
+    //       userId,
+    //       { $set: updateData },
+    //       { new: true, runValidators: true }
+    //     );
+    
+    //     if (!updatedUser) {
+    //       return res.status(404).json({ message: "User not found" });
+    //     }
+    
+    //     res.status(200).json({
+    //       message: "User updated successfully",
+    //       user: updatedUser
+    //     });
+    
+    //   } catch (error) {
+    //     res.status(500).json({ message: error.message });
+    //   }
+    // };
+
+    exports.updateUser = async (req, res) => {
+      try {
+        const userId = req.params.id; // Target user to update
+        const currentUserId = req.user?.id; // User making the request
+    
+        const currentUser = await regUser.findById(currentUserId); // Requester
+        if (!currentUser) {
+          return res.status(401).json({ message: "Unauthorized" });
         }
-        return value === null || value === '';
-      });
-  
-      if (allFieldsEmpty) {
-        return res.status(400).json({ message: "All fields are empty" });
+    
+        const isSelf = currentUser.id === userId;
+        const allowedByRole = ['student', 'store', 'agent'].includes(currentUser.role.toLowerCase());
+    
+        // Role-based access check
+        if (allowedByRole && !isSelf) {
+          return res.status(403).json({ message: "Forbidden: You can only update your own record" });
+        }
+    
+        if (currentUser.role.toLowerCase() !== 'school' && !isSelf) {
+          return res.status(403).json({ message: "Forbidden: You are not authorized to update this user" });
+        }
+    
+        const updates = req.body;
+        if (!updates || Object.keys(updates).length === 0) {
+          return res.status(400).json({ message: "No fields provided for update" });
+        }
+    
+        // Check if all fields are empty or null
+        const allFieldsEmpty = Object.values(updates).every(value => {
+          if (typeof value === 'object' && value !== null) {
+            return Object.values(value).every(v => v === null || v === '');
+          }
+          return value === null || value === '';
+        });
+    
+        if (allFieldsEmpty) {
+          return res.status(400).json({ message: "All fields are empty" });
+        }
+    
+        // Restricted fields
+        delete updates.email;
+        delete updates.password;
+    
+        const updateData = { ...updates };
+    
+        // Get the actual user being updated
+        const targetUser = await regUser.findById(userId);
+        if (!targetUser) {
+          return res.status(404).json({ message: "User not found" });
+        }
+    
+        // Rebuild name if either firstName or lastName is provided
+        if (updates.firstName || updates.lastName) {
+          const firstName = updates.firstName && updates.firstName.trim() !== ''
+            ? updates.firstName
+            : targetUser.firstName;
+    
+          const lastName = updates.lastName && updates.lastName.trim() !== ''
+            ? updates.lastName
+            : targetUser.lastName;
+    
+          updateData.name = `${firstName} ${lastName}`.trim();
+        }
+    
+        // Handle nested object updates like academicDetails
+        if (updates.academicDetails) {
+          updateData.academicDetails = {
+            classAdmittedTo: updates.academicDetails.classAdmittedTo,
+            section: updates.academicDetails.section,
+            previousSchool: updates.academicDetails.previousSchool,
+            admissionDate: updates.academicDetails.admissionDate,
+            boarding: updates.academicDetails.boarding
+          };
+        }
+    
+        const updatedUser = await regUser.findByIdAndUpdate(
+          userId,
+          { $set: updateData },
+          { new: true, runValidators: true }
+        );
+    
+        if (!updatedUser) {
+          return res.status(404).json({ message: "User not found after update" });
+        }
+    
+        return res.status(200).json({
+          message: "User updated successfully",
+          user: updatedUser
+        });
+    
+      } catch (error) {
+        return res.status(500).json({ message: error.message });
       }
+    };
+    
   
-      const updateData = { ...updates };
-  
-      // Nest object updates
-      if (updates.academicDetails) {
-        updateData.academicDetails = {
-          classAdmittedTo: updates.academicDetails.classAdmittedTo,
-          section: updates.academicDetails.section,
-          previousSchool: updates.academicDetails.previousSchool,
-          admissionDate: updates.academicDetails.admissionDate,
-          boarding: updates.academicDetails.boarding
-        };
-      }
-  
-      const updatedUser = await regUser.findByIdAndUpdate(
-        userId,
-        { $set: updateData },
-        { new: true, runValidators: true }
-      );
-  
-      if (!updatedUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-  
-      res.status(200).json({
-        message: "User updated successfully",
-        user: updatedUser
-      });
-  
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  };
   //forgot password
 
   exports.forgotPassword = async (req, res) => {
     try {
-      const { email } = req.body;
+      const {email} = req.body;
   
       const user = await regUser.findOne({ email: email.toLowerCase().trim() });
+      console.log("User found:", user);
   
       if (!user) {
         return res.status(404).json({ success: false, message: 'User not found' });
@@ -496,7 +596,7 @@ switch (role.toLowerCase()) {
       const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
   
       const emailDetails = {
-        to: `taiwodavid19@gmail.com; ${user.email}`, // <-- send to actual user email
+        to: `${user.email}`, // <-- send to actual user email
         from: {
           email: "davidt@yungmindsinnovative.com.ng",
           name: 'Your Company Name'
@@ -564,6 +664,69 @@ exports.resetWithToken = async (req, res) => {
     res.status(500).json({ success: false, message: `Error resetting password ${error.message}` });
   }
 };
+
+//update password
+
+exports.updatePassword = async (req, res) => {
+  const isStrongPassword = (password) => {
+    const minLength = 8;
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSymbol = /[\W_]/.test(password);
+    return (
+      password.length >= minLength &&
+      hasUpper &&
+      hasLower &&
+      hasNumber &&
+      hasSymbol
+    );
+  };
+  try {
+    const userId = req.user?.id;
+    const { currentPassword, newPassword } = req.body;
+    console.log("User ID:", userId);
+    console.log("Current password:", currentPassword);
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ success: false, message: "Both current and new passwords are required." });
+    }
+
+    const user = await regUser.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found." });
+    }
+
+    // Compare current password with the stored hashed password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: "Current password is incorrect." });
+    }
+
+    // Prevent reusing the same password
+    const isSameAsOld = await bcrypt.compare(newPassword, user.password);
+    if (isSameAsOld) {
+      return res.status(400).json({ success: false, message: "New password must be different from the current password." });
+    }
+    // Check password strength
+    if (!isStrongPassword(newPassword)) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 8 characters long and include uppercase, lowercase, numbers, and special characters."
+      });
+    }
+    // Hash and save new password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    return res.status(200).json({ success: true, message: "Password updated successfully." });
+  } catch (error) {
+    console.error("Update Password Error:", error.message);
+    return res.status(500).json({ success: false, message: `Error updating password: ${error.message}` });
+  }
+};
+
 
   exports.deleteUser = async (req, res) => {
       try {
