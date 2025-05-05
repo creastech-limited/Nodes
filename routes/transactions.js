@@ -6,7 +6,7 @@ const verifyToken = require('./verifyToken');
 // Route to initiate a transaction
 router.post('/initiateTransaction', verifyToken, initiateTransaction);
 // Route to verify a transaction
-router.post('/verifyTransaction', verifyToken, verifyTransaction);
+router.post('/verifyTransaction/:reference', verifyTransaction);
 // Route to get all transactions
 router.get('/getAllTransactions', verifyToken, getAllTransactions);
 // Route to get transaction by ID

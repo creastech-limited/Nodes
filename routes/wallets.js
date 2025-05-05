@@ -8,6 +8,7 @@ const router = express.Router();
 const {createSystemWallet} = require('../Controllers/initiateWalletController');
 const {getOneWallet, deleteWallet, getWallet, deleteWalletsByFilter, getUserWallet} = require('../Controllers/getWallet');
 const verifyToken = require('../routes/verifyToken');
+const {transferFunds} = require('../Controllers/walletTransfers');
 
 
 
@@ -22,6 +23,7 @@ router.delete('/deleteWallet',verifyToken, deleteWalletsByFilter);
 router.get('/getWallet/:userId',verifyToken, getOneWallet);
 // get user wallet by id
 router.get('/getuserwallet',verifyToken, getUserWallet);
-
+//wallet to wallet transfer
+router.post('/walletToWalletTransfer',verifyToken, transferFunds);
 
 module.exports = router;

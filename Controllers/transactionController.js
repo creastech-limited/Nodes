@@ -132,10 +132,10 @@ exports.initiateTransaction = async (req, res) => {
     const { amount } = req.body;
 
     const userId = req.user?.id;
-    const systemWalletId = "6807b1ab7e897e850550121d"; // Get system wallet ID from request body
-    const userEmail = req.body.email;
-
     console.log("User ID:", userId);
+    const systemWalletId = "6807b1ab7e897e850550121d"; // Get system wallet ID from request body
+    const userEmail = await User.findById(userId).select('email').then(user => user.email);
+
     console.log("User Email:", userEmail);
 
     if (!userId || !userEmail) {
@@ -213,13 +213,19 @@ exports.initiateTransaction = async (req, res) => {
 
 exports.verifyTransaction = async (req, res) => {
   try {
-    const { reference } = req.params;
+    const  {reference}  = req.params; // Get reference from request parameters
+    console.log("Reference:", reference);
+    console.log(process.env.PAYSTACK_SECRET_KEY);
+    if (!reference) {
+      return res.status(400).json({ status: false, message: 'Reference is required' });
+    }
 
     const response = await axios.get(
       `https://api.paystack.co/transaction/verify/${reference}`,
       {
         headers: {
           Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          'Content-Type': 'application/json',
         },
       }
     );
@@ -287,7 +293,8 @@ console.log("user._id value:", user._id.valueOf());
     console.error('Error verifying payment:', err.message);
     return res.status(500).json({
       status: false,
-      message: 'Server error verifying payment'
+      message: `Server error verifying payment: ${err.message}`,
+      error: err.response?.data || err.message
     });
   }
 };

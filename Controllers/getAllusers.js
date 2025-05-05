@@ -94,6 +94,51 @@ exports.getuserbyid = async (req, res) => {
 //       res.status(500).json({ message: error.message });
 //   }
 // }
+// exports.getuser = async (req, res) => {
+//   try {
+//       const userId = req.user?.id; // <-- Get userId from URL params
+//       console.log("User ID from request:", userId);
+
+//       if (!userId) {
+//           return res.status(400).json({ message: 'User ID is required' });
+//       }
+
+//       const data = await regUser.findById(userId);
+//       if (!data) {
+//           return res.status(404).json({ message: 'Data not found' });
+//       }
+//       let role = data.role.toLowerCase();
+//       let generatedSchoolId = data.schoolId || data.store_id || data.agent_id; // Use the appropriate ID based on role
+//       let schoolName = data.schoolName || data.storeName || data.agentName;
+//       let schoolAddress = data.schoolAddress || data.storeAddress || data.agentAddress;
+//       let schoolType = data.schoolType || data.storeType || data.agentType;
+//       let ownership = data.ownership || data.storeOwnership || data.agentOwnership;
+//       let dynamicSchoolLink = '';
+
+// switch (role.toLowerCase()) {
+  
+//   case 'store':
+//     dynamicSchoolLink = `/?store_id=${encodeURIComponent(store_id)}&storeName=${encodeURIComponent(storeName)}&storeType=${encodeURIComponent(storeType)}`;
+//     break;
+//   case 'school':
+//     dynamicSchoolLink = `/students/new?schoolId=${encodeURIComponent(generatedSchoolId)}&schoolName=${encodeURIComponent(schoolName)}&schoolAddress=${encodeURIComponent(schoolAddress)}&schoolType=${encodeURIComponent(schoolType)}&ownership=${encodeURIComponent(ownership)}`;
+//     break;
+// }
+
+//       res.status(200).json({
+//         message: `User found with the role: ${data.role}`,
+//         user: {
+//           data,
+//           schoolLink: dynamicSchoolLink
+//         },
+
+//       });
+//   }
+//   catch (error) {
+//       res.status(500).json({ message: error.message });
+//   }
+// }
+
 exports.getuser = async (req, res) => {
   try {
       const userId = req.user?.id; // <-- Get userId from URL params
@@ -118,10 +163,10 @@ exports.getuser = async (req, res) => {
 switch (role.toLowerCase()) {
   
   case 'store':
-    dynamicSchoolLink = `/?store_id=${encodeURIComponent(store_id)}&storeName=${encodeURIComponent(storeName)}&storeType=${encodeURIComponent(storeType)}`;
+    dynamicSchoolLink = `/stores/new?/?store_id=${encodeURIComponent(store_id)}&storeName=${encodeURIComponent(storeName)}&storeType=${encodeURIComponent(storeType)}schoolId=${encodeURIComponent(generatedSchoolId)}&schoolName=${encodeURIComponent(schoolName)}&schoolAddress=${encodeURIComponent(schoolAddress)}&schoolType=${encodeURIComponent(schoolType)}&ownership=${encodeURIComponent(ownership)}`;
     break;
   case 'school':
-    dynamicSchoolLink = `/?schoolId=${encodeURIComponent(generatedSchoolId)}&schoolName=${encodeURIComponent(schoolName)}&schoolAddress=${encodeURIComponent(schoolAddress)}&schoolType=${encodeURIComponent(schoolType)}&ownership=${encodeURIComponent(ownership)}`;
+    dynamicSchoolLink = `/pages/samples/register?schoolId=${encodeURIComponent(generatedSchoolId)}&schoolName=${encodeURIComponent(schoolName)}&schoolAddress=${encodeURIComponent(schoolAddress)}&schoolType=${encodeURIComponent(schoolType)}&ownership=${encodeURIComponent(ownership)}`;
     break;
 }
 
@@ -129,7 +174,7 @@ switch (role.toLowerCase()) {
         message: `User found with the role: ${data.role}`,
         user: {
           data,
-          schoolLink: dynamicSchoolLink
+          Link: dynamicSchoolLink
         },
 
       });
@@ -138,6 +183,66 @@ switch (role.toLowerCase()) {
       res.status(500).json({ message: error.message });
   }
 }
+
+// exports.getuser = async (req, res) => {
+//   try {
+//     const userId = req.user?.id;
+//     console.log("User ID from request:", userId);
+
+//     if (!userId) {
+//       return res.status(400).json({ message: 'User ID is required' });
+//     }
+
+//     const data = await regUser.findById(userId);
+//     if (!data) {
+//       return res.status(404).json({ message: 'User not found' });
+//     }
+
+//     const role = data.role?.toLowerCase();
+//     const schoolInfo = {
+//       id: data.schoolId || data.store_id || data.agent_id,
+//       name: data.schoolName || data.storeName || data.agentName,
+//       address: data.schoolAddress || data.storeAddress || data.agentAddress,
+//       type: data.schoolType || data.storeType || data.agentType,
+//       ownership: data.ownership || data.storeOwnership || data.agentOwnership,
+//     };
+
+//     let registrationLinks = {};
+
+//     const jwtSecret = process.env.JWT_SECRET_KEY_LINK_GEN;
+//     console.log("JWT Secret:", jwtSecret); // Log the JWT secret for debugging
+//     if (!jwtSecret || jwtSecret.length > 7) {
+//       return res.status(400).json({ message: 'JWT_SECRET should be 7 characters or less' });
+//     }
+
+//     if (role === 'school') {
+//       const studentToken = jwt.sign({ ...schoolInfo, role: 'student' }, jwtSecret);
+//       const storeToken = jwt.sign({ ...schoolInfo, role: 'store' }, jwtSecret);
+
+//       registrationLinks.studentRegistration = `https://yourfrontend.com/signup?token=${studentToken}`;
+//       registrationLinks.storeRegistration = `https://yourfrontend.com/signup?token=${storeToken}`;
+//     }
+
+//     if (role === 'store') {
+//       const agentToken = jwt.sign({ ...schoolInfo, role: 'agent' }, process.env.JWT_SECRET, { expiresIn: '15m' });
+
+//       registrationLinks.agentRegistration = `https://yourfrontend.com/signup?token=${agentToken}`;
+//     }
+
+//     res.status(200).json({
+//       message: `User found with the role: ${data.role}`,
+//       user: {
+//         data,
+//         registrationLinks
+//       }
+//     });
+
+//   } catch (error) {
+//     console.error('Get User Error:', error);
+//     res.status(500).json({ message: error.message });
+//   }
+// };
+
 
 //Get all students in a school
 exports.getAllStudentsInSchool = async (req, res) => {
