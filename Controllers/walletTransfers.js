@@ -156,7 +156,7 @@ async function transferFunds(req, res) {
 
   } catch (err) {
     console.error('Transfer error:', err.message);
-    return res.status(500).json({ status: false, message: 'Server error during transfer', error: err.message });
+    return res.status(500).json({ status: false, message: 'Servers error during transfer', error: err.message });
   }
 };
 
