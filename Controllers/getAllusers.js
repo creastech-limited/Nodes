@@ -349,7 +349,7 @@ exports.getAllStoreInSchool = async (req, res) => {
 
     res.status(200).json({
       message: `Found ${store.length} store(s) in school ${data.schoolName}`,
-      data: store.length
+      data: store
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
