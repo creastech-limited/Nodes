@@ -687,7 +687,7 @@ exports.register = async (req, res) => {
         }
     
         const isSelf = currentUser.id === userId;
-        const allowedByRole = ['student', 'store', 'agent'].includes(currentUser.role.toLowerCase());
+        const allowedByRole = ['student', 'store', 'agent','parent'].includes(currentUser.role.toLowerCase());
     
         // Role-based access check
         if (allowedByRole && !isSelf) {
