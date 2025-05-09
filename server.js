@@ -45,6 +45,7 @@ db.on('error', (error) => console.error('MongoDB connection error:', error));
 
 // routes
 const authRoute = require('./routes/auth');
+const pinRoute = require('./routes/pin'); // ✅ Correct route file
 const disputeRoute = require('./routes/dispute'); // ✅ Correct route file
 const r = require('./routes/routes'); // ✅ Correct route file
 const walletRoute = require('./routes/wallets'); // ✅ Correct route file
@@ -53,6 +54,7 @@ const transactionRoute = require('./routes/transactions')// ✅ Correct route fi
 //middlewware
 app.use('/api/transaction', transactionRoute) // ✅ Correct route file
 app.use('/api/users', authRoute)// ✅ Correct route file
+app.use('/api/pin', pinRoute); // e.g., /api/pin will work
 app.use('/api', r); // e.g., /api/feedback will work
 app.use('/api/dispute', disputeRoute); // e.g., /api/dispute will work
 app.use('/api/wallet', walletRoute); // e.g., /api/wallet will work
