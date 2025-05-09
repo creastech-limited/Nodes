@@ -681,6 +681,7 @@ exports.register = async (req, res) => {
     exports.updateUser = async (req, res) => {
       try {
         const userId = req.params.id; // Target user to update
+        
         const currentUserId = req.user?.id; // User making the request
     
         const currentUser = await regUser.findById(currentUserId); // Requester
@@ -693,7 +694,7 @@ exports.register = async (req, res) => {
     
         // Role-based access check
         if (allowedByRole && !isSelf) {
-          return res.status(403).json({ message: "Forbidden: You can only update your own record "+allowedByRole+' '+isSelf });
+          return res.status(403).json({ message: "Forbidden: You can only update your own record "+allowedByRole+' '+isSelf + '' + userId + '' + currentUserId});
         }
     
         if (currentUser.role.toLowerCase() !== 'school' && !isSelf) {
