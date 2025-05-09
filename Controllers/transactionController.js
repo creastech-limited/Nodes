@@ -213,7 +213,7 @@ exports.initiateTransaction = async (req, res) => {
 
 exports.verifyTransaction = async (req, res) => {
   try {
-    const  {reference}  = req.params; // Get reference from request parameters
+    const reference = req.query.reference || req.params.reference;
     console.log("Reference:", reference);
     console.log(process.env.PAYSTACK_SECRET_KEY);
     if (!reference) {
