@@ -693,7 +693,7 @@ exports.register = async (req, res) => {
     
         // Role-based access check
         if (allowedByRole && !isSelf) {
-          return res.status(403).json({ message: "Forbidden: You can only update your own record" });
+          return res.status(403).json({ message: "Forbidden: You can only update your own record "+allowedByRole+' '+isSelf });
         }
     
         if (currentUser.role.toLowerCase() !== 'school' && !isSelf) {
