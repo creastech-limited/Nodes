@@ -149,11 +149,12 @@ exports.getuser = async (req, res) => {
       }
 
       const data = await regUser.findById(userId);
+      console.log(data)
       if (!data) {
           return res.status(404).json({ message: 'Data not found' });
       }
       let role = data.role.toLowerCase();
-      let generatedSchoolId = data.schoolId || data.store_id || data.agent_id; // Use the appropriate ID based on role
+      let generatedSchoolId = data.schoolId || data.agent_id; // Use the appropriate ID based on role
       let schoolName = data.schoolName || data.storeName || data.agentName;
       let schoolAddress = data.schoolAddress || data.storeAddress || data.agentAddress;
       let schoolType = data.schoolType || data.storeType || data.agentType;
