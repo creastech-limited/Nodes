@@ -410,14 +410,16 @@ exports.register = async (req, res) => {
       schoolRegistrationLink,
       refreshToken,
       status = 'Inactive',
-      role = decodedToken.role || req.body.role,
-      ownership = decodedToken.ownership || req.query.ownership || '',
-      store_id = decodedToken.id || req.query.store_id || '',
-      schoolName = decodedToken.name || req.query.schoolName || '',
-      schoolType = decodedToken.type || req.query.schoolType || '',
-      schoolAddress = decodedToken.address || req.query.schoolAddress || '',
-      schoolId = decodedToken.id || req.query.schoolId || ''
+      role
     } = req.body;
+    
+    // FIXED: moved fallback logic outside destructuring
+    const ownership = decodedToken.ownership || req.query.ownership || '';
+    const store_id = decodedToken.id || req.body.store_id || req.query.store_id || '';
+    const schoolName = decodedToken.name || req.body.schoolName || req.query.schoolName || '';
+    const schoolType = decodedToken.type || req.body.schoolType || req.query.schoolType || '';
+    const schoolAddress = decodedToken.address || req.body.schoolAddress || req.query.schoolAddress || '';
+    const schoolId = decodedToken.id || req.body.schoolId || req.query.schoolId || '';
 
     const address = {
       street: req.body.street,
