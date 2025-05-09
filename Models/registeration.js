@@ -66,6 +66,8 @@ const userSchema = new mongoose.Schema({
   agent_id: { type: String},
   store_id: { type: String},
   schoolRegistrationLink: { type: String},
+  isFirstLogin: { type: Boolean, default: true },
+  lastLogin: Date,
   status: { 
     type: String, 
     default: "Inactive", 
