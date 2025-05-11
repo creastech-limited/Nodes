@@ -412,8 +412,8 @@ exports.register = async (req, res) => {
       status = 'Inactive',
       role
     } = req.body;
-    
-    // FIXED: moved fallback logic outside destructuring
+
+    // Fallback logic
     const ownership = decodedToken.ownership || req.query.ownership || '';
     const store_id = decodedToken.id || req.body.store_id || req.query.store_id || '';
     const schoolName = decodedToken.name || req.body.schoolName || req.query.schoolName || '';
@@ -474,7 +474,6 @@ exports.register = async (req, res) => {
     let roleSpecificId = {};
     let dynamicSchoolLink = '';
 
-    
     const newUser = new regUser({
       firstName,
       lastName,
@@ -491,7 +490,7 @@ exports.register = async (req, res) => {
       schoolAddress,
       schoolType,
       ownership,
-      store_id,
+      store_id, // initially set, will be overwritten if needed
       student_id,
       storeName,
       storeType,
@@ -500,8 +499,7 @@ exports.register = async (req, res) => {
       agentName,
       email: email.toLowerCase().trim(),
       phone,
-      profilePicture,
-      schoolRegistrationLink: dynamicSchoolLink,
+      schoolRegistrationLink: '', // will be set later if needed
       boarding,
       password: hashedPassword,
       refreshToken: null,
@@ -510,6 +508,8 @@ exports.register = async (req, res) => {
       registrationDate: new Date(),
       status: 'Inactive'
     });
+
+    // Assign role-specific values and update user object
     switch (role.toLowerCase()) {
       case 'student':
         roleSpecificId = { student_id: `${generatedSchoolId}/${newUser._id}` };
@@ -527,8 +527,16 @@ exports.register = async (req, res) => {
         break;
     }
 
+    // Apply role-specific fields to newUser
+    Object.assign(newUser, roleSpecificId);
+    if (dynamicSchoolLink) {
+      newUser.schoolRegistrationLink = dynamicSchoolLink;
+    }
+
+    // Save user
     await newUser.save();
 
+    // Create wallet for the user
     await Wallet.create({
       userId: newUser._id,
       currency: 'NGN',
@@ -540,6 +548,7 @@ exports.register = async (req, res) => {
       phone: newUser.phone
     });
 
+    // Send registration email
     const emailDetails = {
       to: [process.env.EMAIL_TO, newUser.email],
       from: {
@@ -557,6 +566,7 @@ exports.register = async (req, res) => {
       console.error('Email error:', err.response?.body || err.message);
     });
 
+    // Response
     res.status(201).json({
       message: 'Registration successful',
       user: {
@@ -576,6 +586,7 @@ exports.register = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
 
   exports.logout = async (req, res) => { 
     try {
