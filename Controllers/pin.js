@@ -10,13 +10,14 @@ const Wallet = require('../Models/walletSchema');
 
 // Set PIN (initial setup)
 exports.setPin = async (req, res) => {
-  const { userId, pin } = req.body;
+  const currentUserId = req.user?.id
+  const {pin } = req.body;
 
-  if (!/^\d{4,6}$/.test(pin)) return res.status(400).json({ error: 'PIN must be 4-6 digits' });
+  if (!/^\d{4}$/.test(pin)) return res.status(400).json({ error: 'PIN must be 4 digits' });
 
   try {
     const hashedPin = await bcrypt.hash(pin, 10);
-    const user = await regUser.findByIdAndUpdate(userId, { pin: hashedPin }, { new: true });
+    const user = await regUser.findByIdAndUpdate(currentUserId, { pin: hashedPin }, { new: true });
 
     if (!user) return res.status(404).json({ error: 'User not found' });
 

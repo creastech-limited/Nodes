@@ -149,7 +149,7 @@ exports.getuser = async (req, res) => {
       }
 
       const data = await regUser.findById(userId);
-      console.log(data)
+      console.log(data.store_id)
       if (!data) {
           return res.status(404).json({ message: 'Data not found' });
       }
@@ -164,10 +164,10 @@ exports.getuser = async (req, res) => {
 switch (role.toLowerCase()) {
   
   case 'store':
-    dynamicSchoolLink = `?store_id=${encodeURIComponent(store_id)}&storeName=${encodeURIComponent(storeName)}&storeType=${encodeURIComponent(storeType)}schoolId=${encodeURIComponent(generatedSchoolId)}&schoolName=${encodeURIComponent(schoolName)}&schoolAddress=${encodeURIComponent(schoolAddress)}&schoolType=${encodeURIComponent(schoolType)}&ownership=${encodeURIComponent(ownership)}`;
+    dynamicSchoolLink = `?store_id=${encodeURIComponent(data.store_id)}&storeName=${encodeURIComponent(data.storeName)}&storeType=${encodeURIComponent(data.storeType)}schoolId=${encodeURIComponent(data.generatedSchoolId)}&schoolName=${encodeURIComponent(data.schoolName)}&schoolAddress=${encodeURIComponent(data.schoolAddress)}&schoolType=${encodeURIComponent(data.schoolType)}&ownership=${encodeURIComponent(data.ownership)}`;
     break;
   case 'school':
-    dynamicSchoolLink = `?schoolId=${encodeURIComponent(generatedSchoolId)}&schoolName=${encodeURIComponent(schoolName)}&schoolAddress=${encodeURIComponent(schoolAddress)}&schoolType=${encodeURIComponent(schoolType)}&ownership=${encodeURIComponent(ownership)}`;
+    dynamicSchoolLink = `?schoolId=${encodeURIComponent(data.generatedSchoolId)}&schoolName=${encodeURIComponent(data.schoolName)}&schoolAddress=${encodeURIComponent(data.schoolAddress)}&schoolType=${encodeURIComponent(data.schoolType)}&ownership=${encodeURIComponent(data.ownership)}`;
     break;
 }
 
