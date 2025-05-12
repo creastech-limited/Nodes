@@ -10,23 +10,28 @@ const Wallet = require('../Models/walletSchema');
 
 // Set PIN (initial setup)
 exports.setPin = async (req, res) => {
-  const currentUserId = req.user?.id
-  const {pin } = req.body;
-  
-
-const user = await regUser.findById(currentUserId);
-if(user.pin !== '') return res.status(400).json({ error: 'PIN already set' });
-  if (!/^\d{4}$/.test(pin)) return res.status(400).json({ error: 'PIN must be 4 digits' });
+  const currentUserId = req.user?.id;
+  const { pin } = req.body;
 
   try {
-    const hashedPin = await bcrypt.hash(pin, 10);
-    const user = await regUser.findByIdAndUpdate(currentUserId, { pin: hashedPin }, { new: true });
-    console.log('User PIN before check:', user.pin);
-
+    let user = await regUser.findById(currentUserId);
     if (!user) return res.status(404).json({ error: 'User not found' });
-    
-    //change isPinSet to true
+
+    // Check if PIN is already set
+    if (user.pin && user.isPinSet) {
+      return res.status(400).json({ error: 'PIN already set' });
+    }
+
+    // Validate PIN format
+    if (!/^\d{4}$/.test(pin)) {
+      return res.status(400).json({ error: 'PIN must be 4 digits' });
+    }
+
+    const hashedPin = await bcrypt.hash(pin, 10);
+
+    user.pin = hashedPin;
     user.isPinSet = true;
+
     await user.save();
 
     res.json({ message: 'PIN set successfully' });

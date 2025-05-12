@@ -413,6 +413,8 @@ exports.register = async (req, res) => {
       agentName,
       classAdmittedTo,
       academicDetails,
+      pin,
+      lastLogin,
       agent_id,
       schoolRegistrationLink,
       refreshToken,
@@ -511,6 +513,8 @@ exports.register = async (req, res) => {
       password: hashedPassword,
       refreshToken: null,
       role,
+      pin: '',
+      lastLogin,
       schoolId: generatedSchoolId,
       registrationDate: new Date(),
       status: 'Inactive'
