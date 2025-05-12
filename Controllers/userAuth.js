@@ -61,9 +61,9 @@ exports.login = async (req, res) => {
 
     const { accessToken, refreshToken } = generateTokens(user);
     //check if isFirstLogin
-    if (user.isPinSet === false) {
-      return res.status(403).json({ message: 'User is required to set a PIN', AcessToken: accessToken });
-    }
+    // if (user.isPinSet === false) {
+    //   return res.status(403).json({ message: 'User is required to set a PIN', AcessToken: accessToken });
+    // }
     // change isFirstLogin to false
     user.isFirstLogin = false;
     await user.save();
