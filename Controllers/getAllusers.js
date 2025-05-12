@@ -175,6 +175,7 @@ switch (role.toLowerCase()) {
         message: `User found with the role: ${data.role}`,
         user: {
           data,
+          pin: data.pin,
           Link: dynamicSchoolLink
         },
 

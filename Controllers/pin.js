@@ -12,14 +12,22 @@ const Wallet = require('../Models/walletSchema');
 exports.setPin = async (req, res) => {
   const currentUserId = req.user?.id
   const {pin } = req.body;
+  
 
+const user = await regUser.findById(currentUserId);
+if(user.pin !== '') return res.status(400).json({ error: 'PIN already set' });
   if (!/^\d{4}$/.test(pin)) return res.status(400).json({ error: 'PIN must be 4 digits' });
 
   try {
     const hashedPin = await bcrypt.hash(pin, 10);
     const user = await regUser.findByIdAndUpdate(currentUserId, { pin: hashedPin }, { new: true });
+    console.log('User PIN before check:', user.pin);
 
     if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    //change isPinSet to true
+    user.isPinSet = true;
+    await user.save();
 
     res.json({ message: 'PIN set successfully' });
   } catch (error) {
@@ -29,12 +37,13 @@ exports.setPin = async (req, res) => {
 
 // Update PIN (requires current PIN)
 exports.updatePin = async (req, res) => {
-  const { userId, currentPin, newPin } = req.body;
+  const currentUserId = req.user?.id
+  const {currentPin, newPin } = req.body;
 
   if (!/^\d{4}$/.test(newPin)) return res.status(400).json({ error: 'New PIN must be 4 digits' });
 
   try {
-    const user = await regUser.findById(userId);
+    const user = await regUser.findById(currentUserId);
     if (!user || !user.pin) return res.status(404).json({ error: 'PIN not set or user not found' });
 
     const isMatch = await bcrypt.compare(currentPin, user.pin);
@@ -52,10 +61,12 @@ exports.updatePin = async (req, res) => {
 
 // Verify PIN
 exports.verifyPin = async (req, res) => {
-  const { userId, pin } = req.body;
+  const currentUserId = req.user?.id
+  if (!currentUserId) return res.status(400).json({ error: 'User ID is required' });
+  const { pin } = req.body;
 
   try {
-    const user = await regUser.findById(userId);
+    const user = await regUser.findById(currentUserId);
     if (!user || !user.pin) return res.status(404).json({ error: 'PIN not set or user not found' });
 
     const isMatch = await bcrypt.compare(pin, user.pin);

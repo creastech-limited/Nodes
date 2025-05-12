@@ -67,6 +67,7 @@ const userSchema = new mongoose.Schema({
   store_id: { type: String},
   schoolRegistrationLink: { type: String},
   isFirstLogin: { type: Boolean, default: true },
+  isPinSet: { type: Boolean, default: false },
   lastLogin: Date,
   status: { 
     type: String, 

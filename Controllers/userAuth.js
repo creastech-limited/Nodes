@@ -44,10 +44,10 @@ exports.login = async (req, res) => {
     if (!user.password) {
       return res.status(500).json({ message: 'User has no password set' });
     }
-
+    
     // Compare passwords
     const isMatch = await bcrypt.compare(password, user.password);
-    console.log("Password match:", isMatch);
+    // console.log("Password match:", isMatch);
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
 
     // Check status
@@ -60,6 +60,13 @@ exports.login = async (req, res) => {
 
 
     const { accessToken, refreshToken } = generateTokens(user);
+    //check if isFirstLogin
+    if (user.isPinSet === false) {
+      return res.status(403).json({ message: 'User is required to set a PIN', AcessToken: accessToken });
+    }
+    // change isFirstLogin to false
+    user.isFirstLogin = false;
+    await user.save();
 
     // Save refresh token in the database (optional)
     await regUser.findByIdAndUpdate(user._id, { refreshToken }, { new: true });
