@@ -13,7 +13,7 @@ const app = express();
 app.use(cors({
   origin: ["http://localhost:8080","http://localhost:3000","http://127.0.0.1:5503","http://localhost:5174", "https://xpay.jolade-boluwatife.workers.dev"], // For dev only; replace with your frontend URL in production
   credentials: true, // Allow credentials (cookies, authorization headers, etc.)
-  methods: ["GET", "POST", "PUT", "DELETE"]// Allowed HTTP methods
+  methods: ["GET", "POST", "PUT", "DELETE"]// Allowed HTTP method
 }));
 
 app.use(cookieParser());
