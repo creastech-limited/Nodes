@@ -1,3 +1,4 @@
+const QRCode = require('qrcode');
 const regUser = require('../Models/registeration');
 const bcrypt = require('bcryptjs');
 const sgMail = require('@sendgrid/mail');
@@ -383,6 +384,10 @@ exports.login = async (req, res) => {
 //       res.status(500).json({ message: err.message });
 //     }
 //   }
+
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
 exports.register = async (req, res) => {
   try {
     // Decode registration token if provided
@@ -422,7 +427,6 @@ exports.register = async (req, res) => {
       role
     } = req.body;
 
-    // Fallback logic
     const ownership = decodedToken.ownership || req.query.ownership || '';
     const store_id = decodedToken.id || req.body.store_id || req.query.store_id || '';
     const schoolName = decodedToken.name || req.body.schoolName || req.query.schoolName || '';
@@ -499,7 +503,7 @@ exports.register = async (req, res) => {
       schoolAddress,
       schoolType,
       ownership,
-      store_id, // initially set, will be overwritten if needed
+      store_id,
       student_id,
       storeName,
       storeType,
@@ -508,7 +512,7 @@ exports.register = async (req, res) => {
       agentName,
       email: email.toLowerCase().trim(),
       phone,
-      schoolRegistrationLink: '', // will be set later if needed
+      schoolRegistrationLink: '',
       boarding,
       password: hashedPassword,
       refreshToken: null,
@@ -520,7 +524,6 @@ exports.register = async (req, res) => {
       status: 'Inactive'
     });
 
-    // Assign role-specific values and update user object
     switch (role.toLowerCase()) {
       case 'student':
         roleSpecificId = { student_id: `${generatedSchoolId}/${newUser._id}` };
@@ -538,16 +541,14 @@ exports.register = async (req, res) => {
         break;
     }
 
-    // Apply role-specific fields to newUser
     Object.assign(newUser, roleSpecificId);
     if (dynamicSchoolLink) {
       newUser.schoolRegistrationLink = dynamicSchoolLink;
     }
 
-    // Save user
     await newUser.save();
 
-    // Create wallet for the user
+    // Create wallet
     await Wallet.create({
       userId: newUser._id,
       currency: 'NGN',
@@ -556,10 +557,20 @@ exports.register = async (req, res) => {
       email: newUser.email,
       firstName: newUser.firstName,
       lastName: newUser.lastName,
-      phone: newUser.phone
+      phone: newUser.phone,
+      accountNumber: newUser.accountNumber
     });
 
-    // Send registration email
+    // Generate QR code data
+    const qrData = JSON.stringify({
+      email: newUser.email,
+    });
+
+    const qrCodeDataUrl = await QRCode.toDataURL(qrData);
+    newUser.qrcode = qrCodeDataUrl;
+    await newUser.save();
+    const base64Image = qrCodeDataUrl.replace(/^data:image\/png;base64,/, '');
+
     const emailDetails = {
       to: [process.env.EMAIL_TO, newUser.email],
       from: {
@@ -568,16 +579,22 @@ exports.register = async (req, res) => {
       },
       subject: 'Login Notification',
       text: `Hello ${newUser.firstName},\n\nYou have successfully registered with the school wallet solution.\n\nBest regards,\nYour Company Name`,
-      html: `<p>Hello ${newUser.firstName},</p><p>You have successfully registered with the school wallet solution.<br/>Click the link <a href='${process.env.NGROK_URL}/api/activated/${newUser._id}'>activate</a> to activate your account</p><p>Best regards,<br>Your Company Name</p>`
+      html: `<p>Hello ${newUser.firstName},</p>
+             <p>You have successfully registered with the school wallet solution.<br/>
+             Click the link <a href='${process.env.NGROK_URL}/api/activated/${newUser._id}'>activate</a> to activate your account.</p>
+             <p>Best regards,<br>Your Company Name</p>`,
+      attachments: [
+        {
+          content: base64Image,
+          filename: 'qrcode.png',
+          type: 'image/png',
+          disposition: 'attachment'
+        }
+      ]
     };
 
-    sgMail.send(emailDetails).then(() => {
-      console.log('Registration email sent to', newUser.email);
-    }).catch((err) => {
-      console.error('Email error:', err.response?.body || err.message);
-    });
+    await sgMail.send(emailDetails);
 
-    // Response
     res.status(201).json({
       message: 'Registration successful',
       user: {
@@ -978,3 +995,25 @@ exports.updatePassword = async (req, res) => {
     }
   };
   
+  
+  // Step 1: Verify sender and receiver wallet
+exports.verifySenderAndReceiver = async (req, res) => {
+  const senderId = req.user?.id;
+  const { receiverWalletId, description } = req.body;
+
+  try {
+    const sender = await regUser.findById(senderId);
+    if (!sender) return res.status(404).json({ error: 'Sender not found' });
+
+    const receiver = await regUser.findOne({ walletId: receiverWalletId });
+    if (!receiver) return res.status(404).json({ error: 'Receiver not found' });
+
+    // You can optionally store the transfer info in session or return receiver ID
+    res.json({ 
+      message: 'Sender and receiver verified successfully', 
+      receiverId: receiver._id 
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

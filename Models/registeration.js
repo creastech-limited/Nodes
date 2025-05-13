@@ -68,6 +68,7 @@ const userSchema = new mongoose.Schema({
   schoolRegistrationLink: { type: String},
   isFirstLogin: { type: Boolean, default: true },
   isPinSet: { type: Boolean, default: false },
+  qrcode: { type: String },
   lastLogin: Date,
   status: { 
     type: String, 

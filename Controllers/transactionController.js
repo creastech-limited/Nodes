@@ -1,5 +1,6 @@
 const axios = require('axios');
-
+const bcrypt = require('bcrypt');
+const { v4: uuidv4 } = require('uuid');
 const Transaction = require('../Models/transactionSchema'); // Import Transaction model
 const User = require('../Models/registeration'); // Import User model
 const Wallet = require('../Models/walletSchema'); // Import Wallet model
@@ -349,5 +350,95 @@ exports.getAllSchoolTransactions = async (req, res) => {
       success: false,
       message: 'Error fetching transactions for school'
     });
+  }
+};
+
+exports.verifyPinAndTransfer = async (req, res) => {
+  const senderId = req.user?.id;
+  const { receiverId, amount, pin, description = 'No description provided' } = req.body;
+
+  try {
+    const sender = await User.findById(senderId);
+    if (!sender) return res.status(404).json({ error: 'Sender not found' });
+
+    const isPinValid = await bcrypt.compare(pin, sender.pin);
+    if (!isPinValid) return res.status(400).json({ error: 'Invalid PIN' });
+
+    const receiver = await User.findById(receiverId);
+    if (!receiver) return res.status(404).json({ error: 'Receiver not found' });
+
+    const senderWallet = await Wallet.findOne({ userId: sender._id });
+    const receiverWallet = await Wallet.findOne({ userId: receiver._id });
+
+    if (!senderWallet || !receiverWallet)
+      return res.status(400).json({ error: 'Wallet(s) not found' });
+
+    if (senderWallet.balance < amount) {
+      return res.status(400).json({ error: 'Insufficient balance' });
+    }
+
+    // Calculate balances
+    const senderBalanceBefore = senderWallet.balance;
+    const senderBalanceAfter = senderWallet.balance - amount;
+    const receiverBalanceBefore = receiverWallet.balance;
+    const receiverBalanceAfter = receiverWallet.balance + amount;
+
+    // Perform transfer
+    senderWallet.balance = senderBalanceAfter;
+    receiverWallet.balance = receiverBalanceAfter;
+
+    await senderWallet.save();
+    await receiverWallet.save();
+
+    // Create transaction records
+    const senderTransaction = new Transaction({
+      senderWalletId: senderWallet._id,
+      receiverWalletId: receiverWallet._id,
+      transactionType: 'wallet_transfer_sent',
+      category: 'debit',
+      amount,
+      balanceBefore: senderBalanceBefore,
+      balanceAfter: senderBalanceAfter,
+      reference: `TRX-${uuidv4()}`,
+      description,
+      status: 'success',
+      metadata: {
+        receiverEmail: receiver.email
+      }
+    });
+
+    const receiverTransaction = new Transaction({
+      senderWalletId: senderWallet._id,
+      receiverWalletId: receiverWallet._id,
+      transactionType: 'wallet_transfer_received',
+      category: 'credit',
+      amount,
+      balanceBefore: receiverBalanceBefore,
+      balanceAfter: receiverBalanceAfter,
+      reference: `TRX-${uuidv4()}`,
+      description,
+      status: 'success',
+      metadata: {
+        senderEmail: sender.email
+      }
+    });
+
+    await senderTransaction.save();
+    await receiverTransaction.save();
+
+    res.json({
+      message: 'Transfer successful',
+      transaction: {
+        amount,
+        sender: sender.email,
+        receiver: receiver.email,
+        description,
+        senderTransactionRef: senderTransaction.reference,
+        receiverTransactionRef: receiverTransaction.reference
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
   }
 };

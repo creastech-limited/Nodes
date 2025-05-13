@@ -4,6 +4,38 @@ const Transaction = require('../Models/transactionSchema'); // Import Transactio
 
 
 const mongoose = require('mongoose');
+async function verifySenderAndRecipient(req, res) {
+  const senderId = req.user?.id;
+  const { recipientEmail } = req.body;
+
+  try {
+    if (!recipientEmail) {
+      return res.status(400).json({ status: false, message: 'Recipient email is required' });
+    }
+
+    const recipientUser = await User.findOne({ email: recipientEmail });
+    if (!recipientUser) return res.status(404).json({ status: false, message: 'Recipient not found' });
+
+    if (senderId === recipientUser._id.toString()) {
+      return res.status(400).json({ status: false, message: 'You cannot transfer funds to yourself' });
+    }
+
+    const recipientWallet = await Wallet.findOne({ userId: recipientUser._id, type: 'user' });
+    if (!recipientWallet) return res.status(404).json({ status: false, message: 'Recipient wallet not found' });
+
+    return res.status(200).json({
+      status: true,
+      message: 'Sender and recipient verified',
+      recipientId: recipientUser._id,
+      recipientWalletId: recipientWallet._id,
+      recipientUsername: `${recipientUser.firstName} ${recipientUser.lastName}`,
+      recipientAccountNumber: recipientWallet.accountNumber,
+    });
+  } catch (error) {
+    return res.status(500).json({ status: false, message: 'Verification failed', error: error.message });
+  }
+}
+
 
 
 // Function to handle wallet-to-wallet transfer
@@ -163,6 +195,7 @@ async function transferFunds(req, res) {
 
 module.exports = {
   walletToWalletTransfer,
-  transferFunds
+  transferFunds,
+  verifySenderAndRecipient
   // Other functions can be added here
 };
