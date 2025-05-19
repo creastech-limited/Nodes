@@ -65,12 +65,15 @@ exports.getAllStudents = async (req, res) => {
     res.status(200).json({
       success: true,
       total: students.length,
-      data: {
-        name: students.firstName,
-        email: students.email,
-        count: students.length, 
-
-      },
+      data: students.map(student => {
+        return {
+          firstName: student.firstName,
+          lastName: student.lastName,
+          fullName: student.name,
+          email: student.email,
+          phone: student.phone,
+        };
+      })
     });
   } catch (err) {
     console.error(err);
