@@ -165,7 +165,7 @@ exports.initiateTransaction = async (req, res) => {
       {
         amount: amount * 100,
         email: userEmail,
-        callback_url: 'http://localhost:3000/payment/callback', // Change to real callback
+        callback_url: 'http://localhost:5174/payment/callback', // Change to real callback
       },
       {
         headers: {
@@ -355,42 +355,97 @@ exports.getAllSchoolTransactions = async (req, res) => {
 
 exports.verifyPinAndTransfer = async (req, res) => {
   const senderId = req.user?.id;
-  const { receiverId, amount, pin, description = 'No description provided' } = req.body;
+  const { receiverEmail, amount, pin, description = 'No description provided' } = req.body;
+
+  const failTransaction = async (reason, extra = {}) => {
+    try {
+      const senderWallet = senderId ? await Wallet.findOne({ userId: senderId }) : null;
+      const receiverWallet = receiverEmail
+        ? await Wallet.findOne({ userId: (await User.findOne({ email: receiverEmail }))?._id })
+        : null;
+  
+      if (senderWallet) {
+        await new Transaction({
+          senderWalletId: senderWallet._id,
+          receiverWalletId: receiverWallet?._id,
+          transactionType: 'wallet_transfer_sent',
+          category: 'debit',
+          amount: amount || 0,
+          balanceBefore: senderWallet.balance,
+          balanceAfter: senderWallet.balance,
+          reference: `TRX-${uuidv4()}`,
+          description,
+          status: 'failed',
+          metadata: {
+            reason,
+            ...(receiverEmail ? { receiverEmail } : { receiverEmail: 'No recipient email provided' }),
+            ...extra
+          }
+        }).save();
+      }
+    } catch (err) {
+      console.error('Error saving failed transaction:', err.message);
+    }
+  };
+  
 
   try {
     const sender = await User.findById(senderId);
-    if (!sender) return res.status(404).json({ error: 'Sender not found' });
+    if (!sender) {
+      await failTransaction('Sender not found', { reason: 'Sender account does not exist' });
+      return res.status(404).json({ error: 'Sender not found' });
+    }
+
+    if (!sender.pin) {
+      await failTransaction('PIN not set', { reason: 'Sender has not set a PIN' });
+      return res.status(400).json({ error: 'PIN not set' });
+    }
 
     const isPinValid = await bcrypt.compare(pin, sender.pin);
-    if (!isPinValid) return res.status(400).json({ error: 'Invalid PIN' });
+    if (!isPinValid) {
+      await failTransaction('Invalid PIN', { reason: 'Provided PIN is incorrect' });
+      return res.status(400).json({ error: 'Invalid PIN' });
+    }
 
-    const receiver = await User.findById(receiverId);
-    if (!receiver) return res.status(404).json({ error: 'Receiver not found' });
+    const receiver = await User.findOne({ email: receiverEmail });
+    if (!receiver) {
+      await failTransaction('Receiver not found', { reason: 'No user with this email', receiverEmail });
+      return res.status(404).json({ error: 'Receiver not found' });
+    }
 
     const senderWallet = await Wallet.findOne({ userId: sender._id });
     const receiverWallet = await Wallet.findOne({ userId: receiver._id });
 
-    if (!senderWallet || !receiverWallet)
+    if (!senderWallet || !receiverWallet) {
+      await failTransaction('Wallet(s) not found', {
+        reason: 'Either sender or receiver wallet is missing',
+        senderWalletFound: !!senderWallet,
+        receiverWalletFound: !!receiverWallet
+      });
       return res.status(400).json({ error: 'Wallet(s) not found' });
+    }
 
     if (senderWallet.balance < amount) {
+      await failTransaction('Insufficient balance', {
+        reason: 'Sender does not have enough funds',
+        currentBalance: senderWallet.balance,
+        transferAmount: amount
+      });
       return res.status(400).json({ error: 'Insufficient balance' });
     }
 
-    // Calculate balances
+    // Transfer funds
     const senderBalanceBefore = senderWallet.balance;
     const senderBalanceAfter = senderWallet.balance - amount;
     const receiverBalanceBefore = receiverWallet.balance;
     const receiverBalanceAfter = receiverWallet.balance + amount;
 
-    // Perform transfer
     senderWallet.balance = senderBalanceAfter;
     receiverWallet.balance = receiverBalanceAfter;
 
     await senderWallet.save();
     await receiverWallet.save();
 
-    // Create transaction records
     const senderTransaction = new Transaction({
       senderWalletId: senderWallet._id,
       receiverWalletId: receiverWallet._id,
@@ -439,6 +494,7 @@ exports.verifyPinAndTransfer = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
+    await failTransaction('Unexpected error', { reason: error.message });
     res.status(500).json({ error: error.message });
   }
 };
