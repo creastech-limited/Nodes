@@ -66,8 +66,8 @@ exports.getAllStudents = async (req, res) => {
       success: true,
       total: students.length,
       data: {
-        name: students[0]?.firstName,
-        email: students[0]?.email,
+        name: students.firstName,
+        email: students.email,
         count: students.length, 
 
       },
