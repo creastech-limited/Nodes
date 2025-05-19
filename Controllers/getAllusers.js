@@ -1,4 +1,5 @@
 const {regUser,Class} = require('../Models/registeration');
+const Wallet = require('../Models/walletSchema');
 const jwt = require('jsonwebtoken');
 
 exports.getallUsers =  async (req, res) => {
@@ -181,6 +182,7 @@ exports.getuser = async (req, res) => {
       }
 
       const data = await regUser.findById(userId);
+      const wallet = await Wallet.findOne({ userId: data._id });
       console.log(data.store_id)
       if (!data) {
           return res.status(404).json({ message: 'Data not found' });
@@ -208,7 +210,17 @@ switch (role.toLowerCase()) {
         user: {
           data,
           pin: data.pin,
-          Link: dynamicSchoolLink
+          Link: dynamicSchoolLink,
+          wallet: {
+            id: wallet._id,
+            balance: wallet.balance,
+            currency: wallet.currency,
+            type: wallet.type,
+            email: wallet.email,
+            firstName: wallet.firstName,
+            lastName: wallet.lastName,
+            phone: wallet.phone
+          }
         },
 
       });
