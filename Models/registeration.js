@@ -56,6 +56,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   phone: { type: String},
   accountNumber: { type: String, required: true },
+  Class: { type: String },
   role: { 
     type: String, 
     required: true, 
@@ -105,6 +106,17 @@ userSchema.post('save', async function (doc, next) {
 })
 });
 
-const User = mongoose.model('User', userSchema);
+const regUser = mongoose.model('User', userSchema);
 
-module.exports = User;
+//class model
+const classSchema = new mongoose.Schema({
+  className: { type: String, required: true },
+  section: { type: String, required: true,default: '1' },
+  schoolId: { type: String, required: true },
+  students: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  description: { type: String },
+  classTeacher: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+}, { timestamps: true });
+const ClassUser = mongoose.model('Class', classSchema);
+
+module.exports = {regUser, ClassUser};
