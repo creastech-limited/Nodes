@@ -65,7 +65,12 @@ exports.getAllStudents = async (req, res) => {
     res.status(200).json({
       success: true,
       total: students.length,
-      data: students,
+      data: {
+        name: students[0]?.firstName,
+        email: students[0]?.email,
+        count: students.length, 
+
+      },
     });
   } catch (err) {
     console.error(err);
