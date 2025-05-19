@@ -1,4 +1,4 @@
-const regUser = require('../Models/registeration');
+const {regUser,Class} = require('../Models/registeration');
 const jwt = require('jsonwebtoken');
 
 exports.getallUsers =  async (req, res) => {
@@ -41,6 +41,11 @@ exports.getallUsers =  async (req, res) => {
         return {
           user,
           ...roleSpecificId,
+          academicDetails: {
+            classAdmittedTo: user.Class,
+            section: user.section,
+            previousSchool: user.previousSchool,
+          }
         };
       })
     });
@@ -48,6 +53,25 @@ exports.getallUsers =  async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 }
+exports.getAllStudents = async (req, res) => {
+  try {
+    const students = await regUser.find({ role: 'student' })
+      .populate({
+        path: 'Class',
+        select: 'className section description',
+      })
+      .select('-password -pin -refreshToken'); // Hide sensitive info
+
+    res.status(200).json({
+      success: true,
+      total: students.length,
+      data: students,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
 
 exports.getuserbyid = async (req, res) => {
   try {
