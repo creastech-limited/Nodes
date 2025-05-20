@@ -388,7 +388,7 @@ exports.verifyPinAndTransfer = async (req, res) => {
     }
   };
   
-
+console.log("Sender ID:", senderId);
   try {
     const sender = await User.findById(senderId);
     if (!sender) {
