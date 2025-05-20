@@ -2,7 +2,7 @@ const axios = require('axios');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const Transaction = require('../Models/transactionSchema'); // Import Transaction model
-const {User} = require('../Models/registeration'); // Import User model
+const {regUser} = require('../Models/registeration'); // Import User model
 const {Wallet} = require('../Models/walletSchema'); // Import Wallet model
 // const verifyToken = require('../routes/verifyToken'); // Import verifyToken middleware
 
@@ -135,7 +135,7 @@ exports.initiateTransaction = async (req, res) => {
     const userId = req.user?.id;
     console.log("User ID:", userId);
     const systemWalletId = "6807b1ab7e897e850550121d"; // Get system wallet ID from request body
-    const userEmail = await User.findById(userId).select('email').then(user => user.email);
+    const userEmail = await regUser.findById(userId).select('email').then(user => user.email);
 
     console.log("User Email:", userEmail);
 
@@ -236,7 +236,7 @@ exports.verifyTransaction = async (req, res) => {
     if (data.status === 'success' && data.paid_at) {
       const userEmail = data.customer.email;
 
-      const user = await User.findOne({ email: userEmail });
+      const user = await regUser.findOne({ email: userEmail });
 if (!user) {
   return res.status(404).json({ status: false, message: 'User not found' });
 }
@@ -361,7 +361,7 @@ exports.verifyPinAndTransfer = async (req, res) => {
     try {
       const senderWallet = senderId ? await Wallet.findOne({ userId: senderId }) : null;
       const receiverWallet = receiverEmail
-        ? await Wallet.findOne({ userId: (await User.findOne({ email: receiverEmail }))?._id })
+        ? await Wallet.findOne({ userId: (await regUser.findOne({ email: receiverEmail }))?._id })
         : null;
   
       if (senderWallet) {
@@ -388,9 +388,8 @@ exports.verifyPinAndTransfer = async (req, res) => {
     }
   };
   
-console.log("Sender ID:", senderId);
   try {
-    const sender = await User.findById(senderId);
+    const sender = await regUser.findById(senderId);
     if (!sender) {
       await failTransaction('Sender not found', { reason: 'Sender account does not exist' });
       return res.status(404).json({ error: 'Sender not found' });
@@ -407,7 +406,7 @@ console.log("Sender ID:", senderId);
       return res.status(400).json({ error: 'Invalid PIN' });
     }
 
-    const receiver = await User.findOne({ email: receiverEmail });
+    const receiver = await regUser.findOne({ email: receiverEmail });
     if (!receiver) {
       await failTransaction('Receiver not found', { reason: 'No user with this email', receiverEmail });
       return res.status(404).json({ error: 'Receiver not found' });
