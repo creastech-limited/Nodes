@@ -29,31 +29,128 @@ exports.getAllTransactions = async (req, res) => {
 };
 
 //get user transactions
+// exports.getTransactionById = async (req, res) => {
+//   try {
+//     const userId = req.user?.id;
+
+//     if (!userId) {
+//       return res.status(401).json({
+//         success: false,
+//         message: 'Unauthorized: No user ID in token'
+//       });
+//     }
+
+//     // Find the user's wallet
+//     const wallet = await Wallet.findOne({ userId });
+//     if (!wallet) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Wallet not found for the authenticated user'
+//       });
+//     }
+
+//     // Find transactions where the user's wallet is either sender or receiver
+//     const transactions = await Transaction.find({
+//       $or: [
+//         { senderWalletId: wallet._id },
+//         { receiverWalletId: wallet._id }
+//       ]
+//     })
+//       .populate('senderWalletId')
+//       .populate('receiverWalletId')
+//       .sort({ createdAt: -1 });
+
+//     res.status(200).json({
+//       success: true,
+//       message: `Found ${transactions.length} transaction(s) for user`,
+//       data: transactions
+//     });
+//   } catch (error) {
+//     console.error('Error fetching transactions by token ID:', error.message);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Server error while fetching transactions'
+//     });
+//   }
+// };
+// exports.getTransactionById = async (req, res) => {
+//   try {
+//     const userId = req.user?.id;
+
+//     if (!userId) {
+//       return res.status(401).json({
+//         success: false,
+//         message: 'Unauthorized: No user ID in token'
+//       });
+//     }
+
+//     // Find the user's wallet
+//     const wallet = await Wallet.findOne({ userId });
+//     if (!wallet) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Wallet not found for the authenticated user'
+//       });
+//     }
+
+//     // Find transactions where the user's wallet is either sender or receiver
+//     const transactions = await Transaction.find({
+//       $or: [
+//         { senderWalletId: wallet._id },
+//         { receiverWalletId: wallet._id }
+//       ]
+//     })
+//       .populate('senderWalletId')
+//       .populate('receiverWalletId')
+//       .sort({ createdAt: -1 });
+
+//     // Log each transaction and determine if the user was sender or receiver
+//     transactions.forEach((tx) => {
+//       const isSender = tx.senderWalletId._id.toString() === wallet._id.toString();
+//       const isReceiver = tx.receiverWalletId._id.toString() === wallet._id.toString();
+//       const direction = isSender ? 'Sent' : isReceiver ? 'Received' : 'Unknown';
+
+//       console.log(`Transaction ID: ${tx._id}`);
+//       console.log(`  Amount: ${tx.amount}`);
+//       console.log(`  Type: ${direction}`);
+//       console.log(`  From: ${tx.senderWalletId?.userId}`);
+//       console.log(`  To: ${tx.receiverWalletId?.userId}`);
+//       console.log(`  Date: ${tx.createdAt}`);
+//       console.log('---');
+//     });
+
+//     res.status(200).json({
+//       success: true,
+//       message: `Found ${transactions.length} transaction(s) for user`,
+//       data: transactions
+//     });
+//   } catch (error) {
+//     console.error('Error fetching transactions by token ID:', error.message);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Server error while fetching transactions'
+//     });
+//   }
+// };
+
 exports.getTransactionById = async (req, res) => {
   try {
-    const userId = req.user?.id;
+    const userEmail = req.user?.email;
+    console.log(userEmail)
 
-    if (!userId) {
+    if (!userEmail) {
       return res.status(401).json({
         success: false,
-        message: 'Unauthorized: No user ID in token'
+        message: 'Unauthorized: Missing user email'
       });
     }
 
-    // Find the user's wallet
-    const wallet = await Wallet.findOne({ userId });
-    if (!wallet) {
-      return res.status(404).json({
-        success: false,
-        message: 'Wallet not found for the authenticated user'
-      });
-    }
-
-    // Find transactions where the user's wallet is either sender or receiver
+    // Find transactions where any email field in metadata matches user email
     const transactions = await Transaction.find({
       $or: [
-        { senderWalletId: wallet._id },
-        { receiverWalletId: wallet._id }
+        { 'metadata.senderEmail': userEmail },
+        { 'metadata.receiverEmail': userEmail },
+        { 'metadata.email': userEmail }
       ]
     })
       .populate('senderWalletId')
@@ -62,11 +159,11 @@ exports.getTransactionById = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: `Found ${transactions.length} transaction(s) for user`,
+      message: `Found ${transactions.length} transaction(s) for user email`,
       data: transactions
     });
   } catch (error) {
-    console.error('Error fetching transactions by token ID:', error.message);
+    console.error('Error fetching transactions by user email in metadata:', error.message);
     res.status(500).json({
       success: false,
       message: 'Server error while fetching transactions'
