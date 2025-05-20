@@ -2,7 +2,7 @@ const axios = require('axios');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const Transaction = require('../Models/transactionSchema'); // Import Transaction model
-const User = require('../Models/registeration'); // Import User model
+const {User} = require('../Models/registeration'); // Import User model
 const Wallet = require('../Models/walletSchema'); // Import Wallet model
 // const verifyToken = require('../routes/verifyToken'); // Import verifyToken middleware
 
