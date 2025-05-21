@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { initiateTransaction, verifyTransaction,getAllTransactions, getTransactionById} = require('../Controllers/transactionController');
+const { initiateTransaction, verifyTransaction,verifyPinAndTransfer, getAllTransactions, getTransactionById, updateTransferMetadata,deleteTransaction} = require('../Controllers/transactionController');
 const verifyToken = require('./verifyToken');
-const {verifyPinAndTransfer} = require('../Controllers/transactionController');
+// const {} = require('../Controllers/transactionController');
 
 // Route to initiate a transaction
 router.post('/initiateTransaction', verifyToken, initiateTransaction);
@@ -14,6 +14,8 @@ router.get('/getAllTransactions', verifyToken, getAllTransactions);
 router.get('/getusertransaction', verifyToken, getTransactionById);
 // Route to verify sender and receiver
 router.post('/transfer', verifyToken, verifyPinAndTransfer);
+router.put('/updatetransaction',verifyToken, updateTransferMetadata);
+router.delete('/dletetrans/:id',verifyToken, deleteTransaction);
 
 
 module.exports = router
