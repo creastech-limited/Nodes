@@ -490,7 +490,6 @@ exports.verifyPinAndTransfer = async (req, res) => {
   const failTransaction = async (reason, extra = {}) => {
     try {
       const senderWallet = senderId ? await Wallet.findOne({ userId: senderId }) : null;
-  console.log(senderWallet)
       const receiverWallet = receiverEmail
         ? await Wallet.findOne({ userId: (await regUser.findOne({ email: receiverEmail }))?._id })
         : null;
@@ -636,7 +635,7 @@ exports.verifyPinAndTransfer = async (req, res) => {
 
 exports.updateTransferMetadata = async (req, res) => {
   try {
-    // Find all relevant transaction and populate userId inside the wallets
+    // Find all relevant transactions and populate userId inside the wallets
     const transactions = await Transaction.find({
       transactionType: { $in: ['wallet_transfer_sent', 'wallet_transfer_received'] }
     })
