@@ -1204,12 +1204,14 @@ exports.register2 = async (req, res) => {
       status: 'Inactive',
     });
     let schoolDBID = null;
-    const shcool_id = await regUser.findOne({ schoolId: generatedSchoolId });
-    if (!shcool_id) {
-      return res.status(404).json({ message: 'School with provided ID not found' });
-    }else {
-      schoolDBID = shcool_id._id;
-    }
+
+if (roleLower !== 'school') {
+  const existingSchool = await regUser.findOne({ schoolId: generatedSchoolId, role: 'school' });
+  if (!existingSchool) {
+    return res.status(404).json({ message: 'School with provided ID not found' });
+  }
+  schoolDBID = existingSchool._id;
+}
     console.log("shcool_id", schoolDBID);
 console.log("classAdmtrd to", academicDetails.classAdmittedTo); 
 console.log("roleLower", roleLower); 
