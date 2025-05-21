@@ -540,7 +540,7 @@ exports.verifyPinAndTransfer = async (req, res) => {
     const receiver = await regUser.findOne({ email: receiverEmail });
     if (!receiver) {
       await failTransaction('Receiver not found', { reason: 'No user with this email', receiverEmail });
-      return res.status(404).json({ error: 'Receiver not found' });
+      return res.status(404).json({ error: 'Receiver not found ' });
     }
 
     const senderWallet = await Wallet.findOne({ userId: sender._id });
