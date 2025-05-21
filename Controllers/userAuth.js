@@ -1083,9 +1083,7 @@ exports.register2 = async (req, res) => {
       status = 'Inactive',
       role
     } = req.body;
-    console.log("role", role);
     const roleLower = role.toLowerCase();
-    
     const schoolId = decodedToken.id || req.body.schoolId || req.query.schoolId || '';
     let resolvedSchoolId = schoolId;
     let resolvedSchoolName = decodedToken.name || req.body.schoolName || req.query.schoolName || '';
