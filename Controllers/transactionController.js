@@ -73,106 +73,7 @@ exports.getAllTransactions = async (req, res) => {
 //     });
 //   }
 // };
-// exports.getTransactionById = async (req, res) => {
-//   try {
-//     const userId = req.user?.id;
-
-//     if (!userId) {
-//       return res.status(401).json({
-//         success: false,
-//         message: 'Unauthorized: No user ID in token'
-//       });
-//     }
-
-//     // Find the user's wallet
-//     const wallet = await Wallet.findOne({ userId });
-//     if (!wallet) {
-//       return res.status(404).json({
-//         success: false,
-//         message: 'Wallet not found for the authenticated user'
-//       });
-//     }
-
-//     // Find transactions where the user's wallet is either sender or receiver
-//     const transactions = await Transaction.find({
-//       $or: [
-//         { senderWalletId: wallet._id },
-//         { receiverWalletId: wallet._id }
-//       ]
-//     })
-//       .populate('senderWalletId')
-//       .populate('receiverWalletId')
-//       .sort({ createdAt: -1 });
-
-//     // Log each transaction and determine if the user was sender or receiver
-//     transactions.forEach((tx) => {
-//       const isSender = tx.senderWalletId._id.toString() === wallet._id.toString();
-//       const isReceiver = tx.receiverWalletId._id.toString() === wallet._id.toString();
-//       const direction = isSender ? 'Sent' : isReceiver ? 'Received' : 'Unknown';
-
-//       console.log(`Transaction ID: ${tx._id}`);
-//       console.log(`  Amount: ${tx.amount}`);
-//       console.log(`  Type: ${direction}`);
-//       console.log(`  From: ${tx.senderWalletId?.userId}`);
-//       console.log(`  To: ${tx.receiverWalletId?.userId}`);
-//       console.log(`  Date: ${tx.createdAt}`);
-//       console.log('---');
-//     });
-
-//     res.status(200).json({
-//       success: true,
-//       message: `Found ${transactions.length} transaction(s) for user`,
-//       data: transactions
-//     });
-//   } catch (error) {
-//     console.error('Error fetching transactions by token ID:', error.message);
-//     res.status(500).json({
-//       success: false,
-//       message: 'Server error while fetching transactions'
-//     });
-//   }
-// };
-
 exports.getTransactionById = async (req, res) => {
-  try {
-    const userEmail = req.user?.email;
-    console.log(userEmail)
-
-    if (!userEmail) {
-      return res.status(401).json({
-        success: false,
-        message: 'Unauthorized: Missing user email'
-      });
-    }
-
-    // Find transactions where any email field in metadata matches user email
-    const transactions = await Transaction.find({
-      $or: [
-        { 'metadata.senderEmail': userEmail },
-        { 'metadata.receiverEmail': userEmail },
-        { 'metadata.email': userEmail }
-      ]
-    })
-      .populate('senderWalletId')
-      .populate('receiverWalletId')
-      .sort({ createdAt: -1 });
-
-    res.status(200).json({
-      success: true,
-      message: `Found ${transactions.length} transaction(s) for user email`,
-      data: transactions
-    });
-  } catch (error) {
-    console.error('Error fetching transactions by user email in metadata:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while fetching transactions'
-    });
-  }
-};
-
-//get transaction for a particular school which includes all students in the school
-exports.getRecentTransactionsByToken = async (req, res) => {
   try {
     const userId = req.user?.id;
 
@@ -192,31 +93,163 @@ exports.getRecentTransactionsByToken = async (req, res) => {
       });
     }
 
-    // Find latest 5 transactions
+    // Find transactions where:
+    // - user is sender and transaction is debit (money sent)
+    // - user is receiver and transaction is credit (money received)
     const transactions = await Transaction.find({
       $or: [
-        { senderWalletId: wallet._id },
-        { receiverWalletId: wallet._id }
+        { senderWalletId: wallet._id, category: 'debit' },
+        { receiverWalletId: wallet._id, category: 'credit' }
       ]
     })
       .populate('senderWalletId')
       .populate('receiverWalletId')
-      .sort({ createdAt: -1 })
-      .limit(5); // Only the 5 most recent
+      .sort({ createdAt: -1 });
+
+    // Optionally add direction field (debit/credit) for clarity
+    const filteredTransactions = transactions.map(tx => {
+      const isSender = tx.senderWalletId?._id.toString() === wallet._id.toString();
+      return {
+        ...tx.toObject(),
+        direction: isSender ? 'debit' : 'credit'
+      };
+    });
 
     res.status(200).json({
       success: true,
-      message: `Found ${transactions.length} recent transaction(s)`,
-      data: transactions
+      message: `Found ${filteredTransactions.length} transaction(s) for user`,
+      data: filteredTransactions
     });
   } catch (error) {
-    console.error('Error fetching recent transactions:', error.message);
+    console.error('Error fetching transactions by token ID:', error.message);
     res.status(500).json({
       success: false,
-      message: 'Server error while fetching recent transactions'
+      message: 'Server error while fetching transactions'
     });
   }
 };
+
+
+
+// exports.getTransactionById = async (req, res) => {
+//   try {
+//     const userEmail = req.user?.email;
+//     console.log(userEmail)
+
+//     if (!userEmail) {
+//       return res.status(401).json({
+//         success: false,
+//         message: 'Unauthorized: Missing user email'
+//       });
+//     }
+
+//     // Find transactions where any email field in metadata matches user email
+//     const transactions = await Transaction.find({
+//       $or: [
+//         { 'metadata.senderEmail': userEmail },
+//         { 'metadata.receiverEmail': userEmail },
+//         { 'metadata.email': userEmail }
+//       ]
+//     })
+//       .populate('senderWalletId')
+//       .populate('receiverWalletId')
+//       .sort({ createdAt: -1 });
+
+//     res.status(200).json({
+//       success: true,
+//       message: `Found ${transactions.length} transaction(s) for user email`,
+//       data: transactions
+//     });
+//   } catch (error) {
+//     console.error('Error fetching transactions by user email in metadata:', error.message);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Server error while fetching transactions'
+//     });
+//   }
+// };
+
+// exports.getTransactionById = async (req, res) => {
+//   try {
+//     const userId = req.user?.id;
+//     const userEmail = req.user?.email;
+
+//     if (!userId || !userEmail) {
+//       return res.status(401).json({
+//         success: false,
+//         message: 'Unauthorized: No user ID or email in token'
+//       });
+//     }
+//     const transactions = await Transaction.find({
+//   $or: [
+//     { 'metadata.senderEmail': userEmail },
+//     { 'metadata.email': userEmail },
+//     { 'metadata.receiverEmail': userEmail }
+//   ]
+// }).sort({ createdAt: -1 });
+
+
+//     res.status(200).json({
+//       success: true,
+//       message: `Found ${transactions.length} matching transaction(s) for user`,
+//       data: transactions
+//     });
+//   } catch (error) {
+//     console.error('Error fetching filtered transactions:', error.message);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Server error while fetching transactions'
+//     });
+//   }
+// };
+
+
+// //get transaction for a particular school which includes all students in the school
+// exports.getRecentTransactionsByToken = async (req, res) => {
+//   try {
+//     const userId = req.user?.id;
+
+//     if (!userId) {
+//       return res.status(401).json({
+//         success: false,
+//         message: 'Unauthorized: No user ID in token'
+//       });
+//     }
+
+//     // Find the user's wallet
+//     const wallet = await Wallet.findOne({ userId });
+//     if (!wallet) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Wallet not found for the authenticated user'
+//       });
+//     }
+
+//     // Find latest 5 transactions
+//     const transactions = await Transaction.find({
+//       $or: [
+//         { senderWalletId: wallet._id },
+//         { receiverWalletId: wallet._id }
+//       ]
+//     })
+//       .populate('senderWalletId')
+//       .populate('receiverWalletId')
+//       .sort({ createdAt: -1 })
+//       .limit(5); // Only the 5 most recent
+
+//     res.status(200).json({
+//       success: true,
+//       message: `Found ${transactions.length} recent transaction(s)`,
+//       data: transactions
+//     });
+//   } catch (error) {
+//     console.error('Error fetching recent transactions:', error.message);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Server error while fetching recent transactions'
+//     });
+//   }
+// };
 
 
 
@@ -340,10 +373,10 @@ if (!user) {
 
 const userWallet = await Wallet.findOne({ userId: user._id.toString(), type: 'user' });
 if (!userWallet) {
-  console.log("User Wallet not found for userId:", user._id.toString());
-  console.log("typeof user._id:", typeof user._id);
-console.log("user._id constructor:", user._id.constructor.name);
-console.log("user._id value:", user._id.valueOf());
+//   console.log("User Wallet not found for userId:", user._id.toString());
+//   console.log("typeof user._id:", typeof user._id);
+// console.log("user._id constructor:", user._id.constructor.name);
+// console.log("user._id value:", user._id.valueOf());
   return res.status(404).json({ status: false, message: 'Wallet not found' });
 }
 
@@ -354,7 +387,6 @@ console.log("user._id value:", user._id.valueOf());
       console.log("Balance Before:", balanceBefore);
       console.log("Balance After:", balanceAfter);
       // 🟡 Find the existing pending transaction by reference
-      console.log("Reference:", reference);
       const existingTxn = await Transaction.findOne({ reference, status: 'pending' });
       if (!existingTxn) {
         return res.status(404).json({ status: false, message: 'Pending transaction not found' });
@@ -452,6 +484,7 @@ exports.getAllSchoolTransactions = async (req, res) => {
 
 exports.verifyPinAndTransfer = async (req, res) => {
   const senderId = req.user?.id;
+  console.log(senderId)
   const { receiverEmail, amount, pin, description = 'No description provided' } = req.body;
 
   const failTransaction = async (reason, extra = {}) => {
@@ -485,6 +518,7 @@ exports.verifyPinAndTransfer = async (req, res) => {
     }
   };
   
+
   try {
     const sender = await regUser.findById(senderId);
     if (!sender) {
@@ -506,7 +540,7 @@ exports.verifyPinAndTransfer = async (req, res) => {
     const receiver = await regUser.findOne({ email: receiverEmail });
     if (!receiver) {
       await failTransaction('Receiver not found', { reason: 'No user with this email', receiverEmail });
-      return res.status(404).json({ error: 'Receiver not found' });
+      return res.status(404).json({ error: 'Receiver not found ' });
     }
 
     const senderWallet = await Wallet.findOne({ userId: sender._id });
@@ -554,7 +588,8 @@ exports.verifyPinAndTransfer = async (req, res) => {
       description,
       status: 'success',
       metadata: {
-        receiverEmail: receiver.email
+        receiverEmail: receiver.email,
+        senderEmail: sender.email,
       }
     });
 
@@ -570,7 +605,8 @@ exports.verifyPinAndTransfer = async (req, res) => {
       description,
       status: 'success',
       metadata: {
-        senderEmail: sender.email
+        senderEmail: sender.email,
+        receiverEmail: receiver.email
       }
     });
 
@@ -594,3 +630,101 @@ exports.verifyPinAndTransfer = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+  
+
+exports.updateTransferMetadata = async (req, res) => {
+  try {
+    // Find all relevant transactions and populate userId inside the wallets
+    const transactions = await Transaction.find({
+      transactionType: { $in: ['wallet_transfer_sent', 'wallet_transfer_received'] }
+    })
+      .populate({
+        path: 'senderWalletId',
+        populate: {
+          path: 'userId',
+          model: 'User'
+        }
+      })
+      .populate({
+        path: 'receiverWalletId',
+        populate: {
+          path: 'userId',
+          model: 'User'
+        }
+      });
+
+    let updatedCount = 0;
+
+    for (const tx of transactions) {
+      const metadata = tx.metadata || {};
+
+      const senderUser = tx.senderWalletId?.userId;
+      console.log('userID', metadata.senderEmail)
+      const receiverUser = tx.receiverWalletId?.userId;
+      console.log('userID', senderUser.email)
+
+
+      let needsUpdate = false;
+
+      // Add senderEmail if missing
+      if (!metadata.senderEmail && senderUser?.email) {
+        metadata.senderEmail = senderUser.email;
+        needsUpdate = true;
+      }
+
+      // Add receiverEmail if missing
+      if (!metadata.receiverEmail && receiverUser?.email) {
+        metadata.receiverEmail = receiverUser.email;
+        needsUpdate = true;
+      }
+
+      if (needsUpdate) {
+        tx.metadata = metadata;
+        await tx.save();
+        updatedCount++;
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Metadata updated for ${updatedCount} transaction(s)`,
+      tx
+    });
+
+  } catch (error) {
+    console.error('Error updating transaction metadata:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while updating transaction metadata'
+    });
+  }
+};
+
+//Delete Transaction
+exports.deleteTransaction = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deleted = await Transaction.findByIdAndDelete(id);
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        message: `Transaction with ID ${id} not found`
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Transaction ${id} deleted successfully`,
+      data: deleted
+    });
+  } catch (error) {
+    console.error('Error deleting transaction:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while deleting transaction'
+    });
+  }
+};
+
