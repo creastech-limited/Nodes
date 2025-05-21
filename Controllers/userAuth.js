@@ -1212,9 +1212,9 @@ if (roleLower !== 'school') {
   }
   schoolDBID = existingSchool._id;
 }
-    console.log("shcool_id", schoolDBID);
-console.log("classAdmtrd to", academicDetails.classAdmittedTo); 
-console.log("roleLower", roleLower); 
+//     console.log("shcool_id", schoolDBID);
+// console.log("classAdmtrd to", academicDetails.classAdmittedTo); 
+// console.log("roleLower", roleLower); 
     // ✅ Assign student to class using class name (classAdmittedTo)
     if (roleLower === 'student' && academicDetails.classAdmittedTo && schoolDBID) {
       const foundClass = await ClassUser.findOne({
