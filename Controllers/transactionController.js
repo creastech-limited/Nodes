@@ -636,7 +636,7 @@ exports.verifyPinAndTransfer = async (req, res) => {
 
 exports.updateTransferMetadata = async (req, res) => {
   try {
-    // Find all relevant transactions and populate userId inside the wallets
+    // Find all relevant transaction and populate userId inside the wallets
     const transactions = await Transaction.find({
       transactionType: { $in: ['wallet_transfer_sent', 'wallet_transfer_received'] }
     })
