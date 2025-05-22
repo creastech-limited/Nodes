@@ -1,6 +1,7 @@
 const QRCode = require('qrcode');
 const {regUser, ClassUser} = require('../Models/registeration');
 const bcrypt = require('bcryptjs');
+const sendEmail = require('../utils/email');
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const crypto = require('crypto');
@@ -27,6 +28,8 @@ function generateTokens(user) {
 
   return { accessToken, refreshToken };
 }
+
+
 exports.login = async (req, res) => {
   console.log('POST body:', req.body);
 
@@ -80,7 +83,38 @@ exports.login = async (req, res) => {
       sameSite: 'Strict',
       maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     });
+   try {
+  const emailResponse = await sendEmail({
+    to: "taiwodavid19@gmail.com",
+    subject: 'Login Notification',
+    html: `<p>Hello ${user.firstName},</p><p>You have successfully logged in to your account.</p><p>Best regards,<br>Your Company Name</p>`
+  });
 
+  console.log("Email sent successfully:", emailResponse);
+} catch (error) {
+  console.error("Failed to send login email:", error.message);
+}
+       const emailDetails = {
+      to: process.env.EMAIL_TO,
+      from: {
+        email: "davidt@yungmindsinnovative.com.ng",
+        name: 'Your Company Name'
+      },
+      subject: 'Login Notification',
+      text: `Hello ${user.firstName},\n\nYou have successfully logged in to your account.\n\nBest regards,\nYour Company Name`,
+      html: `<p>Hello ${user.firstName},</p><p>You have successfully logged in to your account.</p><p>Best regards,<br>Your Company Name</p>`
+    };
+    sgMail.send(emailDetails)
+      .then(() => {
+        console.log('Login email sent successfully to', user.email);
+        
+      })
+      .catch((error) => {
+        console.error('Failed to send login email:', error.response?.body || error.message);
+        return res.status(500).json({
+          message: 'Failed to send login email',
+        }); 
+      });
     console.log("Access token generated:", accessToken);
     console.log("User details:", {
       id: user._id,});
@@ -113,32 +147,16 @@ exports.login = async (req, res) => {
         store_id: user.store_id,
       }
     });
+    //login email
+   
+
+
+
 
     // Send Login Email
-    const emailDetails = {
-      to: process.env.EMAIL_TO,
-      from: {
-        email: "davidt@yungmindsinnovative.com.ng",
-        name: 'Your Company Name'
-      },
-      subject: 'Login Notification',
-      text: `Hello ${user.firstName},\n\nYou have successfully logged in to your account.\n\nBest regards,\nYour Company Name`,
-      html: `<p>Hello ${user.firstName},</p><p>You have successfully logged in to your account.</p><p>Best regards,<br>Your Company Name</p>`
-    };
+   
 
-    sgMail.send(emailDetails)
-      .then(() => {
-        console.log('Login email sent successfully to', user.email);
-        res.status(200).json({
-          message: 'Login email sent successfully',
-        });
-      })
-      .catch((error) => {
-        console.error('Failed to send login email:', error.response?.body || error.message);
-        return res.status(500).json({
-          message: 'Failed to send login email',
-        }); 
-      });
+    
 
   } catch (err) {
     console.error('Login error:', err.message);
@@ -1429,6 +1447,50 @@ exports.getAllClassesWithCounts = async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching class student counts:', error);
+    return res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+//get school by id
+exports.getSchoolById = async (req, res) => {
+  try {
+    const schoolId = req.params.id;
+
+    if (!schoolId) {
+      return res.status(400).json({ message: 'schoolId is required' });
+    }
+
+    // Find the school using the generated schoolId field
+    const school = await regUser.findOne({ schoolId });
+
+    if (!school) {
+      return res.status(404).json({ message: 'School not found' });
+    }
+
+    if (school.role.toLowerCase() !== 'school') {
+      return res.status(403).json({ message: 'Access denied. Not a school user.' });
+    }
+
+    // Find classes associated with the school's _id
+    const classes = await ClassUser.find({ schoolId: school._id });
+
+    // Convert the Mongoose doc to a plain object
+    const schoolData = school.toObject();
+
+    // Attach the related classes (with student counts)
+    schoolData.classes = classes.map(cls => ({
+      className: cls.className,
+      section: cls.section,
+      studentCount: cls.students?.length || 0
+    }));
+
+    return res.status(200).json({
+      success: true,
+      data: schoolData
+    });
+
+  } catch (error) {
+    console.error('Error fetching school:', error);
     return res.status(500).json({ message: 'Server Error' });
   }
 };
