@@ -183,15 +183,14 @@ exports.getuser = async (req, res) => {
 
       const data = await regUser.findById(userId);
       const wallet = await Wallet.findOne({ userId: data._id });
-      console.log(data.store_id)
       if (!data) {
           return res.status(404).json({ message: 'Data not found' });
       }
       let role = data.role.toLowerCase();
       let generatedSchoolId = data.schoolId  || data.store_id || data.agent_id; // Use the appropriate ID based on role
-      let schoolName = data.schoolName || data.storeName || data.agentName;
-      let schoolAddress = data.schoolAddress || data.storeAddress || data.agentAddress;
-      let schoolType = data.schoolType || data.storeType || data.agentType;
+      let Name = data.schoolName || data.storeName || data.agentName;
+      let Address = data.schoolAddress || data.storeAddress || data.agentAddress;
+      let Type = data.schoolType || data.storeType || data.agentType;
       let ownership = data.ownership || data.storeOwnership || data.agentOwnership;
       let dynamicSchoolLink = '';
 
@@ -201,7 +200,7 @@ switch (role.toLowerCase()) {
     dynamicSchoolLink = `?store_id=${encodeURIComponent(data.store_id)}&storeName=${encodeURIComponent(data.storeName)}&storeType=${encodeURIComponent(data.storeType)}schoolId=${encodeURIComponent(data.generatedSchoolId)}&schoolName=${encodeURIComponent(data.schoolName)}&schoolAddress=${encodeURIComponent(data.schoolAddress)}&schoolType=${encodeURIComponent(data.schoolType)}&ownership=${encodeURIComponent(data.ownership)}`;
     break;
   case 'school':
-    dynamicSchoolLink = `?schoolId=${encodeURIComponent(data.generatedSchoolId)}&schoolName=${encodeURIComponent(data.schoolName)}&schoolAddress=${encodeURIComponent(data.schoolAddress)}&schoolType=${encodeURIComponent(data.schoolType)}&ownership=${encodeURIComponent(data.ownership)}`;
+    dynamicSchoolLink = `?schoolId=${encodeURIComponent(generatedSchoolId)}&schoolName=${encodeURIComponent(Name)}&schoolAddress=${encodeURIComponent(Address)}&schoolType=${encodeURIComponent(Type)}&ownership=${encodeURIComponent(ownership)}`;
     break;
 }
 
