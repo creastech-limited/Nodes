@@ -21,7 +21,7 @@ router.post('/register2', register2);
 router.post('/login', login);
 router.post('/logout',verifyToken, logout);
 router.put('/update-user/:id', verifyToken, updateUser);
-router.get('/getclasse', verifyToken, getSchoolClasses)
+router.get('/getclasse', getSchoolClasses)
 router.get('/getallclasseswithcount', verifyToken, getAllClassesWithCounts)
 router.get('/getallsudent', verifyToken, getAllStudents)
 router.get('/getallUsers', getallUsers);
