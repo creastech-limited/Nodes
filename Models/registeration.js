@@ -37,6 +37,7 @@ const userSchema = new mongoose.Schema({
     admissionDate: Date,
     boarding: Boolean
   },
+  classId: { type: String },
   refreshToken: {
     type: String,
   },
