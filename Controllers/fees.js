@@ -546,12 +546,14 @@ exports.getFeesForClass = async (req, res) => {
 // Get all fees for a specific school
 exports.getFeesForSchool = async (req, res) => {
   try {
-    const { schoolId } = req.params;
+    const currentUserId = req.user?.id;
+    const user = await regUser.findById(currentUserId);
 
     // Validate required fields
-    if (!schoolId) {
+    if (!user) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
+    const schoolId = user._id;
 
     // Find fees for the school
     const fees = await Fee.find({ schoolId });
