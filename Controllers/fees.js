@@ -613,3 +613,45 @@ exports.getFeeForStudent = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+//get fee for a student by ID
+exports.getFeeForStudentById = async (req, res) => {
+  const currentUserId = req.user?.id;
+
+  try {
+    const user = await regUser.findById(currentUserId);
+    const userRole = user?.role;
+
+    // Validate role
+    if (userRole !== 'student') {
+      return res.status(403).json({ message: 'Access denied. Only students, parents, or schools can view fees.' });
+    }
+
+    const studentId = user._id;
+
+    // Validate input
+    if (!studentId) {
+      return res.status(400).json({ message: 'Missing required fields: studentId' });
+    }
+
+    // Find student by ID
+    const student = await regUser.findById(studentId);
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    // Find fees for student
+    const fees = await FeePayment.find({ studentId });
+
+    if (fees.length === 0) {
+      return res.status(200).json({ message: 'No fees found for this student', data: [] });
+    }
+
+    res.status(200).json({
+      message: 'Fees retrieved successfully',
+      data: fees
+    });
+  } catch (error) {
+    console.error('Error retrieving fees for student:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
