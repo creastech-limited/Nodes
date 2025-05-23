@@ -2,6 +2,7 @@ const QRCode = require('qrcode');
 const {regUser, ClassUser} = require('../Models/registeration');
 const bcrypt = require('bcryptjs');
 const sendEmail = require('../utils/email');
+const FeeStatus = require('../Models/fees');
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const crypto = require('crypto');
@@ -1243,6 +1244,18 @@ if (roleLower !== 'school') {
       if (!foundClass) {
         return res.status(404).json({ message: `Class '${academicDetails.classAdmittedTo}' not found for this school.` });
       }
+          const classFees = await Fee.find({ 
+              classId: student.classId, 
+              term: currentTerm, 
+              session: currentSession 
+            });
+
+          for (const fee of classFees) {
+              const exists = await FeeStatus.findOne({ studentId: student._id, feeId: fee._id });
+              if (!exists) {
+                await FeeStatus.create({ studentId: student._id, feeId: fee._id });
+              }
+            }
 
       newUser.academicDetails.classAdmittedTo = foundClass.className;
      //update the students section of the class
