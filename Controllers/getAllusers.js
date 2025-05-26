@@ -68,6 +68,8 @@ exports.getAllStudents = async (req, res) => {
       total: students.length,
       data: students.map(student => {
         return {
+          student_id: student._id,
+          class: student.Class ? student.Class.className : 'N/A',
           firstName: student.firstName,
           lastName: student.lastName,
           fullName: student.name,
