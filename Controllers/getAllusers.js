@@ -63,16 +63,22 @@ exports.getAllStudents = async (req, res) => {
       })
       .select('-password -pin -refreshToken'); // Hide sensitive info
 
+      //get student class details
+    if (students.length === 0) {
+      return res.status(404).json({ success: false, message: 'No students found' });
+    }
+    
     res.status(200).json({
       success: true,
       total: students.length,
       data: students.map(student => {
         return {
           student_id: student._id,
-          class: student.Class ? student.Class.className : 'N/A',
+          class: student.Class ? student.academicDetails.classAdmittedTo : 'N/A',
           firstName: student.firstName,
           lastName: student.lastName,
           fullName: student.name,
+          role: student.role,
           email: student.email,
           phone: student.phone,
         };
