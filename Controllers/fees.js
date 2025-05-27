@@ -5,6 +5,7 @@ const sendEmail = require('../utils/email');
 const Wallet = require('../Models/walletSchema');
 const Transaction = require('../Models/transactionSchema');
 const { v4: uuidv4 } = require('uuid');
+const { generateReference } = require('../utils/generatereference'); // You can define your own unique ref generator
 
 
 
@@ -581,15 +582,16 @@ exports.getFeeForStudent = async (req, res) => {
       return res.status(403).json({ message: 'Access denied. Only students, parents, or schools can view fees.' });
     }
 
-    const { studentEmail } = req.body;
+    const  {email} = req.params;
+    console.log(email)
 
     // Validate input
-    if (!studentEmail) {
+    if (!email) {
       return res.status(400).json({ message: 'Missing required fields: studentEmail' });
     }
 
     // Find student by email
-    const student = await regUser.findOne({ email: studentEmail });
+    const student = await regUser.findOne({ email: email});
     if (!student) {
       return res.status(404).json({ message: 'Student not found' });
     }
@@ -655,3 +657,126 @@ exports.getFeeForStudentById = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 }
+
+
+
+exports.payFee = async (req, res) => {
+  const user = req.user?.id;
+  const { feeId, amount,  studentEmail} = req.body;
+  const student = await regUser.findOne({email: studentEmail});
+  const studentId = student?._id;
+
+  const failTransaction = async (reason, fee = null, student = student, studentWallet = null, receiverWallet = null) => {
+    try {
+      const reference = generateReference('FEE_FAIL');
+
+      await Transaction.create({
+        senderWalletId: studentWallet?._id || null,
+        receiverWalletId: receiverWallet?._id || null,
+        transactionType: 'fee_payment',
+        category: 'debit',
+        amount,
+        balanceBefore: studentWallet?.balance || 0,
+        balanceAfter: studentWallet?.balance || 0,
+        reference,
+        description: `Failed fee payment of ₦${amount}${student?.name ? ' for ' + student.name : ''}${fee ? ` (${fee.feeType}, ${fee.term}, ${fee.session})` : ''} - Reason: ${reason}`,
+        status: 'failed',
+        metadata: {
+          studentId: student?._id,
+          feeId: fee?._id,
+          reason,
+        },
+      });
+    } catch (err) {
+      console.error('Error saving failed transaction:', err.message);
+    }
+  };
+
+  if (!feeId || !amount) {
+    return res.status(400).json({ message: 'Fee ID and amount are required' });
+  }
+
+  try {
+    const fee = await Fee.findById(feeId);
+    if (!fee) {
+      await failTransaction('Fee not found');
+      return res.status(404).json({ message: 'Fee not found' });
+    }
+
+    const feeStatus = await FeePayment.findOne({ studentId, feeId });
+    if (!feeStatus) {
+      await failTransaction('Fee not assigned to this student', fee);
+      return res.status(404).json({ message: 'Fee not assigned to this student' });
+    }
+
+    const student = await regUser.findById(studentId);
+    const studentWallet = await Wallet.findOne({ userId: studentId });
+    if (!studentWallet) {
+      await failTransaction('Student wallet not found', fee, student);
+      return res.status(404).json({ message: 'Student wallet not found' });
+    }
+
+    const schoolUser = await regUser.findOne({ schoolId: student.schoolId, role: 'school' });
+    const receiverWallet = schoolUser
+      ? await Wallet.findOne({ userId: schoolUser._id })
+      : null;
+
+    if (!receiverWallet) {
+      await failTransaction('School wallet not found', fee, student, studentWallet);
+      return res.status(404).json({ message: 'School wallet not found' });
+    }
+
+    if (studentWallet.balance < amount) {
+      await failTransaction('Insufficient balance', fee, student, studentWallet, receiverWallet);
+      return res.status(400).json({ message: 'Insufficient balance' });
+    }
+
+    // Deduct student wallet
+    const balanceBefore = studentWallet.balance;
+    studentWallet.balance -= amount;
+    const balanceAfter = studentWallet.balance;
+    await studentWallet.save();
+
+    // Credit school wallet
+    receiverWallet.balance += amount;
+    await receiverWallet.save();
+
+    // Update fee status
+    FeePayment.amountPaid += amount;
+    if (FeePayment.amountPaid >= fee.amount) {
+      FeePayment.status = 'paid';
+    } else if (FeePayment.amountPaid > 0) {
+      FeePayment.status = 'partial';
+    }
+    await FeePayment.save();
+
+    // Log success transaction
+    await Transaction.create({
+      senderWalletId: studentWallet._id,
+      receiverWalletId: receiverWallet._id,
+      transactionType: 'fee_payment',
+      category: 'debit',
+      amount,
+      balanceBefore,
+      balanceAfter,
+      reference: generateReference('FEE'),
+      description: `Fee payment for ${fee.feeType} (${fee.term}, ${fee.session})`,
+      status: 'success',
+      metadata: {
+        studentId,
+        schoolId: student.schoolId,
+        feeType: fee.feeType,
+        term: fee.term,
+        session: fee.session,
+        amountPaid: FeePayment.amountPaid,
+        paymentMethod: 'wallet',
+        feeId,
+      },
+    });
+
+    res.status(200).json({ message: 'Fee payment successful', feeStatus });
+  } catch (err) {
+    console.error('Fee payment error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
