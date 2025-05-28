@@ -51,9 +51,11 @@ const disputeRoute = require('./routes/dispute'); // ✅ Correct route file
 const r = require('./routes/routes'); // ✅ Correct route file
 const walletRoute = require('./routes/wallets'); // ✅ Correct route file
 const transactionRoute = require('./routes/transactions')// ✅ Correct route file
+const notificationRoute = require('./routes/notification'); // ✅ Correct route file
 
 //middlewware
 app.use('/api/transaction', transactionRoute) // ✅ Correct route file
+app.use('/api/notification', notificationRoute); // ✅ Correct route file
 app.use('/api/users', authRoute)// ✅ Correct route file
 app.use('/api/pin', pinRoute); // e.g., /api/pin will work
 app.use('/api/fee', feeRoute); // e.g., /api/fee will work

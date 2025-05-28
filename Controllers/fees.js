@@ -1,7 +1,9 @@
 const {Fee, FeePayment} = require('../Models/fees');
 const {ClassUser, regUser} = require('../Models/registeration');
+const bcrypt = require('bcryptjs');
 const Notification = require('../Models/notification');
 const sendEmail = require('../utils/email');
+const {sendNotification} = require('../utils/notification');
 const Wallet = require('../Models/walletSchema');
 const Transaction = require('../Models/transactionSchema');
 const { v4: uuidv4 } = require('uuid');
@@ -580,6 +582,12 @@ exports.getFeeForStudent = async (req, res) => {
     // Validate role
     if (userRole !== 'parent' && userRole !== 'student' && userRole !== 'school') {
       return res.status(403).json({ message: 'Access denied. Only students, parents, or schools can view fees.' });
+      await sendNotification({ 
+        userId: currentUserId,
+        title: 'Access Denied',
+        message: 'You do not have permission to view fees.',
+        read: false
+      });
     }
 
     const  {email} = req.params;
@@ -661,23 +669,27 @@ exports.getFeeForStudentById = async (req, res) => {
 
 
 exports.payFee = async (req, res) => {
-  const user = req.user?.id;
-  const { feeId, amount,  studentEmail} = req.body;
-  const student = await regUser.findOne({email: studentEmail});
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.status(400).json({ message: 'User ID is required' });
+  }
+
+  const { feeId, amount, studentEmail,pin } = req.body;
+
+  const student = await regUser.findOne({ email: studentEmail });
   const studentId = student?._id;
 
-  const failTransaction = async (reason, fee = null, student = student, studentWallet = null, receiverWallet = null) => {
+  const failTransaction = async (reason, fee = null, student = null, senderWallet = null, receiverWallet = null) => {
     try {
       const reference = generateReference('FEE_FAIL');
-
       await Transaction.create({
-        senderWalletId: studentWallet?._id || null,
+        senderWalletId: senderWallet?._id || null,
         receiverWalletId: receiverWallet?._id || null,
         transactionType: 'fee_payment',
         category: 'debit',
         amount,
-        balanceBefore: studentWallet?.balance || 0,
-        balanceAfter: studentWallet?.balance || 0,
+        balanceBefore: senderWallet?.balance || 0,
+        balanceAfter: senderWallet?.balance || 0,
         reference,
         description: `Failed fee payment of ₦${amount}${student?.name ? ' for ' + student.name : ''}${fee ? ` (${fee.feeType}, ${fee.term}, ${fee.session})` : ''} - Reason: ${reason}`,
         status: 'failed',
@@ -699,22 +711,28 @@ exports.payFee = async (req, res) => {
   try {
     const fee = await Fee.findById(feeId);
     if (!fee) {
+      await sendNotification(userId, 'Fee not found', 'error');
       await failTransaction('Fee not found');
       return res.status(404).json({ message: 'Fee not found' });
     }
 
     const feeStatus = await FeePayment.findOne({ studentId, feeId });
     if (!feeStatus) {
-      await failTransaction('Fee not assigned to this student', fee);
+      await sendNotification(userId, 'Fee not assigned to this student', 'error');
+      await failTransaction('Fee not assigned to this student', fee, student);
       return res.status(404).json({ message: 'Fee not assigned to this student' });
     }
 
-    const student = await regUser.findById(studentId);
-    const studentWallet = await Wallet.findOne({ userId: studentId });
-    if (!studentWallet) {
-      await failTransaction('Student wallet not found', fee, student);
-      return res.status(404).json({ message: 'Student wallet not found' });
+    const payer = await regUser.findById(userId);
+    const payerWallet = await Wallet.findOne({ userId });
+
+    if (!payer || !payerWallet) {
+      await sendNotification(userId, 'Payer wallet not found', 'error');
+      await failTransaction('Payer wallet not found', fee, student);
+      return res.status(404).json({ message: 'Payer wallet not found' });
     }
+
+    const studentWallet = payerWallet; // assuming payer is paying on behalf of student
 
     const schoolUser = await regUser.findOne({ schoolId: student.schoolId, role: 'school' });
     const receiverWallet = schoolUser
@@ -722,37 +740,50 @@ exports.payFee = async (req, res) => {
       : null;
 
     if (!receiverWallet) {
+      await sendNotification(userId, 'School wallet not found', 'error');
       await failTransaction('School wallet not found', fee, student, studentWallet);
       return res.status(404).json({ message: 'School wallet not found' });
     }
 
-    if (studentWallet.balance < amount) {
-      await failTransaction('Insufficient balance', fee, student, studentWallet, receiverWallet);
+
+    if (payerWallet.balance < amount) {
+      await sendNotification(userId, 'Insufficient balance', 'error');
+      await failTransaction('Insufficient balance', fee, student, payerWallet, receiverWallet);
       return res.status(400).json({ message: 'Insufficient balance' });
     }
+    if (!payer.pin) {
+          await failTransaction('PIN not set', { reason: 'Sender has not set a PIN' });
+          return res.status(400).json({ error: 'PIN not set' });
+        }
+    
+        const isPinValid = await bcrypt.compare(pin, payer.pin);
+        if (!isPinValid) {
+          await failTransaction('Invalid PIN', { reason: 'Provided PIN is incorrect' });
+          return res.status(400).json({ error: 'Invalid PIN' });
+        }
 
-    // Deduct student wallet
-    const balanceBefore = studentWallet.balance;
-    studentWallet.balance -= amount;
-    const balanceAfter = studentWallet.balance;
-    await studentWallet.save();
+    // Deduct from wallet
+    const balanceBefore = payerWallet.balance;
+    payerWallet.balance -= amount;
+    const balanceAfter = payerWallet.balance;
+    await payerWallet.save();
 
     // Credit school wallet
     receiverWallet.balance += amount;
     await receiverWallet.save();
 
-    // Update fee status
-    FeePayment.amountPaid += amount;
-    if (FeePayment.amountPaid >= fee.amount) {
-      FeePayment.status = 'paid';
-    } else if (FeePayment.amountPaid > 0) {
-      FeePayment.status = 'partial';
+    // Update fee payment record
+    feeStatus.amountPaid += amount;
+    if (feeStatus.amountPaid >= fee.amount) {
+      feeStatus.status = 'paid';
+    } else {
+      feeStatus.status = 'partial';
     }
-    await FeePayment.save();
+    await feeStatus.save();
 
-    // Log success transaction
+    // Log transaction
     await Transaction.create({
-      senderWalletId: studentWallet._id,
+      senderWalletId: payerWallet._id,
       receiverWalletId: receiverWallet._id,
       transactionType: 'fee_payment',
       category: 'debit',
@@ -768,11 +799,53 @@ exports.payFee = async (req, res) => {
         feeType: fee.feeType,
         term: fee.term,
         session: fee.session,
-        amountPaid: FeePayment.amountPaid,
+        amountPaid: feeStatus.amountPaid,
         paymentMethod: 'wallet',
         feeId,
       },
     });
+
+    // Notify payer and school
+    await sendNotification(userId, `✅ Fee payment successful: ₦${amount} for ${fee.feeType} (${fee.term}, ${fee.session})`, 'success');
+    //notify student
+    await sendNotification(studentId, `✅ ${payer.name} paid ₦${amount} for your ${fee.feeType} (${fee.term}, ${fee.session})`, 'success');
+    if (schoolUser) {
+    await sendNotification(schoolUser._id, `💰 ${payer.name} paid ₦${amount} for ${student.name}'s ${fee.feeType} (${fee.term}, ${fee.session})`, 'info');
+    }
+    // Send email to payer
+    await sendEmail({
+      to: payer.email,
+      subject: 'Fee Payment Successful',
+      html: `
+        <p>Hello ${payer.name},</p>
+        <p>Your payment of <strong>₦${amount}</strong> for <strong>${fee.feeType}</strong> (${fee.term}, ${fee.session}) has been successfully processed.</p>
+        <p>Thank you for your payment!</p>
+      `
+    });
+    
+
+    // Send email to student
+    await sendEmail({
+      to: student.email,
+      subject: 'Fee Payment Notification',
+      html: `
+        <p>Hello ${student.name},</p>
+        <p>Your fee of <strong>₦${amount}</strong> for <strong>${fee.feeType}</strong> (${fee.term}, ${fee.session}) has been successfully paid by ${payer.name}.</p>
+        <p>Thank you!</p>
+      `
+    });
+    // Send email to school
+    if (schoolUser) {
+      await sendEmail({
+        to: schoolUser.email,
+        subject: 'Fee Payment Received',
+        html: `
+          <p>Hello ${schoolUser.name},</p>
+          <p>You have received a payment of <strong>₦${amount}</strong> for ${student.name}'s <strong>${fee.feeType}</strong> (${fee.term}, ${fee.session}).</p>
+          <p>Thank you!</p>
+        `
+      });
+    }
 
     res.status(200).json({ message: 'Fee payment successful', feeStatus });
   } catch (err) {

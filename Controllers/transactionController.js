@@ -484,7 +484,6 @@ exports.getAllSchoolTransactions = async (req, res) => {
 
 exports.verifyPinAndTransfer = async (req, res) => {
   const senderId = req.user?.id;
-  console.log(senderId)
   const { receiverEmail, amount, pin, description = 'No description provided' } = req.body;
 
   const failTransaction = async (reason, extra = {}) => {
