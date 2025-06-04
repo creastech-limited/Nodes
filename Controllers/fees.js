@@ -3,11 +3,11 @@ const {ClassUser, regUser} = require('../Models/registeration');
 const bcrypt = require('bcryptjs');
 const Notification = require('../Models/notification');
 const sendEmail = require('../utils/email');
-const {sendNotification} = require('../utils/notification');
+// const {} = require('../Utils/notification');
 const Wallet = require('../Models/walletSchema');
 const Transaction = require('../Models/transactionSchema');
 const { v4: uuidv4 } = require('uuid');
-const { generateReference } = require('../utils/generatereference'); // You can define your own unique ref generator
+const { generateReference , sendNotification} = require('../utils/generatereference'); // You can define your own unique ref generator
 
 
 
