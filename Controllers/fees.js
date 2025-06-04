@@ -794,6 +794,7 @@ exports.payFee = async (req, res) => {
       description: `Fee payment for ${fee.feeType} (${fee.term}, ${fee.session})`,
       status: 'success',
       metadata: {
+        school_Id: schoolUser._id,
         studentId,
         schoolId: student.schoolId,
         feeType: fee.feeType,
