@@ -114,7 +114,7 @@ exports.withdrawal = async (req, res) => {
 
     if (isNaN(amount) || amount <= 0) {
       await failTransaction('Invalid amount', null, null, senderWallet, null, amount);
-      await sendNotification(currentUserId, '❌ Withdrawal failed: Invalid amount', 'error');
+      await sendNotification(currentUserId, '❌ Withdrawal failed: Invalid amounts', 'error');
       return res.status(400).json({ error: 'Invalid amount' });
     }
 
