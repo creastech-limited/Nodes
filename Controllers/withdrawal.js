@@ -3,7 +3,9 @@ const axios = require('axios');
 require('dotenv').config();
 const Wallet = require('../Models/walletSchema');
 const Transaction = require('../Models/transactionSchema');
-const { sendEmail, sendNotification } = require('../utils/email');
+const { sendEmail } = require('../utils/email');
+const { sendNotification } = require('../utils/notification');
+const { generateReference } = require('../utils/generateReference');
 const {regUser} = require('../Models/registeration');
 // Paystack secret key from environment variables
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;

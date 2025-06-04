@@ -7,7 +7,9 @@ const sendEmail = require('../utils/email');
 const Wallet = require('../Models/walletSchema');
 const Transaction = require('../Models/transactionSchema');
 const { v4: uuidv4 } = require('uuid');
-const { generateReference , sendNotification} = require('../utils/generatereference'); // You can define your own unique ref generator
+const { generateReference } = require('../utils/generateReference');
+const { sendNotification } = require('../utils/notification'); // Utility function to send notifications
+// unique ref generator
 
 
 
