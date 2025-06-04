@@ -136,13 +136,16 @@ exports.withdrawal = async (req, res) => {
       await sendNotification(currentUserId, '❌ Withdrawal failed: Invalid PIN', 'error');
       return res.status(401).json({ error: 'Invalid PIN' });
     }
+    console.log('PIN verified successfully', user.pin);
 
     if (senderWallet.balance < amount) {
       await failTransaction('Insufficient balance', null, null, senderWallet, null, amount);
       await sendNotification(currentUserId, '❌ Withdrawal failed: Insufficient balance', 'error');
       return res.status(400).json({ error: 'Insufficient balance' });
     }
-
+    console.log('Sufficient balance for withdrawal', senderWallet.balance, amount);
+    console.log('Initiating bank transfer to', account_number, 'at', bank_name);
+    console.log('Transfer description:', user.name, '-', description);  
     // 1. Create Transfer Recipient
     const recipientResponse = await axios.post('https://api.paystack.co/transferrecipient', {
       type: 'nuban',
