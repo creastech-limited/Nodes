@@ -86,36 +86,36 @@ exports.login = async (req, res) => {
     });
    try {
   const emailResponse = await sendEmail({
-    to: "taiwodavid19@gmail.com",
+    to: user.email,
     subject: 'Login Notification',
     html: `<p>Hello ${user.firstName},</p><p>You have successfully logged in to your account.</p><p>Best regards,<br>Your Company Name</p>`
   });
 
-  console.log("Email sent successfully:", emailResponse);
+  console.log("Email sent successfully:");
 } catch (error) {
   console.error("Failed to send login email:", error.message);
 }
-       const emailDetails = {
-      to: process.env.EMAIL_TO,
-      from: {
-        email: "davidt@yungmindsinnovative.com.ng",
-        name: 'Your Company Name'
-      },
-      subject: 'Login Notification',
-      text: `Hello ${user.firstName},\n\nYou have successfully logged in to your account.\n\nBest regards,\nYour Company Name`,
-      html: `<p>Hello ${user.firstName},</p><p>You have successfully logged in to your account.</p><p>Best regards,<br>Your Company Name</p>`
-    };
-    sgMail.send(emailDetails)
-      .then(() => {
-        console.log('Login email sent successfully to', user.email);
+    //    const emailDetails = {
+    //   to: process.env.EMAIL_TO,
+    //   from: {
+    //     email: "davidt@yungmindsinnovative.com.ng",
+    //     name: 'Your Company Name'
+    //   },
+    //   subject: 'Login Notification',
+    //   text: `Hello ${user.firstName},\n\nYou have successfully logged in to your account.\n\nBest regards,\nYour Company Name`,
+    //   html: `<p>Hello ${user.firstName},</p><p>You have successfully logged in to your account.</p><p>Best regards,<br>Your Company Name</p>`
+    // };
+    // sgMail.send(emailDetails)
+    //   .then(() => {
+    //     console.log('Login email sent successfully to', user.email);
         
-      })
-      .catch((error) => {
-        console.error('Failed to send login email:', error.response?.body || error.message);
-        return res.status(500).json({
-          message: 'Failed to send login email',
-        }); 
-      });
+    //   })
+      // .catch((error) => {
+      //   console.error('Failed to send login email:', error.response?.body || error.message);
+      //   return res.status(500).json({
+      //     message: 'Failed to send login email',
+      //   }); 
+      // });
     console.log("Access token generated:", accessToken);
     console.log("User details:", {
       id: user._id,});
@@ -1277,7 +1277,7 @@ if (roleLower !== 'school') {
         break;
       case 'store':
         roleSpecificId = { store_id: `${generatedSchoolId}/${newUser._id}` };
-        dynamicSchoolLink = `/?store_id=${encodeURIComponent(store_id)}&storeName=${encodeURIComponent(storeName)}&storeType=${encodeURIComponent(storeType)}`;
+        dynamicSchoolLink = `/?schoolId=${encodeURIComponent(generatedSchoolId)}store_id=${encodeURIComponent(store_id)}&storeName=${encodeURIComponent(storeName)}&storeType=${encodeURIComponent(storeType)}`;
         break;
       case 'school':
         roleSpecificId = { schoolId: generatedSchoolId };
@@ -1314,7 +1314,15 @@ if (roleLower !== 'school') {
       accountNumber: newUser.accountNumber
     });
 
-    const qrData = JSON.stringify({ email: newUser.email });
+    const qrData = JSON.stringify({ 
+      email: newUser.email,
+      schoolId: newUser.schoolId,
+      role: newUser.role,
+      studentId: roleLower === 'student' ? newUser.student_id : null,
+      name: newUser.name,
+      accountNumber: newUser.accountNumber
+
+    });
     const qrCodeDataUrl = await QRCode.toDataURL(qrData);
     newUser.qrcode = qrCodeDataUrl;
     await newUser.save();
@@ -1342,7 +1350,7 @@ if (roleLower !== 'school') {
       ]
     };
 
-    await sgMail.send(emailDetails);
+    // await sgMail.send(emailDetails);
 
     res.status(201).json({
       message: 'Registration successful',
