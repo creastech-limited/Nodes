@@ -29,7 +29,7 @@ exports.resolveAccountNumber =  async (req, res) => {
 
   try {
     const response = await axios.get(`https://api.paystack.co/bank/resolve`, {
-      body: { account_number, bank_code },
+      params: { account_number, bank_code },
       headers: {
         Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`
       }
