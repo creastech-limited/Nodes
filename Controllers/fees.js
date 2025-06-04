@@ -804,6 +804,31 @@ exports.payFee = async (req, res) => {
         feeId,
       },
     });
+// Log transaction for school
+    if (schoolUser) {
+      await Transaction.create({
+        senderWalletId: payerWallet._id,
+        receiverWalletId: receiverWallet._id,
+        transactionType: 'fee_payment',
+        category: 'credit',
+        amount,
+        balanceBefore: receiverWallet.balance - amount,
+        balanceAfter: receiverWallet.balance,
+        reference: generateReference('FEE_SCHOOL'),
+        description: `Fee payment received for ${student.name} (${fee.feeType}, ${fee.term}, ${fee.session})`,
+        status: 'success',
+        metadata: {
+          studentId,
+          schoolId: student.schoolId,
+          feeType: fee.feeType,
+          term: fee.term,
+          session: fee.session,
+          amountPaid: feeStatus.amountPaid,
+          paymentMethod: 'wallet',
+          feeId,
+        },
+      });
+    }    
 
     // Notify payer and school
     await sendNotification(userId, `✅ Fee payment successful: ₦${amount} for ${fee.feeType} (${fee.term}, ${fee.session})`, 'success');
