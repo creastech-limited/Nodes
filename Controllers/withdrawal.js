@@ -7,6 +7,8 @@ const { sendEmail } = require('../utils/email');
 const { sendNotification } = require('../utils/notification');
 const { generateReference } = require('../utils/generatereference');
 const {regUser} = require('../Models/registeration');
+//verify pin
+const bcrypt = require('bcryptjs');
 // Paystack secret key from environment variables
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
@@ -52,6 +54,7 @@ exports.resolveAccountNumber =  async (req, res) => {
 //Withdrawal route
 exports.withdrawal = async (req, res) => {
   const currentUserId = req.user?.id;
+  console.log('Current User ID:', currentUserId);
 
   // Helper function for failed transactions
   const failTransaction = async (reason, fee = null, student = null, senderWallet = null, receiverWallet = null, amount = 0) => {
@@ -130,8 +133,8 @@ exports.withdrawal = async (req, res) => {
       return res.status(400).json({ error: 'Invalid bank code format' });
     }
 
-    const isPinValid = await user.verifyPin(pin);
-    if (!isPinValid) {
+    const validPin =  bcrypt.compare(pin, user.pin)
+    if (!validPin) {
       await failTransaction('Invalid PIN', null, null, senderWallet, null, amount);
       await sendNotification(currentUserId, '❌ Withdrawal failed: Invalid PIN', 'error');
       return res.status(401).json({ error: 'Invalid PIN' });

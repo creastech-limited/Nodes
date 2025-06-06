@@ -20,6 +20,6 @@ router.delete('/dletetrans/:id',verifyToken, deleteTransaction);
 router.get('/banks', verifyToken, getBank); // Route to get banks from Paystack
 router.get('/resolve-account', verifyToken, resolveAccountNumber);
 // Route to handle withdrawal
-router.post('/withdrawal', verifyToken, withdrawal);
+router.post('/withdraw', verifyToken, withdrawal);
 
 module.exports = router

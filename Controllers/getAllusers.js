@@ -105,8 +105,7 @@ exports.getuserbyid = async (req, res) => {
       }
       res.status(200).json({
         message: `user found with the role: ${data.role}`,
-       data,
-       dynamicSchoolLink
+       data
       });
   }
   catch (error) {
