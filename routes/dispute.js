@@ -6,14 +6,21 @@ const Model = require('../Models/models'); // Corrected import statement
 const router = express.Router();
 const verifyToken = require('./verifyToken');
 
-const {createDispute} = require('../Controllers/dispute');
+const {createDispute,getSchoolDisputes,getUserDisputes} = require('../Controllers/dispute');
 // const {getDisputeById, getDisputeByFilter, getAllDisputes} = require('../Controllers/getDispute');  
 
 
 
 //create dispute
 router.post('/createdispute',verifyToken, createDispute);
-// router.get('/getDispute/:id',verifyToken, getDisputeById);
+//get all disputes
+router.get('/getDispute',verifyToken, getSchoolDisputes);
+//get dispute of a user
+router.get('/getuserdispute', verifyToken, getUserDisputes);
+//update dispute
+// router.put('/updatedispute/:id', verifyToken, updateDispute);
+//delete dispute
+// router.delete('/deletedispute/:id', verifyToken, deleteDispute);
 
 
 

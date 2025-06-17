@@ -80,9 +80,17 @@ const userWalletId = userWallet._id.toString();
 };
 
 
-exports.getDisputesByUser = async (req, res) => {
+exports.getSchoolDisputes = async (req, res) => {
     try {
-      const userId = req.user.id; // pulled from JWT
+      const userId = req.user?.id; // pulled from JWT
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized: No user ID found' });
+      }
+      // Check if user is a school
+      const user = await regUser.findById(userId);
+      if (!user || user.role !== 'school') {
+        return res.status(403).json({ message: 'Unauthorized: User is not a school' });
+      }
   
       const disputes = await disputeData.find({ userId })
         .populate('transactionId')
@@ -95,3 +103,46 @@ exports.getDisputesByUser = async (req, res) => {
       res.status(500).json({ message: 'Server error' });
     }
   };
+
+  //get dispute raised by user
+exports.getUserDisputes = async (req, res) => {
+  try {
+    const userId = req.user?.id; // pulled from JWT
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized: No user ID found' });
+    }
+    // Check if user exists
+    const user = await regUser.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+   
+    // Fetch disputes raised by the user
+    const disputes = await disputeData.find({ userId })
+      .populate('transactionId')
+      .populate('resolvedBy', 'fullName email')
+      .sort({ createdAt: -1 }); 
+    res.status(200).json(disputes);
+  } catch (error) {
+    console.error('Error fetching user disputes:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+//get dispute by id
+exports.getDisputeById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const dispute = await disputeData.findById(id)
+      .populate('transactionId')
+      .populate('resolvedBy', 'fullName email');
+    if (!dispute) {
+
+      return res.status(404).json({ message: 'Dispute not found' });
+    }
+    res.status(200).json(dispute);
+  } catch (error) {
+    console.error('Error fetching dispute by ID:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
