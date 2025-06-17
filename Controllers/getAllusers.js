@@ -336,6 +336,9 @@ exports.getAllStudentsCountInSchool = async (req, res) => {
 exports.getAllAgentsInSchool = async (req, res) => {
   try {
     const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
     const data = await regUser.findById(userId);  
     const schoolId = data.schoolId || data.store_id // Use the appropriate ID based on role
     if (!schoolId) {
@@ -346,6 +349,7 @@ exports.getAllAgentsInSchool = async (req, res) => {
     if (agent.length === 0) {
       return res.status(404).json({ message: 'No agent found in this school' });
     }
+    
 
     res.status(200).json({
       message: `Found ${agent.length} agent(s) in school ${data.schoolName}`,
