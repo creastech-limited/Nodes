@@ -300,9 +300,7 @@ switch (role.toLowerCase()) {
 exports.getAllStudentsInSchool = async (req, res) => {
   try {
     const schoolId = req.user?.id;
-    console.log("School ID from request:", schoolId); // Log the schoolId for debugging
     const data = await regUser.findById(schoolId);  
-    console.log("School data:", data); // Log the school data for debugging
     const students = await regUser.find({ schoolId: data.schoolId, role: 'student' });
 
     if (students.length === 0) {
@@ -337,8 +335,12 @@ exports.getAllStudentsCountInSchool = async (req, res) => {
 };
 exports.getAllAgentsInSchool = async (req, res) => {
   try {
-    const schoolId = req.user?.id;
-    const data = await regUser.findById(schoolId);  
+    const userId = req.user?.id;
+    const data = await regUser.findById(userId);  
+    const schoolId = data.schoolId || data.store_id // Use the appropriate ID based on role
+    if (!schoolId) {
+      return res.status(400).json({ message: 'School or Store ID is required' });
+    }
     const agent = await regUser.find({ schoolId: data.schoolId, role: 'agent' });
 
     if (agent.length === 0) {
