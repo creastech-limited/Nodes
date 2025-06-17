@@ -341,19 +341,38 @@ exports.getAllAgentsInSchool = async (req, res) => {
     }
     const data = await regUser.findById(userId);  
     const schoolId = data.store_id || data.schoolId // Use the appropriate ID based on role
+    console.log("School ID:", schoolId); // Log the schoolId for debugging
     if (!schoolId) {
       return res.status(400).json({ message: 'School or Store ID is required' });
     }
-    const agent = await regUser.find({ schoolId: data.schoolId, role: 'agent' });
+    const agent = await regUser.find({ store_id: data.store_id, role: 'agent' });
 
     if (agent.length === 0) {
       return res.status(404).json({ message: 'No agent found in this school' });
     }
-    
-
+    //format the agent data
+    const formattedAgents = agent.map(agent => ({
+      id: agent._id,
+      firstName: agent.firstName,
+      lastName: agent.lastName,
+      fullName: agent.name,
+      email: agent.email,
+      phone: agent.phone,
+      role: agent.role
+    }));
     res.status(200).json({
-      message: `Found ${agent.length} agent(s) in school ${data.schoolName}`,
-      data: agent
+      message: `Found ${agent.length} agent(s) in school ${data.storeName}`,
+      data: {
+        agent: formattedAgents,
+        schoolId: data.schoolId,
+       store: {
+          id: data._id,
+          name: data.storeName,
+          type: data.storeType,
+          address: data.storeAddress,
+          store_id: data.store_id
+        },
+      }
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
