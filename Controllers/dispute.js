@@ -3,6 +3,7 @@ const {regUser} = require('../Models/registeration');
 const jwt = require('jsonwebtoken');
 const Wallet = require('../Models/walletSchema'); // adjust to your wallet model name
 const Transaction = require('../Models/transactionSchema'); // adjust to your transaction model name
+const { now } = require('mongoose');
 
 exports.createDispute = async (req, res) => {
   try {
@@ -23,12 +24,7 @@ exports.createDispute = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    //check if user is a school
-    if (!user || user.role !== 'school') {
-      return res.status(403).json({ message: 'Unauthorized: User is not a school' });
-    }
     
-
     if (user.status !== 'Active') {
       return res.status(403).json({ message: 'User is not active' });
     }
@@ -143,6 +139,39 @@ exports.getDisputeById = async (req, res) => {
     res.status(200).json(dispute);
   } catch (error) {
     console.error('Error fetching dispute by ID:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+//update dispute
+exports.updateDispute = async (req, res) => {
+  try {
+    const userId = req.user?.id; // pulled from JWT
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized: No user ID found' });
+    }
+    // Check if user is a school
+    const user = await regUser.findById(userId);
+    if (!user || user.role !== 'school') {
+      return res.status(403).json({ message: 'Unauthorized: User is not a school' });
+    }
+    const { id } = req.params;
+    const { status } = req.body;
+    //resolved date
+    const dispute = await disputeData.findByIdAndUpdate(
+      id,
+      { status, resolvedBy:user._id, resolvedDate:Date.now() }, // Update the status and resolvedBy fields, and set resolvedDate to now
+      { new: true }
+    ).populate('transactionId').populate('resolvedBy', 'name email');
+    if (!dispute) {
+      return res.status(404).json({ message: 'Dispute not found' });
+    }
+    res.status(200).json({
+      message: 'Dispute updated successfully',
+      dispute
+    });
+  } catch (error) {
+    console.error('Error updating dispute:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
