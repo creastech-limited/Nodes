@@ -340,7 +340,7 @@ exports.getAllAgentsInSchool = async (req, res) => {
       return res.status(400).json({ message: 'User ID is required' });
     }
     const data = await regUser.findById(userId);  
-    const schoolId = data.schoolId || data.store_id // Use the appropriate ID based on role
+    const schoolId = data.store_id || data.schoolId // Use the appropriate ID based on role
     if (!schoolId) {
       return res.status(400).json({ message: 'School or Store ID is required' });
     }
