@@ -108,6 +108,7 @@ app.use(cors({
     "http://127.0.0.1:5503",
     "http://localhost:5174",
     "https://xpay.jolade-boluwatife.workers.dev",
+    "nodes-production-2b39.up.railway.app",
     "https://nodes-production-2b39.up.railway.app"
   ],
   credentials: true,
