@@ -6,6 +6,13 @@ const disputeSchema = new mongoose.Schema({
     ref: 'User', 
     required: true 
   },
+  schoolId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'School', // Reference to the school if applicable
+    required: false, // Optional if disputes can be raised by users directly
+  },
+  // Enum for dispute types
+  // Billing Issue, Account Discrepancy, Transaction Error, Service Concern, Other
   disputeType: {
     type: String,
     required: true,
@@ -45,7 +52,7 @@ const disputeSchema = new mongoose.Schema({
   },
   paymentCategory: {
     type: String,
-    enum: ['Deposit', 'Withdrawal', 'Transfer', 'Store Purchase', 'Other'], // Associated payment type if relevant
+    enum: ['Deposit', 'Withdrawal', 'Transfer', 'Store Purchase','TopUp', 'Other'], // Associated payment type if relevant
   },
   amount: {
     type: Number, // This could be used for disputes related to transactions

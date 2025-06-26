@@ -2,6 +2,28 @@ const {regUser,Class} = require('../Models/registeration');
 const Wallet = require('../Models/walletSchema');
 const jwt = require('jsonwebtoken');
 
+
+//get all schools
+exports.getallSchools = async (req, res) => {
+  try {
+    const data = await regUser.find({ role: 'school' });
+    res.status(200).json({
+      message: `${data.length} school(s) found`,
+      data: data.map(school => {
+        return {
+          school_id: school._id,
+          schoolName: school.schoolName,
+          schoolAddress: school.schoolAddress,
+          schoolType: school.schoolType
+        };
+      })
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+
 exports.getallUsers =  async (req, res) => {
   try {
     const data = await regUser.find();

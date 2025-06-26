@@ -9,15 +9,15 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const regUser = require('../Models/registeration');
 const disputeData = require('../Models/dispute');
-const {getallUsers, getAllStudentsInSchool, getUserByFilter, getAllStoreInSchool, getAllAgentsInSchool, getAllStudentsCountInSchool, getAllStoreInSchoolCount, getAllAgentsInSchoolCount, getuserbyid,getuser,getAllStudents} = require('../Controllers/getAllusers');
+const {getallUsers, getAllStudentsInSchool, getUserByFilter, getAllStoreInSchool, getAllAgentsInSchool, getAllStudentsCountInSchool, getAllStoreInSchoolCount, getAllAgentsInSchoolCount, getuserbyid,getuser,getAllStudents, getallSchools} = require('../Controllers/getAllusers');
 const {getAllClassesWithCounts,getStudentCountByClass,login,getSchoolClasses, register,register2,logout,updateUser, forgotPassword,resetWithToken, deleteUser,deleteAllUsers, updatePassword, verifySenderAndReceiver, getSchoolById} = require('../Controllers/userAuth');
 const { initiateTransaction, verifyTransaction} = require('../Controllers/transactionController');
 const verifyToken = require('./verifyToken');
 
 
 // Register route
-router.post('/register', register);
-router.post('/register2', register2);
+router.post('/register1', register);
+router.post('/register', register2);
 router.post('/login', login);
 router.post('/logout',verifyToken, logout);
 router.put('/update-user/:id', verifyToken, updateUser);
@@ -42,6 +42,7 @@ router.delete('/delete/:id', deleteUser);
 router.delete('/delete', deleteAllUsers);
 router.delete('/verify-user', verifySenderAndReceiver);
 router.get('/getschoolbyid/:id', getSchoolById);
+router.get('/getallSchools', getallSchools);
 
 
 
