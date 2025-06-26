@@ -1315,11 +1315,11 @@ if (roleLower !== 'school') {
 
     const qrData = JSON.stringify({ 
       email: newUser.email,
-      schoolId: newUser.schoolId,
-      role: newUser.role,
-      studentId: roleLower === 'student' ? newUser.student_id : null,
-      name: newUser.name,
-      accountNumber: newUser.accountNumber
+      // schoolId: newUser.schoolId,
+      // role: newUser.role,
+      // studentId: roleLower === 'student' ? newUser.student_id : null,
+      // name: newUser.name,
+      // accountNumber: newUser.accountNumber
 
     });
     const qrCodeDataUrl = await QRCode.toDataURL(qrData);
