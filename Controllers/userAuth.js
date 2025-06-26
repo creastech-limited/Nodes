@@ -1327,15 +1327,10 @@ if (roleLower !== 'school') {
     await newUser.save();
     const base64Image = qrCodeDataUrl.replace(/^data:image\/png;base64,/, '');
 
-    const emailDetails = {
-      to: [process.env.EMAIL_TO, newUser.email],
-      from: {
-        email: "davidt@yungmindsinnovative.com.ng",
-        name: 'Xpay School Wallet'
-      },
-      subject: 'Registration Notification',
-      text: `Hello ${newUser.firstName},\n\nYou have successfully registered with the school wallet solution.\n\nBest regards,\nYour Company Name`,
-      html: `<p>Hello ${newUser.firstName},</p>
+    await sendEmail({
+    to: user.email,
+    subject: 'Login Notification',
+    html: `<p>Hello ${newUser.firstName},</p>
              <p>You have successfully registered with the school wallet solution.<br/>
              Click the link <a href='${process.env.NGROK_URL}/api/activated/${newUser._id}'>activate</a> to activate your account.</p>
              <p>Best regards,<br>Your Company Name</p>`,
@@ -1347,7 +1342,29 @@ if (roleLower !== 'school') {
           disposition: 'attachment'
         }
       ]
-    };
+  });
+
+    // const emailDetails = {
+    //   to: [process.env.EMAIL_TO, newUser.email],
+    //   from: {
+    //     email: "davidt@yungmindsinnovative.com.ng",
+    //     name: 'Xpay School Wallet'
+    //   },
+    //   subject: 'Registration Notification',
+    //   text: `Hello ${newUser.firstName},\n\nYou have successfully registered with the school wallet solution.\n\nBest regards,\nYour Company Name`,
+    //   html: `<p>Hello ${newUser.firstName},</p>
+    //          <p>You have successfully registered with the school wallet solution.<br/>
+    //          Click the link <a href='${process.env.NGROK_URL}/api/activated/${newUser._id}'>activate</a> to activate your account.</p>
+    //          <p>Best regards,<br>Your Company Name</p>`,
+    //   attachments: [
+    //     {
+    //       content: base64Image,
+    //       filename: 'qrcode.png',
+    //       type: 'image/png',
+    //       disposition: 'attachment'
+    //     }
+    //   ]
+    // };
 
     // await sgMail.send(emailDetails);
 
