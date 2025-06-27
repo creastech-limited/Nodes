@@ -1011,12 +1011,15 @@ exports.register = async (req, res) => {
         className: academicDetails.classAdmittedTo,
         schoolId: schoolDBID
       });
+      const currentTerm = req.body.term || 'First Term';
+      const currentSession = req.body.session || '2025';
+
 
       if (!foundClass) {
         return res.status(404).json({ message: `Class '${academicDetails.classAdmittedTo}' not found for this school.` });
       }
           const classFees = await Fee.find({ 
-              classId: student.classId, 
+              classId: foundClass._id, 
               term: currentTerm, 
               session: currentSession 
             });
