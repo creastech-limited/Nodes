@@ -16,8 +16,8 @@ const verifyToken = require('./verifyToken');
 
 
 // Register route
-router.post('/register', register);
-router.post('/register2', register2);
+router.post('/register1', register);
+router.post('/register', register2);
 router.post('/login', login);
 router.post('/logout',verifyToken, logout);
 router.put('/update-user/:id', verifyToken, updateUser);
