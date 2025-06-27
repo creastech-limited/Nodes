@@ -1025,9 +1025,9 @@ exports.register = async (req, res) => {
             });
 
           for (const fee of classFees) {
-              const exists = await FeeStatus.findOne({ studentId: student._id, feeId: fee._id });
+              const exists = await FeeStatus.findOne({ studentId: newUser._id, feeId: fee._id });
               if (!exists) {
-                await FeeStatus.create({ studentId: student._id, feeId: fee._id });
+                await FeeStatus.create({ studentId: newUser._id, feeId: fee._id });
               }
             }
 
