@@ -3,6 +3,7 @@ const {regUser, ClassUser} = require('../Models/registeration');
 const bcrypt = require('bcryptjs');
 const sendEmail = require('../utils/email');
 const FeeStatus = require('../Models/fees');
+const {Fee, FeePayment} = require('../Models/fees');
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const crypto = require('crypto');
