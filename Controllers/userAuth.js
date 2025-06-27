@@ -1034,6 +1034,7 @@ exports.register = async (req, res) => {
       newUser.academicDetails.classAdmittedTo = foundClass.className;
      //update the students section of the class
       newUser.Class = foundClass._id;
+      newUser.classId = foundClass._id;
       foundClass.students.push(newUser._id);
       await foundClass.save();
 
