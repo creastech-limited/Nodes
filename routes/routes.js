@@ -14,6 +14,7 @@ const jwt = require('jsonwebtoken');
 const {initializeWalletsForUsers} = require('../Controllers/initiateWalletController');
 const verifyToken = require('../routes/verifyToken');
 const {getAllTransactions} = require('../Controllers/transactionController');
+const sendEmail = require('../utils/email');
 
 
 
@@ -53,9 +54,19 @@ router.get('/activated/:id', async (req, res) => {
       return res.status(404).send('Activation failed: user not found.');
     }
 
+    
     // Redirect to login page
     res.redirect(process.env.FRONTEND_URL_PROD); // Replace with your actual frontend login URL
-
+    // Optionally, you can send a success message
+    res.status(200).send('User activated successfully. You can now log in.');
+    //send a suucess email to the user
+    await sendEmail({
+      to: user.email,
+      subject: 'Account Activation Successful',
+      html: `<p>Hello ${user.firstName},</p>
+             <p>Your account has been successfully activated. You can now log in to your account.</p>
+             <p>Thank you for using our service!</p>`
+    });
   } catch (err) {
     res.status(500).send('Server error during activation.');
   }
