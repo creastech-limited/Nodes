@@ -997,7 +997,7 @@ exports.register = async (req, res) => {
       status: 'Inactive',
     });
     let schoolDBID = null;
-    if (roleLower !== 'school') {
+    if (roleLower !== 'school'||roleLower !== 'parent') {
   const existingSchool = await regUser.findOne({ schoolId: generatedSchoolId, role: 'school' });
   if (!existingSchool) {
     return res.status(404).json({ message: 'School with provided ID not found' });
@@ -1320,7 +1320,7 @@ exports.register2 = async (req, res) => {
     });
     let schoolDBID = null;
 
-if (roleLower !== 'school') {
+if (roleLower !== 'school' || roleLower !== 'parent') {
   const existingSchool = await regUser.findOne({ schoolId: generatedSchoolId, role: 'school' });
   if (!existingSchool) {
     return res.status(404).json({ message: 'School with provided ID not found' });
