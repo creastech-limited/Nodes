@@ -864,6 +864,7 @@ exports.register = async (req, res) => {
       schoolAddress,
       agentName,
       Class,
+      role,
       academicDetails,
       classId,
       pin,
