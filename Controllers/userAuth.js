@@ -1328,7 +1328,7 @@ if (roleLower !== 'school') {
     const base64Image = qrCodeDataUrl.replace(/^data:image\/png;base64,/, '');
 
     await sendEmail({
-    to: user.email,
+    to: newUser.email,
     subject: 'Login Notification',
     html: `<p>Hello ${newUser.firstName},</p>
              <p>You have successfully registered with the school wallet solution.<br/>
