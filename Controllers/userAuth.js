@@ -842,7 +842,7 @@ exports.register = async (req, res) => {
     }
 
     const {
-      firstName,
+       firstName,
       lastName,
       name = firstName + ' ' + lastName,
       gender,
@@ -855,25 +855,46 @@ exports.register = async (req, res) => {
       profilePicture,
       storeName,
       storeType,
+      ownership,
+      store_id,
       student_id,
+      section,
+      schoolName,
+      schoolType,
+      schoolAddress,
       agentName,
-      classAdmittedTo,
+      Class,
       academicDetails,
+      classId,
       pin,
       lastLogin,
       agent_id,
       schoolRegistrationLink,
       refreshToken,
       status = 'Inactive',
-      role
+      
     } = req.body;
 
-    const ownership = decodedToken.ownership || req.query.ownership || '';
-    const store_id = decodedToken.id || req.body.store_id || req.query.store_id || '';
-    const schoolName = decodedToken.name || req.body.schoolName || req.query.schoolName || '';
-    const schoolType = decodedToken.type || req.body.schoolType || req.query.schoolType || '';
-    const schoolAddress = decodedToken.address || req.body.schoolAddress || req.query.schoolAddress || '';
+    const roleLower = role.toLowerCase();
     const schoolId = decodedToken.id || req.body.schoolId || req.query.schoolId || '';
+    let resolvedSchoolId = schoolId;
+    let resolvedSchoolName = decodedToken.name || req.body.schoolName || req.query.schoolName || '';
+    let resolvedSchoolType = decodedToken.type || req.body.schoolType || req.query.schoolType || '';
+    let resolvedSchoolAddress = decodedToken.address || req.body.schoolAddress || req.query.schoolAddress || '';
+    let resolvedOwnership = decodedToken.ownership || req.query.ownership || '';
+    // Check if schoolId is provided for student or store roles
+    if ((roleLower === 'student' || roleLower === 'store') && schoolId) {
+      const schoolUser = await regUser.findOne({ schoolId, role: 'school' });
+      if (!schoolUser) {
+        return res.status(404).json({ message: 'School with provided ID not found' });
+      }
+      resolvedSchoolName = schoolUser.schoolName;
+      resolvedSchoolType = schoolUser.schoolType;
+      resolvedSchoolAddress = schoolUser.schoolAddress;
+      resolvedOwnership = schoolUser.ownership;
+      resolvedSchoolId = schoolUser.schoolId;
+    }
+
 
     const address = {
       street: req.body.street,
@@ -890,6 +911,15 @@ exports.register = async (req, res) => {
       occupation: req.body.guardianOccupation,
       address: req.body.guardianAddress
     };
+    if (req.body.guardianEmail) {
+      const existingGuardian = await regUser.findOne({ email: req.body.guardianEmail });
+      if (existingGuardian) {
+        guardian.fullName = existingGuardian.name || guardian.fullName;
+        guardian.email = existingGuardian.email;
+        guardian.phone = existingGuardian.phone || guardian.phone;
+      }
+    }
+
 
     const academic = {
       classAdmittedTo: req.body.classAdmittedTo,
@@ -903,7 +933,7 @@ exports.register = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({ message: 'Email already in use' });
     }
-
+// Helper to generate 10-digit account number starting with 9
     const generateAccountNumber = () => Math.floor(9000000000 + Math.random() * 1000000000).toString();
 
     let accountNumber;
@@ -913,7 +943,8 @@ exports.register = async (req, res) => {
       const exists = await regUser.findOne({ accountNumber });
       if (!exists) isUnique = true;
     }
-
+//
+    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -937,20 +968,22 @@ exports.register = async (req, res) => {
       profilePicture,
       address,
       guardian,
+      schoolId: generatedSchoolId,
       academicDetails: academic,
       country,
-      classAdmittedTo,
       schoolName,
       schoolAddress,
       schoolType,
       ownership,
       store_id,
+      section,
       student_id,
       storeName,
       storeType,
       accountNumber,
       agent_id,
       agentName,
+      Class,
       email: email.toLowerCase().trim(),
       phone,
       schoolRegistrationLink: '',
@@ -960,10 +993,50 @@ exports.register = async (req, res) => {
       role,
       pin: '',
       lastLogin,
-      schoolId: generatedSchoolId,
       registrationDate: new Date(),
-      status: 'Inactive'
+      status: 'Inactive',
     });
+    let schoolDBID = null;
+    if (roleLower !== 'school') {
+  const existingSchool = await regUser.findOne({ schoolId: generatedSchoolId, role: 'school' });
+  if (!existingSchool) {
+    return res.status(404).json({ message: 'School with provided ID not found' });
+  }
+  schoolDBID = existingSchool._id;
+}
+// ✅ Assign student to class using class name (classAdmittedTo)
+    if (roleLower === 'student' && academicDetails.classAdmittedTo && schoolDBID) {
+      const foundClass = await ClassUser.findOne({
+        className: academicDetails.classAdmittedTo,
+        schoolId: schoolDBID
+      });
+
+      if (!foundClass) {
+        return res.status(404).json({ message: `Class '${academicDetails.classAdmittedTo}' not found for this school.` });
+      }
+          const classFees = await Fee.find({ 
+              classId: student.classId, 
+              term: currentTerm, 
+              session: currentSession 
+            });
+
+          for (const fee of classFees) {
+              const exists = await FeeStatus.findOne({ studentId: student._id, feeId: fee._id });
+              if (!exists) {
+                await FeeStatus.create({ studentId: student._id, feeId: fee._id });
+              }
+            }
+
+      newUser.academicDetails.classAdmittedTo = foundClass.className;
+     //update the students section of the class
+      newUser.Class = foundClass._id;
+      foundClass.students.push(newUser._id);
+      await foundClass.save();
+
+      // Optional: push student to class' student list
+      // await ClassUser.findByIdAndUpdate(foundClass._id, { $push: { students: newUser._id } });
+    }
+    console.log("newUserclass", newUser.Class); 
 
     switch (role.toLowerCase()) {
       case 'student':
@@ -989,6 +1062,18 @@ exports.register = async (req, res) => {
 
     await newUser.save();
 
+    // Create classes for school if role is 'school'
+    if (roleLower === 'school') {
+      const defaultClasses = getDefaultClasses(schoolType);
+      const classDocuments = defaultClasses.map(className => ({
+        className,
+        section: req.body.section || '1',
+        schoolId: newUser._id
+      }));
+      await ClassUser.insertMany(classDocuments);
+    }
+
+
     // Create wallet
     await Wallet.create({
       userId: newUser._id,
@@ -1005,6 +1090,7 @@ exports.register = async (req, res) => {
     // Generate QR code data
     const qrData = JSON.stringify({
       email: newUser.email,
+      name: newUser.name
     });
 
     const qrCodeDataUrl = await QRCode.toDataURL(qrData);
@@ -1012,15 +1098,31 @@ exports.register = async (req, res) => {
     await newUser.save();
     const base64Image = qrCodeDataUrl.replace(/^data:image\/png;base64,/, '');
 
-    const emailDetails = {
-      to: [process.env.EMAIL_TO, newUser.email],
-      from: {
-        email: "davidt@yungmindsinnovative.com.ng",
-        name: 'Xpay School Wallet'
-      },
-      subject: 'Login Notification',
-      text: `Hello ${newUser.firstName},\n\nYou have successfully registered with the school wallet solution.\n\nBest regards,\nYour Company Name`,
-      html: `<p>Hello ${newUser.firstName},</p>
+    // const emailDetails = {
+    //   to: [process.env.EMAIL_TO, newUser.email],
+    //   from: {
+    //     email: "davidt@yungmindsinnovative.com.ng",
+    //     name: 'Xpay School Wallet'
+    //   },
+    //   subject: 'Login Notification',
+    //   text: `Hello ${newUser.firstName},\n\nYou have successfully registered with the school wallet solution.\n\nBest regards,\nYour Company Name`,
+    //   html: `<p>Hello ${newUser.firstName},</p>
+    //          <p>You have successfully registered with the school wallet solution.<br/>
+    //          Click the link <a href='${process.env.NGROK_URL}/api/activated/${newUser._id}'>activate</a> to activate your account.</p>
+    //          <p>Best regards,<br>Your Company Name</p>`,
+    //   attachments: [
+    //     {
+    //       content: base64Image,
+    //       filename: 'qrcode.png',
+    //       type: 'image/png',
+    //       disposition: 'attachment'
+    //     }
+    //   ]
+    // };
+    await sendEmail({
+    to: newUser.email,
+    subject: 'Confirm Notification',
+    html: `<p>Hello ${newUser.firstName},</p>
              <p>You have successfully registered with the school wallet solution.<br/>
              Click the link <a href='${process.env.NGROK_URL}/api/activated/${newUser._id}'>activate</a> to activate your account.</p>
              <p>Best regards,<br>Your Company Name</p>`,
@@ -1032,18 +1134,15 @@ exports.register = async (req, res) => {
           disposition: 'attachment'
         }
       ]
-    };
+  });
 
-    await sgMail.send(emailDetails);
+    // await sgMail.send(emailDetails);
 
     res.status(201).json({
       message: 'Registration successful',
       user: {
         id: newUser._id,
         email: newUser.email,
-        role: newUser.role,
-        firstName: newUser.firstName,
-        lastName: newUser.lastName,
         name: newUser.name,
         accountNumber: newUser.accountNumber,
         ...roleSpecificId,
