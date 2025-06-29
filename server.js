@@ -13,7 +13,7 @@ const app = express();
 app.use(cors({
   origin: [
     "http://localhost:8080","http://localhost:3000","http://127.0.0.1:5503","http://localhost:5174","http://localhost:5173", "https://xpay.jolade-boluwatife.workers.dev","https://nodes-production-2b39.up.railway.app",
-    "nodes-production-2b39.up.railway.app","https://nodes-staging.up.railway.app/api/users/register2"
+    "nodes-production-2b39.up.railway.app","https://nodes-staging.up.railway.app/api/users/register"
   ], // For dev only; replace with your frontend URL in production
   credentials: true, // Allow credentials (cookies, authorization headers, etc.)
   methods: ["GET", "POST", "PUT", "DELETE"]// Allowed HTTP method
