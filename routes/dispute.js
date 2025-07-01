@@ -11,7 +11,7 @@ const {createDispute,getSchoolDisputes,getUserDisputes,updateDispute,deleteDispu
 
 
 //get all disputes
-router.get('/getDispute', getAllDisputes);
+router.get('/getallDispute', getAllDisputes);
 //create dispute
 router.post('/createdispute',verifyToken, createDispute);
 //get all disputes
