@@ -203,7 +203,26 @@ exports.getAllDisputes = async (req, res) => {
       .populate('transactionId')
       .populate('resolvedBy', 'fullName email') 
       .sort({ createdAt: -1 });
-    res.status(200).json(disputes);
+
+      const disputesWithUserNames = await Promise.all(
+        disputes.map(async (dispute) => {
+          const raisedByUser = await regUser.findById(dispute.userId);
+          return {
+            ...dispute.toObject(),
+            raisedByName: raisedByUser ? raisedByUser.name : 'Unknown User',
+            raisedByEmail: raisedByUser ? raisedByUser.email : 'Unknown Email'  
+          };
+        })
+      );
+      if (disputesWithUserNames.length === 0) {
+        return res.status(404).json({ message: 'No disputes found for this school' });
+      }
+    // Return the disputes with user names
+   res.status(200).json({
+        message: `${disputesWithUserNames.length} Dispute(s) fetched successfully`,
+        disputes: disputesWithUserNames
+      
+      });
   } catch (error) {
     console.error('Error fetching all disputes:', error);
     res.status(500).json({ message: 'Server error' });
@@ -218,21 +237,54 @@ exports.getSchoolDisputes = async (req, res) => {
       if (!userId) {
         return res.status(401).json({ message: 'Unauthorized: No user ID found' });
       }
+      console.log('User ID:', userId);
       // Check if user is a school
       const user = await regUser.findById(userId);
       if (!user || user.role !== 'school') {
         return res.status(403).json({ message: 'Unauthorized: User is not a school' });
       }
+      console.log('User found:', user._id);
+      //convert userId to string
+      const userIdString = user._id.toString();
+      console.log('User ID String:', userIdString);
   
-      const disputes = await disputeData.find({ userId, schoolId: user._id }) // Assuming the school ID is stored in the dispute
+      const disputes = await disputeData.find({ schoolId: userIdString }) // Assuming the school ID is stored in the dispute
         .populate('transactionId')
         .populate('resolvedBy', 'fullName email')
         .sort({ createdAt: -1 });
-  if(disputes.schoolID !== userId){
-        return res.status(403).json({ message: 'Unauthorized: You can only view as a school' });
-  }
+
+      // Check if disputes were found
+  if (!disputes || disputes.length === 0) {
+        return res.status(404).json({ message: 'No disputes found for this school' });
+      }
+  //       console.log('Disputes found:', disputes.disputeType );
+  //       console.log('Disputes count:', disputes.schoolId === user._id);
+  // if(disputes.schoolId !== user.id){
+  //       return res.status(403).json({ message: 'Unauthorized: You can only view as a school' });
+  // }
+  //get the name of the user who raised the dispute
+      if (!disputes || disputes.length === 0) {
+        return res.status(404).json({ message: 'No disputes found for this school' });
+      }
+      const disputesWithUserNames = await Promise.all(
+        disputes.map(async (dispute) => {
+          const raisedByUser = await regUser.findById(dispute.userId);
+          return {
+            ...dispute.toObject(),
+            raisedByName: raisedByUser ? raisedByUser.name : 'Unknown User',
+            raisedByEmail: raisedByUser ? raisedByUser.email : 'Unknown Email'  
+          };
+        })
+      );
+      if (disputesWithUserNames.length === 0) {
+        return res.status(404).json({ message: 'No disputes found for this school' });
+      }
   
-      res.status(200).json(disputes);
+      res.status(200).json({
+        message: `${disputesWithUserNames.length} Dispute(s) fetched successfully`,
+        disputes: disputesWithUserNames
+      
+      });
     } catch (error) {
       console.error('Error fetching user disputes:', error);
       res.status(500).json({ message: 'Server error' });
@@ -257,7 +309,26 @@ exports.getUserDisputes = async (req, res) => {
       .populate('transactionId')
       .populate('resolvedBy', 'fullName email')
       .sort({ createdAt: -1 }); 
-    res.status(200).json(disputes);
+
+    //get the name of the user who raised the dispute
+    const disputesWithUserNames = await Promise.all(
+      disputes.map(async (dispute) => {
+        const raisedByUser = await regUser.findById(dispute.userId);
+        return {
+          ...dispute.toObject(),
+          raisedBy: raisedByUser ? raisedByUser.name : 'Unknown User'
+        };
+      })
+    );
+    if (disputesWithUserNames.length === 0) {
+      return res.status(404).json({ message: 'No disputes found for this user' });
+    }
+    // Return the disputes with user names
+
+    res.status(200).json({
+      message: `$(disputesWithUserNames.lenght) Disputes fetched successfully`,
+      disputes: disputesWithUserNames
+        });
   } catch (error) {
     console.error('Error fetching user disputes:', error);
     res.status(500).json({ message: 'Server error' });
@@ -275,7 +346,29 @@ exports.getDisputeById = async (req, res) => {
 
       return res.status(404).json({ message: 'Dispute not found' });
     }
-    res.status(200).json(dispute);
+    //get the name of the user who raised the dispute
+      if (!disputes || disputes.length === 0) {
+        return res.status(404).json({ message: 'No disputes found for this school' });
+      }
+      const disputesWithUserNames = await Promise.all(
+        disputes.map(async (dispute) => {
+          const raisedByUser = await regUser.findById(dispute.userId);
+          return {
+            ...dispute.toObject(),
+            raisedBy: raisedByUser ? raisedByUser.name : 'Unknown User'
+          };
+        })
+      );
+      if (disputesWithUserNames.length === 0) {
+        return res.status(404).json({ message: 'No disputes found for this school' });
+      }
+  
+      res.status(200).json({
+        message: 'Disputes fetched successfully',
+        disputes: disputesWithUserNames
+      
+      });
+
   } catch (error) {
     console.error('Error fetching dispute by ID:', error);
     res.status(500).json({ message: 'Server error' });
@@ -305,10 +398,28 @@ exports.updateDispute = async (req, res) => {
     if (!dispute) {
       return res.status(404).json({ message: 'Dispute not found' });
     }
-    res.status(200).json({
-      message: 'Dispute updated successfully',
-      dispute
-    });
+    //get the name of the user who raised the dispute
+      if (!disputes || disputes.length === 0) {
+        return res.status(404).json({ message: 'No disputes found for this school' });
+      }
+      const disputesWithUserNames = await Promise.all(
+        disputes.map(async (dispute) => {
+          const raisedByUser = await regUser.findById(dispute.userId);
+          return {
+            ...dispute.toObject(),
+            raisedBy: raisedByUser ? raisedByUser.name : 'Unknown User'
+          };
+        })
+      );
+      if (disputesWithUserNames.length === 0) {
+        return res.status(404).json({ message: 'No disputes found for this school' });
+      }
+  
+      res.status(200).json({
+        message: 'Disputes fetched successfully',
+        disputes: disputesWithUserNames
+      
+      });
   } catch (error) {
     console.error('Error updating dispute:', error);
     res.status(500).json({ message: 'Server error' });
@@ -331,10 +442,28 @@ exports.deleteDispute = async (req, res) => {
     if (!dispute) {
       return res.status(404).json({ message: 'Dispute not found' });
     }
-    res.status(200).json({
-      message: 'Dispute deleted successfully',
-      dispute
-    });
+    //get the name of the user who raised the dispute
+      if (!disputes || disputes.length === 0) {
+        return res.status(404).json({ message: 'No disputes found for this school' });
+      }
+      const disputesWithUserNames = await Promise.all(
+        disputes.map(async (dispute) => {
+          const raisedByUser = await regUser.findById(dispute.userId);
+          return {
+            ...dispute.toObject(),
+            raisedBy: raisedByUser ? raisedByUser.name : 'Unknown User'
+          };
+        })
+      );
+      if (disputesWithUserNames.length === 0) {
+        return res.status(404).json({ message: 'No disputes found for this school' });
+      }
+  
+      res.status(200).json({
+        message: 'Disputes fetched successfully',
+        disputes: disputesWithUserNames
+      
+      });
   } catch (error) {
     console.error('Error deleting dispute:', error);
     res.status(500).json({ message: 'Server error' });

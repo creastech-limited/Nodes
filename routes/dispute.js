@@ -15,7 +15,7 @@ router.get('/getDispute', getAllDisputes);
 //create dispute
 router.post('/createdispute',verifyToken, createDispute);
 //get all disputes
-router.get('/getDispute',verifyToken, getSchoolDisputes);
+router.get('/getschDispute',verifyToken, getSchoolDisputes);
 //get dispute of a user
 router.get('/getuserdispute', verifyToken, getUserDisputes);
 //update dispute
