@@ -232,25 +232,25 @@ switch (role.toLowerCase()) {
     dynamicSchoolLink = `?schoolId=${encodeURIComponent(generatedSchoolId)}&schoolName=${encodeURIComponent(Name)}&schoolAddress=${encodeURIComponent(Address)}&schoolType=${encodeURIComponent(Type)}&ownership=${encodeURIComponent(ownership)}`;
     break;
 }
+//give response with user data and dynamic link base d on role
+      // Remove sensitive information from the response
+      const { pin, password, ...safeUser} = data.toObject();
+      // Remove sensitive information from the response
+      // Use toObject() to convert Mongoose document to plain object
+      // This allows us to safely remove properties without affecting the original document
+// const { pin, password, ...safeUser} = data;
 
       res.status(200).json({
         message: `User found with the role: ${data.role}`,
         user: {
-          data,
-          pin: data.pin,
-          Link: dynamicSchoolLink,
+          data:safeUser,
           wallet: {
-            id: wallet._id,
-            balance: wallet.balance,
-            currency: wallet.currency,
-            type: wallet.type,
-            email: wallet.email,
-            firstName: wallet.firstName,
-            lastName: wallet.lastName,
-            phone: wallet.phone
-          }
+            balance: wallet ? wallet.balance : 0,
+            currency: wallet ? wallet.currency : 'NGN',
+            walletId: wallet ? wallet._id : null,
+          },
+          schoolLink: dynamicSchoolLink
         },
-
       });
   }
   catch (error) {

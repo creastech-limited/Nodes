@@ -5,6 +5,8 @@ const mongoose = require('mongoose');
 const morgan = require('morgan');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
+const fs = require('fs');
+const path = require('path');
 
 
 const app = express();
@@ -56,7 +58,18 @@ const walletRoute = require('./routes/wallets'); // ✅ Correct route file
 const transactionRoute = require('./routes/transactions')// ✅ Correct route file
 const notificationRoute = require('./routes/notification'); // ✅ Correct route file
 
+
+
+const uploadDir = path.join(__dirname, 'uploads');
+
+// Create the uploads folder if it doesn't exist
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+}
+
+
 //middlewware
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/transaction', transactionRoute) // ✅ Correct route file
 app.use('/api/notification', notificationRoute); // ✅ Correct route file
 app.use('/api/users', authRoute)// ✅ Correct route file

@@ -1,5 +1,4 @@
 
-
 const express = require('express');
 const axios = require('axios');
 const Model = require('../Models/models'); // Corrected import statement
@@ -13,6 +12,8 @@ const {getallUsers, getAllStudentsInSchool, getUserByFilter, getAllStoreInSchool
 const {getAllClassesWithCounts,getStudentCountByClass,login,getSchoolClasses, register,register2,logout,updateUser, forgotPassword,resetWithToken, deleteUser,deleteAllUsers, updatePassword, verifySenderAndReceiver, getSchoolById} = require('../Controllers/userAuth');
 const { initiateTransaction, verifyTransaction} = require('../Controllers/transactionController');
 const verifyToken = require('./verifyToken');
+const {uploadProfileImage,compressAndSaveProfilePicture} = require('../Middleware/upload');
+const { updateUserProfilePicture } = require('../Controllers/userAuth');
 
 
 // Register route
@@ -43,6 +44,8 @@ router.delete('/delete', deleteAllUsers);
 router.delete('/verify-user', verifySenderAndReceiver);
 router.get('/getschoolbyid/:id', getSchoolById);
 router.get('/getallSchools', getallSchools);
+router.post('/upload-profile',verifyToken,uploadProfileImage, compressAndSaveProfilePicture, updateUserProfilePicture, 
+);
 
 
 

@@ -27,9 +27,11 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.13.2",
     "morgan": "^1.10.0",
+    "multer": "^2.0.1",
     "nodemailer": "^7.0.3",
     "qrcode": "^1.5.4",
     "sendgrid": "^5.2.3",
+    "sharp": "^0.34.2",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

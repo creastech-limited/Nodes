@@ -1634,3 +1634,23 @@ exports.getSchoolById = async (req, res) => {
     return res.status(500).json({ message: 'Server Error' });
   }
 };
+
+exports.updateUserProfilePicture = async (req, res) => {
+  try {
+    const userId = req.user?.id; // comes from the token (auth middleware)
+    console.log("userId", userId);
+
+    const user = await regUser.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.profilePicture = req.savedFilePath;
+    await user.save();
+
+    res.status(200).json({
+      message: 'Profile picture uploaded successfully',
+      profilePicture: user.profilePicture
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to update profile picture', error: err.message });
+  }
+};
