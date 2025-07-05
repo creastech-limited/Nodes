@@ -9,7 +9,7 @@ const bcrypt = require('bcrypt');
 const regUser = require('../Models/registeration');
 const disputeData = require('../Models/dispute');
 const {getallUsers, getAllStudentsInSchool, getUserByFilter, getAllStoreInSchool, getAllAgentsInSchool, getAllStudentsCountInSchool, getAllStoreInSchoolCount, getAllAgentsInSchoolCount, getuserbyid,getuser,getAllStudents, getallSchools} = require('../Controllers/getAllusers');
-const {getAllClassesWithCounts,getStudentCountByClass,login,getSchoolClasses, register,register2,logout,updateUser, forgotPassword,resetWithToken, deleteUser,deleteAllUsers, updatePassword, verifySenderAndReceiver, getSchoolById} = require('../Controllers/userAuth');
+const {getAllClassesWithCounts,getStudentCountByClass,login,getSchoolClasses, register,register2,logout,updateUser, forgotPassword,resetWithToken, deleteUser,deleteAllUsers, updatePassword, verifySenderAndReceiver, getSchoolById, deactiveUser,activateUSer} = require('../Controllers/userAuth');
 const { initiateTransaction, verifyTransaction} = require('../Controllers/transactionController');
 const verifyToken = require('./verifyToken');
 const {uploadProfileImage,compressAndSaveProfilePicture} = require('../Middleware/upload');
@@ -17,6 +17,8 @@ const { updateUserProfilePicture } = require('../Controllers/userAuth');
 
 
 // Register route
+router.patch('/deactive/:id', verifyToken, deactiveUser);
+router.patch('/active/:id', verifyToken, activateUSer);
 router.post('/register', register);
 router.post('/register1', register2);
 router.post('/login', login);

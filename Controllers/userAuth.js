@@ -1654,3 +1654,55 @@ exports.updateUserProfilePicture = async (req, res) => {
     res.status(500).json({ message: 'Failed to update profile picture', error: err.message });
   }
 };
+exports.activateUSer = async (req, res) => {
+    try{
+        const id = req.params.id;
+        const user = await regUser.findById(id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        if (user.role.toLowerCase() === 'school') {
+            return res.status(403).json({ message: 'Cannot activate a school user' });
+        }
+        // check if the user is already active
+        if (user.status.toLowerCase() === 'active') {
+            return res.status(400).json({ message: 'User is already active' });
+        }
+        const datatoUpdate = {"status": "Active"};
+        const options = { new: true };
+        const result = await regUser.findByIdAndUpdate(id, datatoUpdate, options);
+
+
+        // res.send(result);
+        res.status(200).json({message:"user activated successfully"});
+    }
+    catch (error) {
+        res.status(400).json({ message: error.message });
+        
+    }
+};
+exports.deactiveUser = async (req, res) => {
+    try{
+        const id = req.params.id;
+        const user = await regUser.findById(id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        if (user.role.toLowerCase() === 'school') {
+            return res.status(403).json({ message: 'Cannot deactivate a school user' });
+        }
+        // check if the user is already inactive
+        if (user.status.toLowerCase() === 'inactive') {
+            return res.status(400).json({ message: 'User is already inactive' });
+        }
+        const datatoUpdate = {"status": "Inactive"};
+        const options = { new: true };
+        const result = await regUser.findByIdAndUpdate(id, datatoUpdate, options);
+
+        res.status(200).json({message:"user deactivated successfully"});
+    }
+    catch (error) {
+        res.status(400).json({ message: error.message });
+        
+    }
+};

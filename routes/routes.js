@@ -105,35 +105,9 @@ router.patch('/patch/:id', async (req, res) => {
     }
 });
 //Activate API
-router.patch('/active/:id', async (req, res) => {
-    try{
-        const id = req.params.id;
-        const datatoUpdate = {"status": "Active"};
-        const options = { new: true };
-        const result = await regUser.findByIdAndUpdate(id, datatoUpdate, options);
 
-        res.send(result);
-    }
-    catch (error) {
-        res.status(400).json({ message: error.message });
-        
-    }
-});
 //Deactivate API
-router.patch('/deactive/:id', async (req, res) => {
-    try{
-        const id = req.params.id;
-        const datatoUpdate = {"status": "Inactive"};
-        const options = { new: true };
-        const result = await regUser.findByIdAndUpdate(id, datatoUpdate, options);
 
-        res.status(200).json({message:"user deactivated successfully"});
-    }
-    catch (error) {
-        res.status(400).json({ message: error.message });
-        
-    }
-});
 //Patch API
 
 //delete API
