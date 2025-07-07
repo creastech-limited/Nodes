@@ -17,8 +17,8 @@ const { updateUserProfilePicture } = require('../Controllers/userAuth');
 
 
 // Register route
-router.patch('/deactive/:id', verifyToken, deactiveUser);
-router.patch('/active/:id', verifyToken, activateUSer);
+router.put('/deactive/:id', verifyToken, deactiveUser);
+router.put('/active/:id', verifyToken, activateUSer);
 router.post('/register', register);
 router.post('/register1', register2);
 router.post('/login', login);
