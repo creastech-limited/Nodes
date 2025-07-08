@@ -1,4 +1,4 @@
-const User = require('../Models/registeration'); // Import User model
+const {regUser} = require('../Models/registeration'); // Import User model
 const Wallet = require('../Models/walletSchema'); // Import Wallet model
 const Transaction = require('../Models/transactionSchema'); // Import Transaction model
 
@@ -13,7 +13,7 @@ async function verifySenderAndRecipient(req, res) {
       return res.status(400).json({ status: false, message: 'Recipient email is required' });
     }
 
-    const recipientUser = await User.findOne({ email: recipientEmail });
+    const recipientUser = await regUser.findOne({ email: recipientEmail });
     if (!recipientUser) return res.status(404).json({ status: false, message: 'Recipient not found' });
 
     if (senderId === recipientUser._id.toString()) {
@@ -110,7 +110,7 @@ async function transferFunds(req, res) {
     // Find sender and recipient
     const senderWallet = await Wallet.findOne({ userId: senderId, type: 'user' });
     console.log('Sender Wallet:', senderWallet);
-    const recipientUser = await User.findOne({ email: recipientEmail });
+    const recipientUser = await regUser.findOne({ email: recipientEmail });
     if (!recipientUser) return res.status(404).json({ status: false, message: 'Recipient not found' });
 
     // Prevent self-transfer
