@@ -93,7 +93,7 @@ const bcrypt = require('bcrypt'); // To verify hashed pin
 async function transferFunds(req, res) {
   try {
     const senderId = req.user.id; // from auth middleware
-    console.log('Sender's ID:', senderId);
+    console.log('Sender ID:', senderId);
     const senderEmail = req.user.email; // from auth middleware
     const { recipientEmail, amount, pin } = req.body;
 
