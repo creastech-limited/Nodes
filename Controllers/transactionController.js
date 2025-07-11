@@ -295,7 +295,7 @@ exports.initiateTransaction = async (req, res) => {
       {
         amount: amount * 100,
         email: userEmail,
-        callback_url: 'http://localhost:5174/payment/callback', // Change to real callback
+        callback_url: '/payment/callback', // Change to real callback
       },
       {
         headers: {
