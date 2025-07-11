@@ -276,7 +276,7 @@ exports.initiateTransaction = async (req, res) => {
     if (!amount || isNaN(amount) || amount <= 0) {
       return res.status(400).json({ message: 'Valid amount is required' });
     }
-    //fetch system wallet
+    //fetch system wallets
     const systemWallet = await Wallet.findById(systemWalletId);
     if (!systemWallet) {
       return res.status(404).json({ message: 'System wallet not found' });
