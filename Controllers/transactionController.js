@@ -288,6 +288,7 @@ exports.initiateTransaction = async (req, res) => {
     }
 
     const balanceBefore = userWallet.balance || 0;
+    const FRONTEND_URL_PROD = process.env.FRONTEND_URL_PROD || 'http://localhost:5174'; // Default to localhost if not set
 
     // Call Paystack to initialize transaction
     const response = await axios.post(
@@ -295,7 +296,7 @@ exports.initiateTransaction = async (req, res) => {
       {
         amount: amount * 100,
         email: userEmail,
-        callback_url: '/payment/callback', // Change to real callback
+        callback_url: `${FRONTEND_URL_PROD}/payment/callback`, // Change to real callback
       },
       {
         headers: {
