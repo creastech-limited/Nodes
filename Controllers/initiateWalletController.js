@@ -9,7 +9,7 @@ async function createSystemWallet(req, res) {
     return res.status(400).json({ message: 'User ID is required' });
   }
   try {
-    const data = await User.findById(id.toString()).select('email firstName lastName phone');
+    const data = await regUser.findById(id.toString()).select('email firstName lastName phone');
     if (!data) {
       return res.status(404).json({ message: 'User not found' });
     }
