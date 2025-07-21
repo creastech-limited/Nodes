@@ -1,4 +1,4 @@
-const User = require('../Models/registeration');  // Import User model
+const {regUser} = require('../Models/registeration');  // Import User model
 const Wallet = require('../Models/walletSchema');  // Import Wallet model
 
 
