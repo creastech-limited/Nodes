@@ -14,8 +14,8 @@ const app = express();
 // middleware
 app.use(cors({
   origin: [
-    "http://localhost:8080","http://localhost:3000","http://127.0.0.1:5503","http://localhost:5174","http://localhost:5173", "https://xpay.jolade-boluwatife.workers.dev","https://nodes-production-2b39.up.railway.app",
-    "nodes-production-2b39.up.railway.app","https://nodes-staging.up.railway.app/api/users/register"
+    "http://localhost:8080","http://localhost:3000","http://127.0.0.1:5503","http://localhost:5174","http://localhost:5173", "https://xpay.jolade-boluwatife.workers.dev","https://nodes-production-2b39.up.railway.app", "nodes-production-2b39.up.railway.app", "https://nodes-staging.up.railway.app/api/users/register","https://nodes-production-12.up.railway.app"
+
   ], // For dev only; replace with your frontend URL in production
   credentials: true, // Allow credentials (cookies, authorization headers, etc.)
   methods: ["GET", "POST", "PUT", "DELETE"]// Allowed HTTP method
@@ -57,6 +57,7 @@ const r = require('./routes/routes'); // ✅ Correct route file
 const walletRoute = require('./routes/wallets'); // ✅ Correct route file
 const transactionRoute = require('./routes/transactions')// ✅ Correct route file
 const notificationRoute = require('./routes/notification'); // ✅ Correct route file
+const otpRoute = require('./routes/otp'); // ✅ Correct route file
 
 
 
@@ -78,6 +79,7 @@ app.use('/api/fee', feeRoute); // e.g., /api/fee will work
 app.use('/api', r); // e.g., /api/feedback will work
 app.use('/api/dispute', disputeRoute); // e.g., /api/dispute will work
 app.use('/api/wallet', walletRoute); // e.g., /api/wallet will work
+app.use('/api/otp', otpRoute); // e.g., /api/otp will work
 // const registerRoute = require('./routes/register'); // ✅ Correct route file
 // app.use('/api', registerRoute); // e.g., /api/register will work
 const feedbackRoute = require('./routes/feedback'); // ✅ Correct route file

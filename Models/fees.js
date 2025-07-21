@@ -28,15 +28,15 @@ const Fee = mongoose.model('Fee', feeSchema);
 const feePaymentSchema = new mongoose.Schema({
   studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   feeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Fee', required: true },
-  amount: { type: Number, required: true },
-  feeType: { type: String, required: true }, // e.g., "Tuition", "Exam Fee"
-  term: { type: String, required: true }, // e.g., "First Term", "Second Term"
-  session: { type: String, required: true }, // e.g., "2024/2025",
+  amount: { type: Number },
+  feeType: { type: String }, // e.g., "Tuition", "Exam Fee"
+  term: { type: String }, // e.g., "First Term", "Second Term"
+  session: { type: String }, // e.g., "2024/2025",
   className: { type: String, required: true },
   schoolId: { type: String, required: true },
-  amountPaid: { type: Number, required: true },
-  paymentMethod: { type: String, enum: ['bank_transfer', 'card_payment', 'wallet_transfer', 'cash', 'none'], required: true },
-  transactionId: { type: String, required: true }, // Reference to the transaction,
+  amountPaid: { type: Number },
+  paymentMethod: { type: String, enum: ['bank_transfer', 'card_payment', 'wallet_transfer', 'cash', 'none'] },
+  transactionId: { type: String }, // Reference to the transaction,
   paymentDate: { type: Date, default: Date.now },
   status: { type: String, enum: ['Unpaid', 'Completed', 'Failed','partial'], default: 'Unpaid' },
 }, { timestamps: true });

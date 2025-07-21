@@ -11,6 +11,449 @@ const { generateReference } = require('../utils/generatereference');
 const { sendNotification } = require('../utils/notification'); // Utility function to send notifications
 // unique ref generator
 
+exports.deleteFeePaymentByFeeId = async (req, res) => {
+  try {
+    const { feeId } = req.params;
+
+    if (!feeId) {
+      return res.status(400).json({ message: 'Fee ID is required' });
+    }
+
+
+    // Delete all FeePayment records linked to this fee
+    const result = await FeePayment.deleteMany({ feeId });
+
+    return res.status(200).json({
+      message: `Deleted ${result.deletedCount} fee payment record(s) linked to fee ID ${feeId}.`
+    });
+  } catch (err) {
+    console.error('Error deleting fee payments:', err.message);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
+//update fee and update all student fee and send // notification and email to all students in the class
+
+exports.updateFeeForClass = async (req, res) => {
+  const currentUserId = req.user?.id;
+  const feeId = req.params.id; // Get fee ID from request parameters
+  if (!feeId) return res.status(400).json({ message: 'Fee ID is required' });
+  const user = await regUser.findById(currentUserId);
+  const schoolId = user?._id;
+  if (!schoolId) return res.status(400).json({ message: 'School ID not found' });
+
+  const { className, amount, description, dueDate, feeType, session, term } = req.body;
+  console.log('className:', className); // Debugging log
+  console.log('schoolId:', schoolId);
+
+  // Only required fields
+  if (!className ) {
+    return res.status(400).json({ message: 'Class Name is required fields' });
+  }
+
+  try {
+    const classData = await ClassUser.findOne({ className: className, schoolId:schoolId });
+    console.log('Class Data:', classData); // Debugging log
+    if (!classData) return res.status(404).json({ message: 'Class not found' });
+
+    const existingFee = await Fee.findById(feeId);
+    if (!existingFee) return res.status(404).json({ message: 'Fee not found for this class, term, and session.' });
+
+    if (existingFee.status !== 'Active') {
+      return res.status(409).json({ message: 'Fee is not active for this class, term, and session.' });
+    }
+
+    // Build update payload dynamically
+    const updatePayload = {
+      classId: classData._id,
+      className,
+      schoolId,
+      feeType,
+      term,
+      session,
+      status: 'Active'
+    };
+    if (amount) updatePayload.amount = amount;
+    if (description) updatePayload.description = description;
+    if (dueDate) updatePayload.dueDate = dueDate;
+
+    const updatedFee = await Fee.findByIdAndUpdate(
+      existingFee._id,
+      updatePayload,
+      { new: true }
+    );
+
+    const students = await regUser.find({ Class: classData._id.toString(), role: 'student' });
+    if (students.length === 0) {
+      return res.status(404).json({ message: 'No students found for this class.' });
+    }
+
+    const schoolWallet = await Wallet.findOne({ userId: schoolId });
+
+    const feeStatusList = [];
+    const transactionList = [];
+    const notificationList = [];
+    const emailPromises = [];
+
+    const fallbackEmail = 'taiwodavid19@gmail.com';
+
+    for (const student of students) {
+      try {
+        const timestamp = Date.now();
+        const reference = `FEE-${student._id}-${timestamp}`;
+        const studentWallet = await Wallet.findOne({ userId: student._id });
+
+        if (!studentWallet) {
+          console.warn(`No wallet found for student ${student.fullName} (${student._id})`);
+          continue;
+        }
+        //get the amountpaid for every Studdent attached to the // fee
+        const existingFeePayment = await FeePayment.findOne({ studentId: student._id, feeId: existingFee._id });
+        feeStatusList.push({
+          studentId: student._id,
+          feeId: updatedFee._id,
+          schoolId,
+          amount: amount || existingFee.amount,
+          feeType,
+          amountPaid: existingFeePayment.amountPaid, // Assuming no payment yet
+          paymentMethod: existingFeePayment.paymentMethod, // Assuming no payment method yet
+          session,
+          className,
+          dueDate: updatePayload.dueDate || existingFee.dueDate,
+          transactionId: reference
+        });
+
+        const currentBalance = studentWallet.balance || 0;
+
+        transactionList.push({
+          senderWalletId: schoolWallet?._id || null,
+          receiverWalletId: studentWallet._id,
+          transactionType: 'school_fee_allocation',
+          category: 'internal',
+          amount: amount || existingFee.amount,
+          balanceBefore: currentBalance,
+          balanceAfter: currentBalance,
+          reference,
+          description: `Fee of ₦${amount || existingFee.amount} updated for ${student.fullName} for ${feeType}, ${term}, ${session}`,
+          status: 'success',
+          metadata: {
+            studentId: student._id,
+            classId: classData._id,
+            className,
+            feeType,
+            term,
+            session,
+            dueDate: dueDate || existingFee.dueDate
+          }
+        });
+
+        notificationList.push({
+          userId: student._id,
+          title: 'Fee Updated',
+          message: `The fee of ₦${amount || existingFee.amount} has been updated for ${term} ${session}.`,
+          read: false
+        });
+
+        emailPromises.push(
+          sendEmail({
+            to: [student.email, fallbackEmail],
+            subject: 'New Fee Notification',
+            html: `
+              <p>Hello ${student.name},</p>
+              <p>You have an updated fee of <strong>₦${amount || existingFee.amount}</strong> for <strong>${feeType}</strong>.</p>
+              <p>Term: ${term} | Session: ${session} | Due: ${dueDate || existingFee.dueDate}</p>
+              <p>Please log in to your portal to view details.</p>
+            `
+          })
+        );
+      } catch (studentErr) {
+        console.error(`Error processing student ${student._id}:`, studentErr);
+      }
+    }
+    await FeePayment.deleteMany({ feeId: existingFee._id });
+
+    await Promise.all([
+      FeePayment.insertMany(feeStatusList),
+      Transaction.insertMany(transactionList),
+      Notification.insertMany(notificationList),
+      ...emailPromises
+    ]);
+
+    res.status(200).json({ message: 'Fee updated successfully.', data: updatedFee });
+  } catch (err) {
+    console.error('Error:', err.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+// exports.updateFeeForClass = async (req, res) => {
+//   const currentUserId = req.user?.id;
+//   const user = await regUser.findById(currentUserId);
+//   const schoolId = user?.schoolId;
+//   if (!schoolId) return res.status(400).json({ message: 'School ID not found' });
+
+//   const { className, amount, description,dueDate } = req.body;
+//   if (!className || !amount  || !feeType || !dueDate) {
+//     return res.status(400).json({ message: 'Missing required fields' });
+//   }
+
+//   try {
+//     const classData = await ClassUser.findOne({ className, schoolId });
+//     if (!classData) return res.status(404).json({ message: 'Class not found' });
+
+//     const existingFee = await Fee.findOne({ classId: classData._id.toString(), term, session, feeType });
+//     if (!existingFee) return res.status(404).json({ message: 'Fee not found for this class, term, and session.' });
+
+//     if (existingFee.status !== 'Active') {
+//       return res.status(409).json({ message: 'Fee is not active for this class, term, and session.' });
+//     }
+
+//     const updatedFee = await Fee.findByIdAndUpdate(
+//       existingFee._id,
+//       {
+//         classId: classData._id,
+//         className,
+//         schoolId,
+//         amount,
+//         description,
+//         session,
+//         feeType,
+//         dueDate,
+//         status: 'Active'
+//       },
+//       { new: true }
+//     );
+
+//     const students = await regUser.find({ Class: classData._id.toString(), role: 'student' });
+//     if (students.length === 0) {
+//       return res.status(404).json({ message: 'No students found for this class.' });
+//     }
+
+//     const schoolWallet = await Wallet.findOne({ userId: schoolId });
+
+//     const feeStatusList = [];
+//     const transactionList = [];
+//     const notificationList = [];
+//     const emailPromises = [];
+
+//     const fallbackEmail = 'taiwodavid19@gmail.com'; // Configurable fallback
+
+//     for (const student of students) {
+//       try {
+//         const timestamp = Date.now();
+//         const reference = `FEE-${student._id}-${timestamp}`;
+//         const studentWallet = await Wallet.findOne({ userId: student._id });
+
+//         if (!studentWallet) {
+//           console.warn(`No wallet found for student ${student.fullName} (${student._id})`);
+//           continue;
+//         }
+
+//         feeStatusList.push({
+//           studentId: student._id,
+//           feeId: updatedFee._id,
+//           schoolId,
+//           amount,
+//           feeType,
+//           session,
+//           className,
+//           transactionId: reference
+//           // amountPaid and paymentMethod intentionally excluded
+//         });
+
+//         const currentBalance = studentWallet.balance || 0;
+
+//         transactionList.push({
+//           senderWalletId: schoolWallet?._id || null,
+//           receiverWalletId: studentWallet._id,
+//           transactionType: 'school_fee_allocation',
+//           category: 'internal',
+//           amount,
+//           balanceBefore: currentBalance,
+//           balanceAfter: currentBalance,
+//           reference,
+//           description: `Fee of ₦${amount} updated for ${student.fullName} for ${feeType}, ${term}, ${session}`,
+//           status: 'success',
+//           metadata: {
+//             studentId: student._id,
+//             classId: classData._id,
+//             className,
+//             feeType,
+//             term,
+//             session,
+//             dueDate
+//           }
+//         });
+
+//         notificationList.push({
+//           userId: student._id,
+//           title: 'Fee Updated',
+//           message: `The fee of ₦${amount} has been updated for ${term} ${session}.`,
+//           read: false
+//         });
+
+//         emailPromises.push(
+//           sendEmail({
+//             to: [student.email, fallbackEmail],
+//             subject: 'New Fee Notification',
+//             html: `
+//               <p>Hello ${student.name},</p>
+//               <p>You have an updated fee of <strong>₦${amount}</strong> for <strong>${feeType}</strong>.</p>
+//               <p>Term: ${term} | Session: ${session} | Due: ${dueDate}</p>
+//               <p>Please log in to your portal to view details.</p>
+//             `
+//           })
+//         );
+//       } catch (studentErr) {
+//         console.error(`Error processing student ${student._id}:`, studentErr);
+//       }
+//     }
+
+//     await Promise.all([
+//       FeePayment.insertMany(feeStatusList),
+//       Transaction.insertMany(transactionList),
+//       Notification.insertMany(notificationList),
+//       ...emailPromises
+//     ]);
+
+//     res.status(200).json({ message: 'Fee updated successfully.', data: updatedFee });
+//   } catch (err) {
+//     console.error('Error:', err);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// };
+
+
+//  exports.updateFeeForClass = async (req, res) => {
+//   const currentUserId = req.user?.id;
+//   const user = await regUser.findById(currentUserId);
+//   const schoolId = user?.schoolId
+//   if (!schoolId) return res.status(400).json({ message: 'School ID not found' });
+//   const { className, amount, description, term, session, feeType, dueDate } = req.body;
+//   if (!className || !amount || !term || !session || !feeType || !dueDate) {
+//     return res.status(400).json({ message: 'Missing required fields' });
+//   }
+
+//   try {
+//     // Get class info
+//     const classData = await ClassUser.findOne({ className, schoolId });
+//     if (!classData) return res.status(404).json({ message: 'Class not found' });
+//     // Check if fee already exists for this class, term, and session
+//     const existingFee = await Fee.findOne({ classId: classData._id.toString(), term, session, feeType });
+//     if (!existingFee) return res.status(404).json({ message: 'Fee not found for this class, term, and session.' });
+//     //check if the fee is not active
+//     if (existingFee.status !== 'Active') {
+//       return res.status(409).json({ message: 'Fee is not active for this class, term, and session.' });
+//     }
+//     // Update the class-wide  fee record
+//     const updatedFee = await Fee.findByIdAndUpdate(existingFee._id, {
+//       classId: classData._id,
+//       className,
+//       schoolId,
+//       amount,
+//       description,
+//       session,
+//       feeType,
+//       dueDate,
+//       // updatedBy: currentUserId,
+//       status: 'Active'
+//     }, { new: true });
+//     // Get students in the class
+//     const students = await regUser.find({ Class: classData._id.toString(), role: 'student' });
+//     if (students.length === 0) {
+//       return res.status(404).json({ message: 'No students found for this class.' });
+//     }
+
+//     const schoolWallet = await Wallet.findOne({ userId: schoolId });
+//     // Prepare batched operations
+//     const feeStatusList = [];
+//     const transactionList = [];
+//     const notificationList = [];
+//     const emailPromises = [];
+
+//     for (const student of students) {
+//       try {
+//         const timestamp = Date.now();
+//         const reference = `FEE-${student._id}-${timestamp}`;
+//         const studentWallet = await Wallet.findOne({ userId: student._id });
+//         if (!studentWallet) {
+//           console.warn(`No wallet found for student ${student.fullName} (${student._id})`);
+//           continue; // Skip this student if no wallet is found
+//         }
+//         // Create fee status
+//         feeStatusList.push({
+//           studentId: student._id,
+//           feeId: updatedFee._id,
+//           schoolId,
+//           amount,
+//           feeType,
+//           session,
+//           className,
+//           amountPaid,
+//           paymentMethod,
+//           transactionId: reference
+//         });
+//         // Log transaction if wallet found
+//         if (studentWallet) {
+//           const currentBalance = studentWallet.balance || 0;
+//           transactionList.push({
+//             senderWalletId: schoolWallet?._id || null,
+//             receiverWalletId: studentWallet._id,
+//             transactionType: 'school_fee_allocation',
+//             category: 'internal',
+//             amount,
+//             balanceBefore: currentBalance,
+//             balanceAfter: currentBalance,
+//             reference,
+//             description: `Fee of ₦${amount} updated for ${student.fullName} for ${feeType}, ${term}, ${session}`,
+//             status: 'success',
+//             metadata: {
+//               studentId: student._id,
+//               classId: classData._id,
+//               className,
+//               feeType,
+//               term,
+//               session,
+//               dueDate
+//             }
+//           });
+//         }
+//         // Notification
+//         notificationList.push({
+//           userId: student._id,
+//           title: 'Fee Updated',
+//           message: `The fee of ₦${amount} has been updated for ${term} ${session}.`,
+//           read: false
+//         });
+//         // Email
+//         emailPromises.push(sendEmail({
+//           to: [student.email, 'taiwodavid19@gmail.com'],
+//           subject: 'New Fee Notification',
+//           html: `
+//             <p>Hello ${student.name},</p>
+//             <p>You have an updated fee of <strong>₦${amount}</strong> for <strong>${feeType}</strong>.</p>
+//             <p>Term: ${term} | Session: ${session} | Due: ${dueDate}</p>
+//             <p>Please log in to your portal to view details.</p>   `
+//         }));
+//       } catch (studentErr) {
+//         console.error(`Error processing student ${student._id}:`, studentErr);
+//       }
+//     }
+//     // Execute batched inserts
+//     await Promise.all([
+//       FeePayment.insertMany(feeStatusList),
+//       Transaction.insertMany(transactionList),
+//       Notification.insertMany(notificationList),
+//       ...emailPromises
+//     ]);
+//     res.status(200).json({ message: 'Fee updated successfully.', data: updatedFee });
+//   } catch (err) {
+//     console.error('Error:', err);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// }
 
 
 // Raise a fee using className
@@ -19,8 +462,8 @@ exports.raiseFeeForClass = async (req, res) => {
   const currentUserId = req.user?.id;
   const user = await regUser.findById(currentUserId);
   const schoolId = user?._id;
-  console.log('School ID:', schoolId); // Log the schoolId for debugging
-  console.log('Current User ID:', currentUserId); // Log the currentUserId for debugging
+  // console.log('School ID:', schoolId); // Log the schoolId for debugging
+  // console.log('Current User ID:', currentUserId); // Log the currentUserId for debugging
 
 
   if (!schoolId) return res.status(400).json({ message: 'School ID not found' });

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { initiateTransaction, verifyTransaction,verifyPinAndTransfer, getAllTransactions, getTransactionById, updateTransferMetadata,deleteTransaction, verifyPinAndTransferToAgent} = require('../Controllers/transactionController');
 const verifyToken = require('./verifyToken');
-const { getBank, resolveAccountNumber, withdrawal} = require('../Controllers/withdrawal');
+const { getBank, resolveAccountNumber, withdrawal, resolveAccount} = require('../Controllers/withdrawal');
 // const {} = require('../Controllers/transactionController');
 
 // Route to initiate a transaction
@@ -19,7 +19,8 @@ router.post('/transfertoagent', verifyToken, verifyPinAndTransferToAgent);
 router.put('/updatetransaction',verifyToken, updateTransferMetadata);
 router.delete('/dletetrans/:id',verifyToken, deleteTransaction);
 router.get('/banks', getBank); // Route to get banks from Paystack
-router.get('/resolve-account', verifyToken, resolveAccountNumber);
+router.get('/resolve-account', resolveAccountNumber);
+router.get('/resolveaccount', resolveAccount);
 // Route to handle withdrawal
 router.post('/withdraw', verifyToken, withdrawal);
 

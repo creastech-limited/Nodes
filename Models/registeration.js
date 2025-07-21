@@ -30,6 +30,12 @@ const userSchema = new mongoose.Schema({
     occupation: String,
     address: String
   },
+  bankDetails: {
+    accountName: String,
+    accountNumber: String,
+    bankName: String,
+    bankCode: String
+  },
   academicDetails: {
     classAdmittedTo: String,
     section: String,

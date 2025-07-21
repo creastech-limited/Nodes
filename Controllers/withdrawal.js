@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 require('dotenv').config();
+const https = require('https');
 const Wallet = require('../Models/walletSchema');
 const Transaction = require('../Models/transactionSchema');
 const { sendEmail } = require('../utils/email');
@@ -10,7 +11,7 @@ const {regUser} = require('../Models/registeration');
 //verify pin
 const bcrypt = require('bcryptjs');
 // Paystack secret key from environment variables
-const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+const PAYSTACK_SECRET_KEY = "sk_live_8c3db99b858cc67db585ff878a69eb5d73d8bbbc"//process.env.PAYSTACK_SECRET_KEY;
 
 exports.getBank =  async (req, res) => {
   try {
@@ -37,7 +38,7 @@ exports.resolveAccountNumber =  async (req, res) => {
 
   try {
     const response = await axios.get(`https://api.paystack.co/bank/resolve`, {
-      params: { account_number, bank_code },
+      body: { account_number, bank_code },
       headers: {
         Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`
       }
@@ -49,6 +50,48 @@ exports.resolveAccountNumber =  async (req, res) => {
     res.status(500).json({ error: 'Failed to verify account number' });
   }
 }
+
+exports.resolveAccount = async (req, res) => {
+  const { account_number, bank_code } = req.body;
+
+  if (!account_number || !bank_code) {
+    return res.status(400).json({ message: 'account_number and bank_code are required' });
+  }
+    const queryParams = `account_number=${account_number}&bank_code=${bank_code}`;
+  const options = {
+    hostname: 'api.paystack.co',
+    port: 443,
+    path: `/bank/resolve?${queryParams}`,
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`  
+    }
+  };
+
+  const paystackReq = https.request(options, (paystackRes) => {
+    let data = '';
+
+    paystackRes.on('data', (chunk) => {
+      data += chunk;
+    });
+
+    paystackRes.on('end', () => {
+      try {
+        const result = JSON.parse(data);
+        res.status(paystackRes.statusCode).json(result);
+      } catch (error) {
+        res.status(500).json({ message: 'Error parsing Paystack response', error: error.message });
+      }
+    });
+  });
+
+  paystackReq.on('error', (error) => {
+    res.status(500).json({ message: 'Error connecting to Paystack', error: error.message });
+  });
+
+  paystackReq.end();
+}
+
 
 
 //Withdrawal route
