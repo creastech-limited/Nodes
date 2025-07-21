@@ -264,7 +264,7 @@ exports.initiateTransaction = async (req, res) => {
 
     const userId = req.user?.id;
     console.log("User ID:", userId);
-    const systemWalletId = "6807b1ab7e897e850550121d"; // Get system wallet ID from request body
+    const systemWalletId = "687e6d9c817f9a454d12bc0e"; // Get system wallet ID from request body
     const userEmail = await regUser.findById(userId).select('email').then(user => user.email);
 
     console.log("User Email:", userEmail);
