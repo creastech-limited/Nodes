@@ -68,7 +68,10 @@ async function createChargesWallet(req, res) {
     }
 
     // Check if a charges wallet already exists for this user
-    const existing = await Wallet.findOne({ userId: data._id, walletName});
+    const existing = await Wallet.findOne({ 
+      userId: data._id, 
+      walletName: { $regex: `^${walletName}$`, $options: 'i' }, // Case-insensitive search});
+    });
     if (existing) {
       console.log("Charges wallet already exists:", existing._id);
       return res.status(409).json({
@@ -81,7 +84,7 @@ async function createChargesWallet(req, res) {
 
     const chargesWallet = await Wallet.create({
       userId: data._id,
-      walletName,
+      walletName: req.body.walletName,
       currency: 'NGN',
       type: 'charges',
       balance: 0,
