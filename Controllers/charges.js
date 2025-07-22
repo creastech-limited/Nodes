@@ -1,5 +1,6 @@
 const Charge = require('../Models/charges');
 const mongoose = require('mongoose');
+const {regUser} = require('../Models/registeration'); // Assuming this is the correct path for the user model
 
 // Function to create a new charge
 exports.createCharge = async (req, res) => {
