@@ -46,6 +46,11 @@ const transactionSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  charges: {
+    type: Number,
+    required: false,
+    default: 0 // Charges can be optional, e.g. for deposits
+  },
   description: {
     type: String,
     required: false,

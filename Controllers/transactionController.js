@@ -283,10 +283,7 @@ exports.initiateTransaction = async (req, res) => {
     if (!systemWallet) {
       return res.status(404).json({ message: 'System wallet not found' });
     }
-    const topupChargesWallet = await Wallet.findOne({ walletName: 'Topup Charge Wallet' });
-    if (!topupChargesWallet) {
-      return res.status(404).json({ message: 'Topup Charge Wallet not found' });
-    }
+   
     // get charges for topup
     const charge = await Charge.findOne({ name: 'Topup Charges' });
     if (!charge) {
@@ -311,6 +308,7 @@ exports.initiateTransaction = async (req, res) => {
 
     const balanceBefore = userWallet.balance || 0;
     const FRONTEND_URL_PROD = process.env.FRONTEND_URL_PROD || 'http://localhost:5174'; // Default to localhost if not set
+    
 
     // Call Paystack to initialize transaction
     const response = await axios.post(
@@ -319,6 +317,14 @@ exports.initiateTransaction = async (req, res) => {
         amount: (amount + chargeAmount) * 100, // Paystack expects amount in kobo
         email: userEmail,
         callback_url: `${FRONTEND_URL_PROD}/payment/callback`, // Change to real callback
+           metadata: {
+            chargeAmount: chargeAmount*100, // Store charge in kobo
+            topupAmount: amount*100, // Store topup amount in kobo
+            initiatedBy: userId,
+            email: userEmail,
+            platform: 'web',
+
+          },
       },
       {
         headers: {
@@ -339,6 +345,7 @@ exports.initiateTransaction = async (req, res) => {
       category: 'credit',
       amount,
       balanceBefore,
+      charges: chargeAmount,
       balanceAfter: balanceBefore, // Will update after verification
       reference,
       description: 'Wallet top-up via Paystack',
@@ -368,8 +375,7 @@ exports.initiateTransaction = async (req, res) => {
 exports.verifyTransaction = async (req, res) => {
   try {
     const reference = req.query.reference || req.params.reference;
-    console.log("Reference:", reference);
-    console.log(process.env.PAYSTACK_SECRET_KEY);
+    
     if (!reference) {
       return res.status(400).json({ status: false, message: 'Reference is required' });
     }
@@ -402,13 +408,18 @@ if (!userWallet) {
 // console.log("user._id value:", user._id.valueOf());
   return res.status(404).json({ status: false, message: 'Wallet not found' });
 }
-
+     const topupChargesWallet = await Wallet.findOne({ walletName: 'Topup Charge Wallet' });
+    if (!topupChargesWallet) {
+      return res.status(404).json({ message: 'Topup Charge Wallet not found' });
+    }
 
       const amount = data.amount / 100;
+      const chargeAmount = data.metadata.chargeAmount/100 || 0;
+      const topupAmount = data.metadata.topupAmount/100 || amount - chargeAmount;
       const balanceBefore = userWallet.balance;
-      const balanceAfter = balanceBefore + amount;
-      console.log("Balance Before:", balanceBefore);
-      console.log("Balance After:", balanceAfter);
+      const balanceAfter = balanceBefore + topupAmount;
+      // console.log("Balance Before:", balanceBefore);
+      // console.log("Balance After:", balanceAfter);
       // 🟡 Find the existing pending transaction by reference
       const existingTxn = await Transaction.findOne({ reference, status: 'pending' });
       if (!existingTxn) {
@@ -421,6 +432,7 @@ if (!userWallet) {
 
       // ✅ Update the transaction record
       existingTxn.status = 'success';
+      existingTxn.charges = chargeAmount;
       existingTxn.balanceAfter = balanceAfter;
       existingTxn.updatedAt = new Date();
       existingTxn.senderWalletId = userWallet._id;
