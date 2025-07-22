@@ -3,6 +3,14 @@ const mongoose = require('mongoose');
 
 // Function to create a new charge
 exports.createCharge = async (req, res) => {
+    const userId = req.user?.id
+    if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+    }
+    const user = await regUser.findById(userId);
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+    }
     const { name, chargeType, amount, description } = req.body;
     if (!name || !chargeType || amount === undefined) {
         return res.status(400).json({ message: 'All fields are required' });
@@ -16,7 +24,7 @@ exports.createCharge = async (req, res) => {
             chargeType,
             amount,
             description,
-            createdBy: req.user.id
+            createdBy:user._id
         });
         await charge.save();
         res.status(201).json({ message: 'Charge created successfully', charge });
