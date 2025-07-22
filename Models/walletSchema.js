@@ -12,7 +12,7 @@ const walletSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
   lastTransaction: { type: Date },
   lastTransactionAmount: { type: Number, default: 0 },
-  lastTransactionType: { type: String, enum: ['credit', 'debit'], default: '' },
+  lastTransactionType: { type: String, enum: ['credit', 'debit'], default: 'credit' },
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
   phone: { type: String },
