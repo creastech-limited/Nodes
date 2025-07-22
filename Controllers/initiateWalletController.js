@@ -4,7 +4,6 @@ const Wallet = require('../Models/walletSchema');  // Import Wallet model
 
 async function createSystemWallet(req, res) {
   const  id = req.user?.id || req.body;
-  console.log("Creating system wallet for email:", id);
   if (!id) {
     return res.status(400).json({ message: 'User ID is required' });
   }
@@ -51,13 +50,65 @@ async function createSystemWallet(req, res) {
   }
 }
 
+//create charges wallet for users
+async function createChargesWallet(req, res) {
+  const userId = req.user?.id || req.body.userId;
+  console.log("Creating charges wallet for user ID:", userId);
+  if (!userId) {
+    return res.status(400).json({ message: 'User ID is required' });
+  }
+  const {walletName} = req.body;
+  if (!walletName) {
+    return res.status(400).json({ message: 'Wallet name is required' });
+  } 
+  try {
+    const data = await regUser.findById(userId.toString()).select('email firstName lastName phone');
+    if (!data) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
+    // Check if a charges wallet already exists for this user
+    const existing = await Wallet.findOne({ userId: data._id, walletName});
+    if (existing) {
+      console.log("Charges wallet already exists:", existing._id);
+      return res.status(409).json({
+        message: "Charges wallet already exists",
+        walletId: existing._id,
+        walletType: existing.type,
+        walletBalance: existing.balance
+      });
+    }
+
+    const chargesWallet = await Wallet.create({
+      userId: data._id,
+      walletName,
+      currency: 'NGN',
+      type: 'charges',
+      balance: 0,
+      email: data.email,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      phone: data.phone,
+    });
+
+    console.log("Charges wallet created:", chargesWallet._id);
+    return res.status(201).json({
+      message: 'Charges wallet created successfully',
+      walletId: chargesWallet._id,
+      user: data
+    });
+
+  } catch (error) {
+    console.error("Error creating charges wallet:", error);
+    res.status(500).json({ message: error.message });
+  }
+}
 
 
 
 async function initializeWalletsForUsers() {
   try {
-    const users = await User.find();
+    const users = await regUser.find();
     const userCount = users.length;
     console.log(`Total users found: ${userCount}`);
 
@@ -95,5 +146,6 @@ async function initializeWalletsForUsers() {
 
 module.exports = {
   createSystemWallet,
-  initializeWalletsForUsers
+  initializeWalletsForUsers,
+  createChargesWallet
 };
