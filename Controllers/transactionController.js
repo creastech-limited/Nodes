@@ -288,7 +288,7 @@ exports.initiateTransaction = async (req, res) => {
       return res.status(404).json({ message: 'Topup Charge Wallet not found' });
     }
     // get charges for topup
-    const charge = await Charge.findOne({ name: 'Topup Charge' });
+    const charge = await Charge.findOne({ name: 'Topup Charges' });
     if (!charge) {
       return res.status(404).json({ message: 'Topup Charge not found' });
     }
