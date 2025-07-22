@@ -4,6 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const Transaction = require('../Models/transactionSchema'); // Import Transaction model
 const {regUser} = require('../Models/registeration'); // Import User model
 const Wallet = require('../Models/walletSchema'); // Import Wallet model
+const Charge = require('../Models/charges'); // Import Charges model
 // const verifyToken = require('../routes/verifyToken'); // Import verifyToken middleware
 
 // Get all transactions
@@ -264,7 +265,8 @@ exports.initiateTransaction = async (req, res) => {
 
     const userId = req.user?.id;
     console.log("User ID:", userId);
-    const systemWalletId = "687e6d9c817f9a454d12bc0e"; // Get system wallet ID from request body
+    //find Wallet by Name Topup charges
+    const systemWalletId = process.env.SYSTEM_WALLET_ID; // Get system wallet ID from request body
     const userEmail = await regUser.findById(userId).select('email').then(user => user.email);
 
     console.log("User Email:", userEmail);
@@ -281,6 +283,26 @@ exports.initiateTransaction = async (req, res) => {
     if (!systemWallet) {
       return res.status(404).json({ message: 'System wallet not found' });
     }
+    const topupChargesWallet = await Wallet.findOne({ walletName: 'Topup Charge Wallet' });
+    if (!topupChargesWallet) {
+      return res.status(404).json({ message: 'Topup Charge Wallet not found' });
+    }
+    // get charges for topup
+    const charge = await Charge.findOne({ name: 'Topup Charge' });
+    if (!charge) {
+      return res.status(404).json({ message: 'Topup Charge not found' });
+    }
+    // Calculate charge amount if charge type is Flat put the charge amount as is, if charge type is Percentage calculate the percentage of the amount not greater than 500
+    let chargeAmount = 0;
+    if (charge.chargeType === 'Flat') {
+      chargeAmount = charge.amount;
+    } else if (charge.chargeType === 'Percentage') {
+      chargeAmount = Math.min((amount * charge.amount) / 100, 500);
+    } else {
+      return res.status(400).json({ message: 'Invalid charges type' });
+    }
+    
+
     // Fetch user's wallet
     const userWallet = await Wallet.findOne({ userId });
     if (!userWallet) {
@@ -294,7 +316,7 @@ exports.initiateTransaction = async (req, res) => {
     const response = await axios.post(
       'https://api.paystack.co/transaction/initialize',
       {
-        amount: amount * 100,
+        amount: (amount + chargeAmount) * 100, // Paystack expects amount in kobo
         email: userEmail,
         callback_url: `${FRONTEND_URL_PROD}/payment/callback`, // Change to real callback
       },
