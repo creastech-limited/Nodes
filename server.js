@@ -50,6 +50,7 @@ db.on('error', (error) => console.error('MongoDB connection error:', error));
 
 // routes
 const authRoute = require('./routes/auth');
+const chargeRoute = require('./routes/charge'); // ✅ Correct route file
 const feeRoute = require('./routes/fees');// ✅ Correct route file
 const pinRoute = require('./routes/pin'); // ✅ Correct route file
 const disputeRoute = require('./routes/dispute'); // ✅ Correct route file
@@ -78,6 +79,7 @@ app.use('/api/pin', pinRoute); // e.g., /api/pin will work
 app.use('/api/fee', feeRoute); // e.g., /api/fee will work
 app.use('/api', r); // e.g., /api/feedback will work
 app.use('/api/dispute', disputeRoute); // e.g., /api/dispute will work
+app.use('/api/charge', chargeRoute); // e.g., /api/charge will work
 app.use('/api/wallet', walletRoute); // e.g., /api/wallet will work
 app.use('/api/otp', otpRoute); // e.g., /api/otp will work
 // const registerRoute = require('./routes/register'); // ✅ Correct route file
