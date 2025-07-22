@@ -372,10 +372,163 @@ exports.initiateTransaction = async (req, res) => {
 };
 
 
+// exports.verifyTransaction = async (req, res) => {
+//   try {
+//     const reference = req.query.reference || req.params.reference;
+    
+//     if (!reference) {
+//       return res.status(400).json({ status: false, message: 'Reference is required' });
+//     }
+
+//     const response = await axios.get(
+//       `https://api.paystack.co/transaction/verify/${reference}`,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+//           'Content-Type': 'application/json',
+//         },
+//       }
+//     );
+
+//     const data = response.data.data;
+
+//     if (data.status === 'success' && data.paid_at) {
+//       const userEmail = data.customer.email;
+
+//       const user = await regUser.findOne({ email: userEmail });
+// if (!user) {
+//   return res.status(404).json({ status: false, message: 'User not found' });
+// }
+
+// const userWallet = await Wallet.findOne({ userId: user._id.toString(), type: 'user' });
+// if (!userWallet) {
+// //   console.log("User Wallet not found for userId:", user._id.toString());
+// //   console.log("typeof user._id:", typeof user._id);
+// // console.log("user._id constructor:", user._id.constructor.name);
+// // console.log("user._id value:", user._id.valueOf());
+//   return res.status(404).json({ status: false, message: 'Wallet not found' });
+// }
+//      const topupChargesWallet = await Wallet.findOne({ walletName: 'Topup Charge Wallet' });
+//     if (!topupChargesWallet) {
+//       return res.status(404).json({ message: 'Topup Charge Wallet not found' });
+//     }
+
+//       const amount = data.amount / 100;
+//       const chargeAmount = data.metadata.chargeAmount/100 || 0;
+//       const topupAmount = data.metadata.topupAmount/100 || amount - chargeAmount;
+//       const balanceBefore = userWallet.balance;
+//       const balanceAfter = balanceBefore + topupAmount;
+//       // console.log("Balance Before:", balanceBefore);
+//       // console.log("Balance After:", balanceAfter);
+//       // 🟡 Find the existing pending transaction by reference
+//       const existingTxn = await Transaction.findOne({ reference, status: 'pending' });
+//       if (!existingTxn) {
+//         return res.status(404).json({ status: false, message: 'Pending transaction not found' });
+//       }
+
+//       // ✅ Update wallet balance
+//       userWallet.balance = balanceAfter;
+//       //update topup charges wallet
+//       topupChargesWallet = {
+//         ...topupChargesWallet,
+//         balance: topupChargesWallet.balance + chargeAmount,
+//         lastTransaction: new Date(),
+//         lastTransactionAmount: chargeAmount,
+//         lastTransactionType: 'credit'
+//       }
+//       await userWallet.save();
+
+//       // ✅ Update the transaction record
+//       existingTxn.status = 'success';
+//       existingTxn.charges = chargeAmount;
+//       existingTxn.balanceAfter = balanceAfter;
+//       existingTxn.updatedAt = new Date();
+//       existingTxn.senderWalletId = userWallet._id;
+//       existingTxn.receiverWalletId = userWallet._id;
+//       await existingTxn.save();
+
+//       return res.status(200).json({
+//         status: true,
+//         message: 'Payment verified, wallet funded, and transaction updated',
+//         data
+//       });
+
+//     } else {
+//       return res.status(400).json({
+//         status: false,
+//         message: `Transaction not completed. Status: ${data.status}`,
+//         gateway_response: data.gateway_response,
+//         data
+//       });
+//     }
+
+//   } catch (err) {
+//     console.error('Error verifying payment:', err.message);
+//     return res.status(500).json({
+//       status: false,
+//       message: `Server error verifying payment: ${err.message}`,
+//       error: err.response?.data || err.message
+//     });
+//   }
+// };
+
+// exports.getAllSchoolTransactions = async (req, res) => {
+//   try {
+//     const schoolId = req.user?.schoolId;
+
+//     if (!schoolId) {
+//       return res.status(401).json({
+//         success: false,
+//         message: 'Unauthorized: No school ID found in token'
+//       });
+//     }
+
+//     // Find all students under the school
+//     const students = await User.find({ role: 'student', schoolId }, '_id');
+
+//     if (students.length === 0) {
+//       return res.status(200).json({
+//         success: true,
+//         message: 'No students found for this school',
+//         data: []
+//       });
+//     }
+
+//     const studentIds = students.map(student => student._id);
+
+//     // Get all wallets for those students
+//     const wallets = await Wallet.find({ userId: { $in: studentIds } }, '_id');
+//     const walletIds = wallets.map(wallet => wallet._id);
+
+//     // Find transactions where sender or receiver is among those wallets
+//     const transactions = await Transaction.find({
+//       $or: [
+//         { senderWalletId: { $in: walletIds } },
+//         { receiverWalletId: { $in: walletIds } }
+//       ]
+//     })
+//       .populate('senderWalletId')
+//       .populate('receiverWalletId')
+//       .sort({ createdAt: -1 });
+
+//     res.status(200).json({
+//       success: true,
+//       message: `${transactions.length} transaction(s) found for school`,
+//       data: transactions
+//     });
+//   } catch (error) {
+//     console.error('Error fetching school transactions:', error.message);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Error fetching transactions for school'
+//     });
+//   }
+// };
+
 exports.verifyTransaction = async (req, res) => {
   try {
     const reference = req.query.reference || req.params.reference;
-    
+
     if (!reference) {
       return res.status(400).json({ status: false, message: 'Reference is required' });
     }
@@ -394,43 +547,47 @@ exports.verifyTransaction = async (req, res) => {
 
     if (data.status === 'success' && data.paid_at) {
       const userEmail = data.customer.email;
-
       const user = await regUser.findOne({ email: userEmail });
-if (!user) {
-  return res.status(404).json({ status: false, message: 'User not found' });
-}
+      if (!user) {
+        return res.status(404).json({ status: false, message: 'User not found' });
+      }
 
-const userWallet = await Wallet.findOne({ userId: user._id.toString(), type: 'user' });
-if (!userWallet) {
-//   console.log("User Wallet not found for userId:", user._id.toString());
-//   console.log("typeof user._id:", typeof user._id);
-// console.log("user._id constructor:", user._id.constructor.name);
-// console.log("user._id value:", user._id.valueOf());
-  return res.status(404).json({ status: false, message: 'Wallet not found' });
-}
-     const topupChargesWallet = await Wallet.findOne({ walletName: 'Topup Charge Wallet' });
-    if (!topupChargesWallet) {
-      return res.status(404).json({ message: 'Topup Charge Wallet not found' });
-    }
+      const userWallet = await Wallet.findOne({ userId: user._id.toString(), type: 'user' });
+      if (!userWallet) {
+        return res.status(404).json({ status: false, message: 'Wallet not found' });
+      }
+
+      const topupChargesWallet = await Wallet.findOne({ walletName: 'Topup Charge Wallet' });
+      if (!topupChargesWallet) {
+        return res.status(404).json({ message: 'Topup Charge Wallet not found' });
+      }
 
       const amount = data.amount / 100;
-      const chargeAmount = data.metadata.chargeAmount/100 || 0;
-      const topupAmount = data.metadata.topupAmount/100 || amount - chargeAmount;
+
+      const metadata = data.metadata || {};
+      const chargeAmount = metadata.chargeAmount ? metadata.chargeAmount / 100 : 0;
+      const topupAmount = metadata.topupAmount ? metadata.topupAmount / 100 : amount - chargeAmount;
+
       const balanceBefore = userWallet.balance;
       const balanceAfter = balanceBefore + topupAmount;
-      // console.log("Balance Before:", balanceBefore);
-      // console.log("Balance After:", balanceAfter);
-      // 🟡 Find the existing pending transaction by reference
+
       const existingTxn = await Transaction.findOne({ reference, status: 'pending' });
       if (!existingTxn) {
         return res.status(404).json({ status: false, message: 'Pending transaction not found' });
       }
 
-      // ✅ Update wallet balance
+      // ✅ Update user wallet balance
       userWallet.balance = balanceAfter;
       await userWallet.save();
 
-      // ✅ Update the transaction record
+      // ✅ Update topup charges wallet balance and info
+      topupChargesWallet.balance += chargeAmount;
+      topupChargesWallet.lastTransaction = new Date();
+      topupChargesWallet.lastTransactionAmount = chargeAmount;
+      topupChargesWallet.lastTransactionType = 'credit';
+      await topupChargesWallet.save();
+
+      // ✅ Update transaction
       existingTxn.status = 'success';
       existingTxn.charges = chargeAmount;
       existingTxn.balanceAfter = balanceAfter;
@@ -464,58 +621,6 @@ if (!userWallet) {
   }
 };
 
-exports.getAllSchoolTransactions = async (req, res) => {
-  try {
-    const schoolId = req.user?.schoolId;
-
-    if (!schoolId) {
-      return res.status(401).json({
-        success: false,
-        message: 'Unauthorized: No school ID found in token'
-      });
-    }
-
-    // Find all students under the school
-    const students = await User.find({ role: 'student', schoolId }, '_id');
-
-    if (students.length === 0) {
-      return res.status(200).json({
-        success: true,
-        message: 'No students found for this school',
-        data: []
-      });
-    }
-
-    const studentIds = students.map(student => student._id);
-
-    // Get all wallets for those students
-    const wallets = await Wallet.find({ userId: { $in: studentIds } }, '_id');
-    const walletIds = wallets.map(wallet => wallet._id);
-
-    // Find transactions where sender or receiver is among those wallets
-    const transactions = await Transaction.find({
-      $or: [
-        { senderWalletId: { $in: walletIds } },
-        { receiverWalletId: { $in: walletIds } }
-      ]
-    })
-      .populate('senderWalletId')
-      .populate('receiverWalletId')
-      .sort({ createdAt: -1 });
-
-    res.status(200).json({
-      success: true,
-      message: `${transactions.length} transaction(s) found for school`,
-      data: transactions
-    });
-  } catch (error) {
-    console.error('Error fetching school transactions:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching transactions for school'
-    });
-  }
-};
 
 exports.verifyPinAndTransfer = async (req, res) => {
   const senderId = req.user?.id;
