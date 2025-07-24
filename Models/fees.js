@@ -34,7 +34,7 @@ const feePaymentSchema = new mongoose.Schema({
   session: { type: String }, // e.g., "2024/2025",
   className: { type: String, required: true },
   schoolId: { type: String, required: true },
-  amountPaid: { type: Number },
+  amountPaid: { type: Number, default: 0 },
   paymentMethod: { type: String, enum: ['bank_transfer', 'card_payment', 'wallet_transfer', 'cash', 'none'] },
   transactionId: { type: String }, // Reference to the transaction,
   paymentDate: { type: Date, default: Date.now },

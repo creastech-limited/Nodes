@@ -1167,6 +1167,7 @@ exports.payFee = async (req, res) => {
       await failTransaction('Fee not assigned to this student', fee, student);
       return res.status(404).json({ message: 'Fee not assigned to this student' });
     }
+      console.log("feeStatus", feeStatus.amountPaid);
 
     const payer = await regUser.findById(userId);
     const payerWallet = await Wallet.findOne({ userId });
