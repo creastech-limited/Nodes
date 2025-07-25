@@ -170,11 +170,11 @@ exports.withdrawal = async (req, res) => {
       return res.status(400).json({ error: 'Invalid account number format' });
     }
 
-    if (!/^\d{3,4}$/.test(bank_code)) {
-      await failTransaction('Invalid bank code format', null, null, senderWallet, null, amount);
-      await sendNotification(currentUserId, '❌ Withdrawal failed: Invalid bank code format', 'error');
-      return res.status(400).json({ error: 'Invalid bank code format' });
-    }
+    // if (!/^\d{3,4}$/.test(bank_code)) {
+    //   await failTransaction('Invalid bank code format', null, null, senderWallet, null, amount);
+    //   await sendNotification(currentUserId, '❌ Withdrawal failed: Invalid bank code format', 'error');
+    //   return res.status(400).json({ error: 'Invalid bank code format' });
+    // }
 
     const validPin =  bcrypt.compare(pin, user.pin)
     if (!validPin) {
