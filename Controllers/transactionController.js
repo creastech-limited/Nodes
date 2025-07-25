@@ -106,10 +106,10 @@ exports.getTransactionById = async (req, res) => {
     { receiverWalletId: wallet._id, category: 'credit', transactionType: { $ne: 'reversal' } },
 
     // Reversal debit: user's wallet was debited (e.g., money taken back)
-    { receiverWalletId: wallet._id, category: 'credit', transactionType: 'reversal' },
+    { senderWalletId: wallet._id, category: 'credit', transactionType: 'reversal' },
 
     // Reversal credit: user's wallet was credited (e.g., money refunded)
-    { receiverWalletId: wallet._id, category: 'debit', transactionType: 'reversal' }
+    { senderWalletId: wallet._id, category: 'debit', transactionType: 'reversal' }
   ]
     })
       .populate('senderWalletId')
