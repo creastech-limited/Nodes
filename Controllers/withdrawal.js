@@ -52,7 +52,7 @@ exports.resolveAccountNumber =  async (req, res) => {
 }
 
 exports.resolveAccount = async (req, res) => {
-  const { account_number, bank_code } = req.body;
+  const { account_number, bank_code } = req.params;
 
   if (!account_number || !bank_code) {
     return res.status(400).json({ message: 'account_number and bank_code are required' });
