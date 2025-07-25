@@ -19,7 +19,7 @@ const transactionSchema = new mongoose.Schema({
       // Credit
       'deposit', 'wallet_transfer_received', 'loan_disbursement', 'refund', 'salary_payment', 'bonus', 'wallet_topup', 'fee_payment_received',
       // Debit
-      'withdrawal', 'wallet_transfer_sent', 'loan_repayment', 'purchase', 'fee_payment', 'subscription_payment', 'wallet_deduction',
+      'withdrawal', 'wallet_transfer_sent', 'loan_repayment', 'purchase', 'fee_payment', 'subscription_payment', 'wallet_deduction', 'bank_transfer',
       // Internal
       'internal_adjustment', 'commission_credit', 'commission_debit', 'wallet_to_loan_wallet', 'school_fee_allocation',
       // Withdrawal

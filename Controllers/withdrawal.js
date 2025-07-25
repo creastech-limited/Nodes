@@ -231,7 +231,7 @@ exports.withdrawal = async (req, res) => {
     const trx = await Transaction.create({
       senderWalletId: senderWallet._id,
       receiverWalletId: null,
-      transactionType: 'bank_transfer',
+      transactionType: 'withdrawal_completed',
       category: 'debit',
       amount,
       balanceBefore: senderBalanceBefore,
