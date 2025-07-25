@@ -269,3 +269,51 @@ exports.withdrawal = async (req, res) => {
     res.status(500).json({ error: 'Bank transfer failed' });
   }
 };
+
+// withdrawal rereversal
+
+
+exports.reverseWithdrawal = async (req, res) => {
+  const currentUserId = req.user?.id;
+  if (!currentUserId) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  const { amount } = req.body;
+
+  if (!amount) {
+    return res.status(400).json({ message: 'amount are required' });
+  }
+
+  try {
+    const wallet = await Wallet.findOne({userId: currentUserId });
+
+    if (!wallet) return res.status(404).json({ message: 'Wallet not found' });
+
+    // Credit back the withdrawn amount
+    wallet.balance += Number(amount);
+    await wallet.save();
+
+    // Log the reversal transaction
+    await Transaction.create({
+      senderWalletId: wallet._id,
+      receiverWalletId: wallet._id,
+      transactionType: 'withdrawal_reversal',
+      category: 'credit',
+      amount: Number(amount),
+      balanceBefore: wallet.balance - Number(amount),
+      balanceAfter: wallet.balance,
+      reference: generateReference('REV'),
+      description: `Reversal of withdrawal transaction of ₦${amount}`,
+      status: 'success',
+      metadata: {
+        userId: currentUserId,
+        reason: 'Withdrawal reversal'
+      }
+    });
+
+    res.status(200).json({ message: 'Withdrawal reversed and wallet credited successfully' });
+  } catch (error) {
+    console.error('Reversal error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
