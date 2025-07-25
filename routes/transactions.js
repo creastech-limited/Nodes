@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { initiateTransaction, verifyTransaction,verifyPinAndTransfer, getAllTransactions, getTransactionById, updateTransferMetadata,deleteTransaction, verifyPinAndTransferToAgent} = require('../Controllers/transactionController');
+const { initiateTransaction, verifyTransaction,verifyPinAndTransfer, reverseUnloggedTransaction,getAllTransactions, getTransactionById, updateTransferMetadata,deleteTransaction, verifyPinAndTransferToAgent} = require('../Controllers/transactionController');
 const verifyToken = require('./verifyToken');
 const { getBank, resolveAccountNumber, withdrawal, resolveAccount} = require('../Controllers/withdrawal');
 // const {} = require('../Controllers/transactionController');
@@ -23,5 +23,7 @@ router.get('/resolve-account', resolveAccountNumber);
 router.get('/resolveaccount', resolveAccount);
 // Route to handle withdrawal
 router.post('/withdraw', verifyToken, withdrawal);
+// Route to reverse unlogged transaction
+router.post('/reverseunloggedtransaction', reverseUnloggedTransaction);
 
 module.exports = router

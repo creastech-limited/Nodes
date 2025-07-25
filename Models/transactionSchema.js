@@ -21,12 +21,17 @@ const transactionSchema = new mongoose.Schema({
       // Debit
       'withdrawal', 'wallet_transfer_sent', 'loan_repayment', 'purchase', 'fee_payment', 'subscription_payment', 'wallet_deduction',
       // Internal
-      'internal_adjustment', 'commission_credit', 'commission_debit', 'wallet_to_loan_wallet', 'school_fee_allocation'
+      'internal_adjustment', 'commission_credit', 'commission_debit', 'wallet_to_loan_wallet', 'school_fee_allocation',
+      // Withdrawal
+      'withdrawal_request', 'withdrawal_approved', 'withdrawal_rejected', 'withdrawal_completed', 'withdrawal_failed',
+      // reverse
+      'reverse_transaction', 'reversal_request', 'reversal_approved', 'reversal_rejected', 'reversal_completed', 'reversal_failed', 'reversal'
+
     ]
   },
   category: {
     type: String,
-    enum: ['credit', 'debit', 'internal'],
+    enum: ['credit', 'debit', 'internal', 'withdrawal', 'deposit'],
     required: true
   },
   amount: {

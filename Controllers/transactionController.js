@@ -99,8 +99,11 @@ exports.getTransactionById = async (req, res) => {
     // - user is receiver and transaction is credit (money received)
     const transactions = await Transaction.find({
       $or: [
-        { senderWalletId: wallet._id, category: 'debit' },
-        { receiverWalletId: wallet._id, category: 'credit' }
+        { senderWalletId: wallet._id, category: 'debit'},// Debit transactions (money sent)
+        { receiverWalletId: wallet._id, transactionType: 'reversal', category: 'debit' },// Credit transactions (money sent)
+        //reversal transactions credit
+        { senderWalletId: wallet._id, transactionType: 'reversal', category:'credit'},// Reversal transactions (money received)
+        { receiverWalletId: wallet._id, category: 'credit'}// Credit transactions (money received)
       ]
     })
       .populate('senderWalletId')
@@ -1015,3 +1018,105 @@ exports.deleteTransaction = async (req, res) => {
   }
 };
 
+// Reverse an unlogged transaction
+exports.reverseUnloggedTransaction = async (req, res) => {
+  try {
+    const { senderEmail, receiverEmail, amount, reason } = req.body;
+
+    if (!senderEmail || !receiverEmail || !amount || !reason) {
+      return res.status(400).json({
+        success: false,
+        message: 'Sender email, receiver email, amount, and reason are required'
+      });
+    }
+
+    const numericAmount = Number(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Amount must be a valid positive number'
+      });
+    }
+
+    const senderUser = await regUser.findOne({ email: senderEmail });
+    const receiverUser = await regUser.findOne({ email: receiverEmail });
+
+    if (!senderUser || !receiverUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'Sender or receiver not found'
+      });
+    }
+
+    const senderWallet = await Wallet.findOne({ userId: senderUser._id });
+    const receiverWallet = await Wallet.findOne({ userId: receiverUser._id });
+
+    if (!senderWallet || !receiverWallet) {
+      return res.status(404).json({
+        success: false,
+        message: 'Sender or receiver wallet not found'
+      });
+    }
+
+    if (receiverWallet.balance < numericAmount) {
+      return res.status(400).json({
+        success: false,
+        message: "Insufficient balance in receiver's wallet"
+      });
+    }
+
+    // Perform reversal
+    receiverWallet.balance -= numericAmount;
+    senderWallet.balance += numericAmount;
+
+    await receiverWallet.save();
+    await senderWallet.save();
+
+    // Log debit (receiver) and credit (sender)
+    const debitTransaction = new Transaction({
+      senderWalletId: receiverWallet._id,
+      receiverWalletId: senderWallet._id,
+      transactionType: 'reversal',
+      category: 'debit',
+      amount: numericAmount,
+      balanceBefore: receiverWallet.balance + numericAmount,
+      balanceAfter: receiverWallet.balance,
+      reference: `REV-${uuidv4()}`,
+      description: `Reversal: ${receiverEmail} to ${senderEmail}`,
+      status: 'success',
+      metadata: { reason, senderEmail, receiverEmail }
+    });
+
+    const creditTransaction = new Transaction({
+      senderWalletId: senderWallet._id,
+      receiverWalletId: receiverWallet._id,
+      transactionType: 'reversal',
+      category: 'credit',
+      amount: numericAmount,
+      balanceBefore: senderWallet.balance - numericAmount,
+      balanceAfter: senderWallet.balance,
+      reference: `REV-${uuidv4()}`,
+      description: `Reversal: ${receiverEmail} to ${senderEmail}`,
+      status: 'success',
+      metadata: { reason, senderEmail: receiverEmail, receiverEmail: senderEmail }
+    });
+
+    await debitTransaction.save();
+    await creditTransaction.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Unlogged transaction reversed successfully',
+      data: {
+        debitTransaction,
+        creditTransaction
+      }
+    });
+  } catch (error) {
+    console.error('Error reversing unlogged transaction:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while reversing transaction'
+    });
+  }
+};
