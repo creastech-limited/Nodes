@@ -4,7 +4,7 @@ require('dotenv').config();
 const https = require('https');
 const Wallet = require('../Models/walletSchema');
 const Transaction = require('../Models/transactionSchema');
-const { sendEmail } = require('../utils/email');
+const sendEmail = require('../utils/email');
 const { sendNotification } = require('../utils/notification');
 const { generateReference } = require('../utils/generatereference');
 const {regUser} = require('../Models/registeration');
@@ -315,5 +315,7 @@ exports.reverseWithdrawal = async (req, res) => {
   } catch (error) {
     console.error('Reversal error:', error);
     res.status(500).json({ message: 'Internal server error' });
+    // Optionally, you can log the error to a monitoring service
+
   }
 };
