@@ -84,7 +84,7 @@ exports.getTransactionById = async (req, res) => {
         message: 'Unauthorized: No user ID in token'
       });
     }
-
+    const userEmail = regUser.findById(userId).select('email').then(user => user.email);
     // Find the user's wallet
     const wallet = await Wallet.findOne({ userId });
     if (!wallet) {
@@ -99,12 +99,18 @@ exports.getTransactionById = async (req, res) => {
     // - user is receiver and transaction is credit (money received)
     const transactions = await Transaction.find({
       $or: [
-        { senderWalletId: wallet._id, category: 'debit'},// Debit transactions (money sent)
-        { receiverWalletId: wallet._id, transactionType: 'reversal', category: 'debit' },// Credit transactions (money sent)
-        //reversal transactions credit
-        { senderWalletId: wallet._id, transactionType: 'reversal', category:'credit'},// Reversal transactions (money received)
-        { receiverWalletId: wallet._id, category: 'credit'}// Credit transactions (money received)
-      ]
+    // Normal debit: user sent money
+    { senderWalletId: wallet._id, category: 'debit', transactionType: { $ne: 'reversal' } },
+
+    // Normal credit: user received money
+    { receiverWalletId: wallet._id, category: 'credit', transactionType: { $ne: 'reversal' } },
+
+    // Reversal debit: user's wallet was debited (e.g., money taken back)
+    { receiverWalletId: wallet._id, category: 'credit', transactionType: 'reversal' },
+
+    // Reversal credit: user's wallet was credited (e.g., money refunded)
+    { receiverWalletId: wallet._id, category: 'debit', transactionType: 'reversal' }
+  ]
     })
       .populate('senderWalletId')
       .populate('receiverWalletId')
