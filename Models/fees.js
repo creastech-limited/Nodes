@@ -38,7 +38,7 @@ const feePaymentSchema = new mongoose.Schema({
   paymentMethod: { type: String, enum: ['bank_transfer', 'card_payment', 'wallet_transfer', 'cash', 'none'] },
   transactionId: { type: String }, // Reference to the transaction,
   paymentDate: { type: Date, default: Date.now },
-  status: { type: String, enum: ['Unpaid', 'Completed', 'Failed','partial'], default: 'Unpaid' },
+  status: { type: String, enum: ['Unpaid', 'Completed', 'Failed','partial', 'paid','Paid'], default: 'Unpaid' },
 }, { timestamps: true });
 const FeePayment = mongoose.model('FeePayment', feePaymentSchema);
 
