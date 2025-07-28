@@ -323,7 +323,12 @@ exports.withdrawal = async (req, res) => {
     if (senderBalanceBefore < amount) {
       return res.status(400).json({ message: 'Insufficient balance' });
     }
-    const amountInKobo = amount * 100; // Convert to Kobo for Paystack
+    const rawAmount = Number(amount);
+    if (isNaN(rawAmount) || rawAmount <= 0) {
+        return res.status(400).json({ message: 'Invalid amount passed' });
+        }
+
+const amountInKobo = Math.floor(rawAmount * 100); // Ensures it's an integer
     // Make transfer
     const transferResponse = await initiateTransfer({
       amountInKobo,
