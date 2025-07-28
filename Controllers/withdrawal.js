@@ -316,26 +316,24 @@ exports.withdrawal = async (req, res) => {
 
     // Get recipient code (cached or new)
     const recipientCode = await getOrCreateRecipient(account_number, bank_code, currentUser.name);
-    console.log('Recipient code:', recipientCode);  
+    // console.log('Recipient code:', recipientCode);  
 
     
  const senderBalanceBefore = senderWallet.balance;
     if (senderBalanceBefore < amount) {
       return res.status(400).json({ message: 'Insufficient balance' });
     }
-    const rawAmount = Number(amount);
-    if (isNaN(rawAmount) || rawAmount <= 0) {
-        return res.status(400).json({ message: 'Invalid amount passed' });
-        }
-
-const amountInKobo = Math.floor(rawAmount * 100); // Ensures it's an integer
-    // Make transfer
+   amount = Number(amount);
+    if (isNaN(amount) || amount <= 0) {
+      return res.status(400).json({ message: 'Invalid amount passed' });
+    }
+    amount = amount*100    // Make transfer
     const transferResponse = await initiateTransfer({
-      amountInKobo,
+      amount,
       recipientCode,
       reason: description
     });
-   
+   amount = amount / 100; // Convert back to naira for logging
     const senderBalanceAfter = senderBalanceBefore - amount;
     senderWallet.balance = senderBalanceAfter;
     await senderWallet.save();
