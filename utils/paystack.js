@@ -1,8 +1,5 @@
-const https = require('https');
-const Recipient = require('../Models/recipient');
-const {regUser} = require('../Models/registeration'); // Assuming you have a user model
 const axios = require('axios');
-
+const Recipient = require('../Models/recipient');
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
 
 const headers = {
@@ -10,14 +7,15 @@ const headers = {
   'Content-Type': 'application/json'
 };
 
-// Validate digit-only
+// Digits-only validation
 function isDigitsOnly(value) {
   return /^\d+$/.test(value);
 }
 
-// Create or retrieve recipient
+// Create or retrieve a recipient
 const getOrCreateRecipient = async (accountNumber, bankCode, name = 'Withdrawal Recipient') => {
-  const existing = await Recipient.findOne({ accountNumber, bankCode });
+  const existing = await Recipient.findOne({ account_number: accountNumber, bank_code: bankCode });
+  console.log('Checking existing recipient:', existing);
 
   if (existing) return existing.recipient_code;
 
@@ -35,8 +33,12 @@ const getOrCreateRecipient = async (accountNumber, bankCode, name = 'Withdrawal 
 
   const recipientCode = res.data.data.recipient_code;
 
-  // Cache in DB
-  await Recipient.create({ accountNumber, bankCode, recipientCode });
+  // Cache recipient in DB
+  await Recipient.create({
+    account_number: accountNumber,
+    bank_code: bankCode,
+    recipient_code: recipientCode
+  });
 
   return recipientCode;
 };
@@ -62,52 +64,3 @@ module.exports = {
   getOrCreateRecipient,
   initiateTransfer
 };
-
-
-
-
-
-
-
-// // utils/paystack.js
-// const https = require('https');
-
-// const createRecipient = ({ name, account_number, bank_code, currency = 'NGN' }) => {
-//   return new Promise((resolve, reject) => {
-//     const params = JSON.stringify({
-//       type: 'nuban',
-//       name,
-//       account_number,
-//       bank_code,
-//       currency
-//     });
-
-//     const options = {
-//       hostname: 'api.paystack.co',
-//       port: 443,
-//       path: '/transferrecipient',
-//       method: 'POST',
-//       headers: {
-//         Authorization: 'Bearer YOUR_SECRET_KEY', // Replace with ENV in production
-//         'Content-Type': 'application/json'
-//       }
-//     };
-
-//     const req = https.request(options, res => {
-//       let data = '';
-//       res.on('data', chunk => data += chunk);
-//       res.on('end', () => {
-//         const result = JSON.parse(data);
-//         result.status
-//           ? resolve(result.data.recipient_code)
-//           : reject(result.message || 'Recipient creation failed');
-//       });
-//     });
-
-//     req.on('error', error => reject(error));
-//     req.write(params);
-//     req.end();
-//   });
-// };
-
-// module.exports = { createRecipient };

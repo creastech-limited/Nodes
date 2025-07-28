@@ -292,6 +292,7 @@ exports.withdrawal = async (req, res) => {
     if (!user) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
+    console.log('Withdrawal request from user:', user);
     const currentUser = await regUser.findById(user);
     if (!currentUser) {
       return res.status(404).json({ message: 'User not found' });
@@ -315,17 +316,24 @@ exports.withdrawal = async (req, res) => {
 
     // Get recipient code (cached or new)
     const recipientCode = await getOrCreateRecipient(account_number, bank_code, currentUser.name);
+    console.log('Recipient code:', recipientCode);  
 
-    // You would pull wallet & balance here
-    const senderBalanceBefore = senderWallet.balance;
-    const senderBalanceAfter = senderBalanceBefore - amount;
-
+    
+ const senderBalanceBefore = senderWallet.balance;
+    if (senderBalanceBefore < amount) {
+      return res.status(400).json({ message: 'Insufficient balance' });
+    }
     // Make transfer
     const transferResponse = await initiateTransfer({
       amount,
       recipientCode,
       reason: description
     });
+   
+    const senderBalanceAfter = senderBalanceBefore - amount;
+    senderWallet.balance = senderBalanceAfter;
+    await senderWallet.save();
+    
 
     // Log transaction
     const trx = await Transaction.create({
