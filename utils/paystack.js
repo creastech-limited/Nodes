@@ -3,7 +3,7 @@ const Recipient = require('../Models/recipient');
 const {regUser} = require('../Models/registeration'); // Assuming you have a user model
 const axios = require('axios');
 
-const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET;
+const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
 
 const headers = {
   Authorization: `Bearer ${PAYSTACK_SECRET}`,
