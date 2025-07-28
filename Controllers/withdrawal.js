@@ -287,12 +287,12 @@ exports.resolveAccount = async (req, res) => {
 
 exports.withdrawal = async (req, res) => {
   try {
-    const { account_number, bank_code, amount, description } = req.body;
+    let { account_number, bank_code, amount, description } = req.body;
     const user = req.user?.id;
     if (!user) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
-    console.log('Withdrawal request from user:', user);
+    // console.log('Withdrawal request from user:', user);
     const currentUser = await regUser.findById(user);
     if (!currentUser) {
       return res.status(404).json({ message: 'User not found' });
@@ -323,7 +323,6 @@ exports.withdrawal = async (req, res) => {
     if (senderBalanceBefore < amount) {
       return res.status(400).json({ message: 'Insufficient balance' });
     }
-   amount = Number(amount);
     if (isNaN(amount) || amount <= 0) {
       return res.status(400).json({ message: 'Invalid amount passed' });
     }

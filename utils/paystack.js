@@ -15,7 +15,7 @@ function isDigitsOnly(value) {
 // Create or retrieve a recipient
 const getOrCreateRecipient = async (accountNumber, bankCode, name = 'Withdrawal Recipient') => {
   const existing = await Recipient.findOne({ account_number: accountNumber, bank_code: bankCode });
-  console.log('Checking existing recipient:', existing);
+  // console.log('Checking existing recipient:', existing);
 
   if (existing) return existing.recipient_code;
 
