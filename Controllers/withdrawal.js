@@ -323,9 +323,10 @@ exports.withdrawal = async (req, res) => {
     if (senderBalanceBefore < amount) {
       return res.status(400).json({ message: 'Insufficient balance' });
     }
+    const amountInKobo = amount * 100; // Convert to Kobo for Paystack
     // Make transfer
     const transferResponse = await initiateTransfer({
-      amount,
+      amountInKobo,
       recipientCode,
       reason: description
     });
