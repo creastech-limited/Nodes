@@ -7,7 +7,7 @@ const Transaction = require('../Models/transactionSchema');
 const sendEmail = require('../utils/email');
 const { sendNotification } = require('../utils/notification');
 const { generateReference } = require('../utils/generatereference');
-const createOrGetRecipient = require('../utils/paystack');
+const {isDigitsOnly,getOrCreateRecipient,initiateTransfer} = require('../utils/paystack');
 const {regUser} = require('../Models/registeration');
 //verify pin
 const bcrypt = require('bcryptjs');
