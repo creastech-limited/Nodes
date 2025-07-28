@@ -27,26 +27,26 @@ app.use(morgan('dev'));
 app.use(express.json());
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI);
-const db = mongoose.connection;
-//user.collection.dropIndex('schoolId_1')
-db.once('open', async () => {
-  console.log('Connected to Database');
+  mongoose.connect(process.env.MONGO_URI);
+  const db = mongoose.connection;
+  //user.collection.dropIndex('schoolId_1')
+  db.once('open', async () => {
+    console.log('Connected to Database');
 
-  try {
-    // Drop the unique index on userId in the wallets collection
-    await db.collection('wallets').dropIndex('userId_1');
-    console.log('Index dropped successfully');
-  } catch (err) {
-    if (err.codeName === 'IndexNotFound') {
-      console.log('Index not found, skipping drop.');
-    } else {
-      console.error('Error dropping index:', err);
+    try {
+      // Drop the unique index on userId in the wallets collection
+      await db.collection('wallets').dropIndex('userId_1');
+      console.log('Index dropped successfully');
+    } catch (err) {
+      if (err.codeName === 'IndexNotFound') {
+        console.log('Index not found, skipping drop.');
+      } else {
+        console.error('Error dropping index:', err);
+      }
     }
-  }
-});
+  });
 
-db.on('error', (error) => console.error('MongoDB connection error:', error));
+  db.on('error', (error) => console.error('MongoDB connection error:', error));
 
 // routes
 const authRoute = require('./routes/auth');
