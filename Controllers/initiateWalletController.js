@@ -2,6 +2,51 @@ const {regUser} = require('../Models/registeration');  // Import User model
 const Wallet = require('../Models/walletSchema');  // Import Wallet model
 
 
+// Function to delete a system wallet for admin users
+async function deleteWallet(req, res) {
+  const userId = req.user?.id || req.body.userId;
+  if (!userId) {
+    return res.status(400).json({ message: 'User ID is required' });
+  }
+  //get wallet id from request body
+  const { walletId } = req.body;
+  try {
+    const user = await regUser.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    } 
+    // Check if a system wallet exists globally
+    const existing = await Wallet.findById(walletId);
+    if (!existing) {
+      return res.status(404).json({ message: 'System wallet not found' });
+    }
+    if (existing.type !== 'system') {
+      return res.status(400).json({ message: 'This wallet is not a system wallet'
+      });
+    }
+    // Delete the system wallet
+    await Wallet.findByIdAndDelete(walletId);
+    console.log("System wallet deleted:", walletId);
+    return res.status(200).json({
+      message: 'System wallet deleted successfully',
+      walletId: walletId,
+      user: {
+        email: user.email,
+        firstName: user.firstName,  
+        lastName: user.lastName,
+        phone: user.phone,
+      }
+    });
+  } catch (error) {
+    console.error("Error deleting system wallet:", error);
+    res.status(500).json({ message: error.message });
+  }
+}
+
+// Function to create a system wallet for admin users
+
+
+
 async function createSystemWallet(req, res) {
   const  id = req.user?.id || req.body;
   if (!id) {
@@ -109,6 +154,7 @@ async function createChargesWallet(req, res) {
 
 
 
+
 async function initializeWalletsForUsers() {
   try {
     const users = await regUser.find();
@@ -146,9 +192,52 @@ async function initializeWalletsForUsers() {
     console.error('❌ Error initializing wallet:', error.message);
   }
 }
+//update wallets for user by userId
+async function updateWalletsForUsers() {  
+  const userId = req.user?.id || req.body.userId;
+  if (!userId) {
+    return res.status(400).json({ message: 'User ID is required' });
+  }
+  try {
+    const user = await regUser.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    //get the wallet name from request body
+    const { walletName } = req.params;
+    if (!walletName) {
+      return res.status(400).json({ message: 'Wallet name is required' });
+    }
+    // get items to be updated from request body
+    const { email, firstName, lastName, phone } = req.body;
+    const wallet = await Wallet.findOne({ walletName: walletName, type: 'user' });
+    if (!wallet) {
+      return res.status(404).json({ message: 'Wallet not found' });
+    }
+
+    // Update wallet details
+    wallet.email = user.email;
+    wallet.firstName = user.firstName;
+    wallet.lastName = user.lastName;
+    wallet.phone = user.phone;
+
+    await wallet.save();
+
+    return res.status(200).json({
+      message: 'Wallet updated successfully',
+      wallet,
+    });
+
+  } catch (error) {
+    console.error("Error updating wallet:", error);
+    res.status(500).json({ message: error.message });
+  }
+}
+
 
 module.exports = {
   createSystemWallet,
   initializeWalletsForUsers,
-  createChargesWallet
+  createChargesWallet,
+  deleteWallet
 };

@@ -42,6 +42,11 @@ const transactionSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  errorCode: {
+    type: String,
+    required: false,
+    default: null // Optional field for error codes
+  },
   balanceAfter: {
     type: Number,
     required: true

@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 require('dotenv').config();
+const Charge = require('../Models/charges');
 const https = require('https');
 const Wallet = require('../Models/walletSchema');
 const Transaction = require('../Models/transactionSchema');
@@ -284,6 +285,109 @@ exports.resolveAccount = async (req, res) => {
 //   }
 //   }
 // };  
+//get withrawal fee
+exports.getWithdrawalFee = async(req, res) => {
+  const userId = req.user?.id;
+  if(!userId){
+    return res.status(400).json({message: 'Unauthorized'})
+  }
+  const user =  await regUser.findById(userId)
+  if(!user){
+        return res.status(400).json({message: 'User not found'})
+  }
+  if(user.role !== 'school'&&user.role !== 'store'){
+       return res.status(400).json({message: 'User is neither a school or a store'})
+  }
+  const charge = await Charge.findOne({ name: 'Withdrawal Charges' });
+       if (!charge) {
+         return res.status(404).json({ message: 'Withdrawal Charges not found' });
+       }
+  
+}
+
+//get withrawal charge
+const getWithdrawalCharge = async (userId) => {
+  const user = await regUser.findById(userId);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  if (user.role !== 'school' && user.role !== 'store') {
+    throw new Error('User is neither a school or a store');
+  }
+
+  const charge = await Charge.findOne({ name: 'Withdrawal Charges' });
+  if (!charge) {
+    throw new Error('Withdrawal Charges not found');
+  }
+
+  return charge;
+};
+
+
+exports.validateWithdrawal = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { amount } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const currentUser = await regUser.findById(userId);
+    if (!currentUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const senderWallet = await Wallet.findOne({ userId: currentUser._id });
+    if (!senderWallet) {
+      return res.status(404).json({ message: 'Wallet not found' });
+    }
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+      return res.status(400).json({ message: 'Invalid amount' });
+    }
+
+    // Get charge
+    let charge;
+    try {
+      charge = await getWithdrawalCharge(userId);
+    } catch (err) {
+      return res.status(400).json({ message: err.message });
+    }
+
+    // Calculate charge
+    let chargeAmount = 0;
+    if (charge.chargeType === 'Flat') {
+      chargeAmount = charge.amount;
+    } else if (charge.chargeType === 'Percentage') {
+      chargeAmount = Math.min((amount * charge.amount) / 100, 500);
+    } else {
+      return res.status(400).json({ message: 'Invalid charge type' });
+    }
+
+    const totalDebit = amount + chargeAmount;
+
+    if (senderWallet.balance < totalDebit) {
+      return res.status(400).json({ message: 'Insufficient balance', balance: senderWallet.balance });
+    }
+
+    return res.status(200).json({
+      message: 'Withdrawal is valid',
+      data: {
+        amount: parseFloat(amount),
+        charge: chargeAmount,
+        totalDebit,
+        balance: senderWallet.balance
+      }
+    });
+
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).json({ message: 'Failed to validate withdrawal', error: err.message });
+  }
+};
+
 
 exports.withdrawal = async (req, res) => {
   try {
@@ -317,8 +421,23 @@ exports.withdrawal = async (req, res) => {
     // Get recipient code (cached or new)
     const recipientCode = await getOrCreateRecipient(account_number, bank_code, currentUser.name);
     // console.log('Recipient code:', recipientCode);  
-
-    
+    if (!recipientCode) {
+      return res.status(500).json({ message: 'Failed to create or retrieve recipient code' });
+    }
+   // get charges for withdrawal
+       const charge = await Charge.findOne({ name: 'Withdrawal Charges' });
+       if (!charge) {
+         return res.status(404).json({ message: 'Withdrawal Charges not found' });
+       }
+       // Calculate charge amount if charge type is Flat put the charge amount as is, if charge type is Percentage calculate the percentage of the amount not greater than 500
+       let chargeAmount = 0;
+       if (charge.chargeType === 'Flat') {
+         chargeAmount = charge.amount;
+       } else if (charge.chargeType === 'Percentage') {
+         chargeAmount = Math.min((amount * charge.amount) / 100, 500);
+       } else {
+         return res.status(400).json({ message: 'Invalid charges type' });
+       }
  const senderBalanceBefore = senderWallet.balance;
     if (senderBalanceBefore < amount) {
       return res.status(400).json({ message: 'Insufficient balance' });

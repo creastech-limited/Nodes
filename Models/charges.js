@@ -9,6 +9,7 @@ const chargesSchema = new mongoose.Schema({
   chargeType: {
     type: String,
     enum: ['Flat', 'Percentage'],
+    default: 'Flat',
     required: true,
   },
   amount: {

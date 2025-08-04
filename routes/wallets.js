@@ -5,8 +5,10 @@ const Wallet = require('../Models/walletSchema'); // Corrected import statement
 // const RegisterModel = require('../Models/registeration'); // Corrected import statement
 // const LoginModel = require('../Models/login'); // Corrected import statement
 const router = express.Router();
-const {createSystemWallet, createChargesWallet} = require('../Controllers/initiateWalletController');
-const {getOneWallet, deleteWallet, getWallet, deleteWalletsByFilter, getUserWallet} = require('../Controllers/getWallet');
+const {createSystemWallet, createChargesWallet, deleteWallet} = require('../Controllers/initiateWalletController');
+const {getOneWallet, getWallet, deleteWalletsByFilter, getUserWallet,
+    //deleteSystemWallet
+} = require('../Controllers/getWallet');
 const verifyToken = require('../routes/verifyToken');
 const {transferFunds} = require('../Controllers/walletTransfers');
 
@@ -17,6 +19,8 @@ router.get('/getWallets',verifyToken, getWallet);
 router.post('/createSystemWallet',verifyToken, createSystemWallet);
 //create charges wallet for users
 router.post('/createChargesWallet',verifyToken, createChargesWallet);
+//delete charges wallet for WalletId
+// router.delete('/deleteChargesWallet',verifyToken, deleteSystemWallet);
 // delete wallet
 router.delete('/deleteWallet/:walletId',verifyToken, deleteWallet);
 // delete wallet by filter
