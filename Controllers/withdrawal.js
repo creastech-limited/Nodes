@@ -493,7 +493,7 @@ exports.withdrawal = async (req, res) => {
 
     //add charge to wallet
     if (chargeAmount > 0) {
-      const chargeWallet = await Wallet.findOne({ walletname: 'Withdrawal Charge Wallet' });
+      const chargeWallet = await Wallet.findOne({ walletName: 'Withdrawal Charge Wallet' });
       if (!chargeWallet) {
         return res.status(404).json({ message: 'Charge wallet not found' });
       }
