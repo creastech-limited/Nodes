@@ -12,6 +12,7 @@ const {isDigitsOnly,getOrCreateRecipient,initiateTransfer} = require('../utils/p
 const {regUser} = require('../Models/registeration');
 //verify pin
 const bcrypt = require('bcryptjs');
+const charges = require('../Models/charges');
 // Paystack secret key from environment variables
 const PAYSTACK_SECRET_KEY = "sk_live_8c3db99b858cc67db585ff878a69eb5d73d8bbbc"//process.env.PAYSTACK_SECRET_KEY;
 
@@ -396,6 +397,32 @@ exports.withdrawal = async (req, res) => {
     if (!user) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
+    //helper function for failed transactions
+    const failTransaction = async (reason, fee = null, senderWallet = null, amount = 0, errorCode) => {
+      try {
+        const reference = generateReference('WITHDRAW_FAIL');
+        await Transaction.create({
+          senderWalletId: senderWallet?._id || null,
+          receiverWalletId: null,
+          transactionType: 'withdrawal_failed',
+          category: 'debit',
+          amount,
+          balanceBefore: senderWallet?.balance || 0,
+          balanceAfter: senderWallet?.balance || 0,
+          reference,
+          description: `Failed withdrawal of ₦${amount} - Reason: ${reason}`,
+          errorCode: '00',
+          status: 'failed',
+          metadata: {
+            userId: user,
+            reason,
+            feeId: fee?._id || null,
+          },
+        });
+      } catch (err) {
+        console.error('Error saving failed transaction:', err.message);
+      }
+    };  
     // console.log('Withdrawal request from user:', user);
     const currentUser = await regUser.findById(user);
     if (!currentUser) {
@@ -404,14 +431,17 @@ exports.withdrawal = async (req, res) => {
     const senderWallet = await Wallet.findOne({ userId: currentUser._id });
     if (!senderWallet) {
       return res.status(404).json({ message: 'Wallet not found' });
+      failTransaction('Sender wallet not found', null, senderWallet, amount, '63');
     }
 
     if (!account_number || !bank_code || !amount || !description) {
       return res.status(400).json({ message: 'Missing required fields' });
+      failTransaction('Missing required fields', null, senderWallet, amount, '01');
     }
 
     if (!isDigitsOnly(account_number)) {
       return res.status(400).json({ message: 'Account number must contain digits only' });
+      failTransaction('Invalid account number format', null, senderWallet, amount, '02');
     }
 
     if (!isDigitsOnly(bank_code)) {
@@ -423,11 +453,13 @@ exports.withdrawal = async (req, res) => {
     // console.log('Recipient code:', recipientCode);  
     if (!recipientCode) {
       return res.status(500).json({ message: 'Failed to create or retrieve recipient code' });
+      failTransaction('Failed to create or retrieve recipient code', null, senderWallet, amount, '03');
     }
    // get charges for withdrawal
        const charge = await Charge.findOne({ name: 'Withdrawal Charges' });
        if (!charge) {
          return res.status(404).json({ message: 'Withdrawal Charges not found' });
+         failTransaction('Withdrawal Charges not found', null, senderWallet, amount, '04');
        }
        // Calculate charge amount if charge type is Flat put the charge amount as is, if charge type is Percentage calculate the percentage of the amount not greater than 500
        let chargeAmount = 0;
@@ -441,20 +473,33 @@ exports.withdrawal = async (req, res) => {
  const senderBalanceBefore = senderWallet.balance;
     if (senderBalanceBefore < amount) {
       return res.status(400).json({ message: 'Insufficient balance' });
+      failTransaction('Insufficient balance', charge, senderWallet, amount, '05');
     }
     if (isNaN(amount) || amount <= 0) {
       return res.status(400).json({ message: 'Invalid amount passed' });
     }
-    amount = amount*100    // Make transfer
+    amount =amount*100    // Make transfer
     const transferResponse = await initiateTransfer({
       amount,
       recipientCode,
       reason: description
     });
    amount = amount / 100; // Convert back to naira for logging
-    const senderBalanceAfter = senderBalanceBefore - amount;
+   totalDebit = amount + chargeAmount;
+    const senderBalanceAfter = senderBalanceBefore - totalDebit;
     senderWallet.balance = senderBalanceAfter;
     await senderWallet.save();
+    
+
+    //add charge to wallet
+    if (chargeAmount > 0) {
+      const chargeWallet = await Wallet.findOne({ walletname: 'Withdrawal Charge Wallet' });
+      if (!chargeWallet) {
+        return res.status(404).json({ message: 'Charge wallet not found' });
+      }
+      chargeWallet.balance += chargeAmount;
+      await chargeWallet.save();
+    }
     
 
     // Log transaction
@@ -469,10 +514,12 @@ exports.withdrawal = async (req, res) => {
       reference: transferResponse.data.reference,
       description,
       status: 'success',
+      errorCode: '00',
       metadata: {
         receiverAccount: account_number,
         receiverBank: bank_code,
         senderEmail: user.email,
+        charges: chargeAmount,
       }
     });
 
