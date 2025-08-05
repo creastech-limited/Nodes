@@ -453,14 +453,14 @@ exports.withdrawal = async (req, res) => {
     }
     //validate pin
     if(!pin) {
-      failTransaction('PIN is required', null, senderWallet, amount, '02');
+      failTransaction('PIN is required', null, senderWallet, amount, '02',user);
       await sendNotification(user, '❌ Withdrawal failed: PIN is required', 'error');
       return res.status(400).json({ message: 'PIN is required' });
     }
 
     const validPin = await bcrypt.compare(pin, currentUser.pin);
     if (!validPin) {
-      failTransaction('Invalid PIN', null, senderWallet, amount, '02');
+      failTransaction('Invalid PIN', null, senderWallet, amount, '02', user);
       await sendNotification(user, '❌ Withdrawal failed: Invalid PIN', 'error');
       return res.status(401).json({ message: 'Invalid PIN' });
     }
@@ -471,7 +471,7 @@ exports.withdrawal = async (req, res) => {
     const recipientCode = await getOrCreateRecipient(account_number, bank_code, currentUser.name);
     // console.log('Recipient code:', recipientCode);  
     if (!recipientCode) {
-      failTransaction('Failed to create or retrieve recipient code', null, senderWallet, amount, '03');
+      failTransaction('Failed to create or retrieve recipient code', null, senderWallet, amount, '03',user);
       await sendNotification(user, '❌ Failed to create or retrieve recipient code', 'error');
       return res.status(500).json({ message: 'Failed to create or retrieve recipient code' });
 
@@ -495,7 +495,7 @@ exports.withdrawal = async (req, res) => {
        }
  const senderBalanceBefore = senderWallet.balance;
     if (senderBalanceBefore < amount) {
-      failTransaction('Insufficient balance', charge, senderWallet, amount, '05');
+      failTransaction('Insufficient balance', charge, senderWallet, amount, '05', user);
       await sendNotification(user, '❌ Insufficient Balance', 'error');
       return res.status(400).json({ message: 'Insufficient balance' });
 
