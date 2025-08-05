@@ -430,13 +430,13 @@ exports.withdrawal = async (req, res) => {
     }
     const senderWallet = await Wallet.findOne({ userId: currentUser._id });
     if (!senderWallet) {
-      await failTransaction('Sender wallet not found', null, amount, '63', user);
+       failTransaction('Sender wallet not found', null, amount, '63', user);
       await sendNotification(user, '❌ Withdrawal failed: Wallet not found', 'error');
       return res.status(404).json({ message: 'Wallet not found' });
     }
 
     if (!account_number || !bank_code || !amount || !description) {
-      await failTransaction('Missing required fields', null, amount, '01', user);
+       failTransaction('Missing required fields', null, amount, '01', user);
       await sendNotification(user, '❌ Withdrawal failed: Missing required fields', 'error');
       return res.status(400).json({ message: 'Missing required fields' });
 
