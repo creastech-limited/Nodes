@@ -398,7 +398,7 @@ exports.withdrawal = async (req, res) => {
       return res.status(401).json({ message: 'Unauthorized' });
     }
     //helper function for failed transactions
-    const failTransaction = async (reason, fee = null, senderWallet = null, amount = 0, errorCode) => {
+    const failTransaction = async (reason, senderWallet = null, amount = 0, errorCode = '00', user = nul) => {
       try {
         const reference = generateReference('WITHDRAW_FAIL');
         await Transaction.create({
@@ -416,7 +416,6 @@ exports.withdrawal = async (req, res) => {
           metadata: {
             userId: user,
             reason,
-            feeId: fee?._id || null,
           },
         });
       } catch (err) {
@@ -431,23 +430,22 @@ exports.withdrawal = async (req, res) => {
     }
     const senderWallet = await Wallet.findOne({ userId: currentUser._id });
     if (!senderWallet) {
-      return res.status(404).json({ message: 'Wallet not found' });
-      failTransaction('Sender wallet not found', null, senderWallet, amount, '63');
+      await failTransaction('Sender wallet not found', null, amount, '63', user);
       await sendNotification(user, '❌ Withdrawal failed: Wallet not found', 'error');
+      return res.status(404).json({ message: 'Wallet not found' });
     }
 
     if (!account_number || !bank_code || !amount || !description) {
-      return res.status(400).json({ message: 'Missing required fields' });
-      failTransaction('Missing required fields', null, senderWallet, amount, '01');
+      await failTransaction('Missing required fields', null, amount, '01', user);
       await sendNotification(user, '❌ Withdrawal failed: Missing required fields', 'error');
+      return res.status(400).json({ message: 'Missing required fields' });
+
     }
 
     if (!isDigitsOnly(account_number)) {
-      return res.status(400).json({ message: 'Account number must contain digits only' });
       failTransaction('Invalid account number format', null, senderWallet, amount, '02');
       await sendNotification(user, '❌ Withdrawal failed: Account number must contain digits only', 'error');
-
-
+      return res.status(400).json({ message: 'Account number must contain digits only' });
     }
 
     if (!isDigitsOnly(bank_code)) {
@@ -455,16 +453,16 @@ exports.withdrawal = async (req, res) => {
     }
     //validate pin
     if(!pin) {
-      return res.status(400).json({ message: 'PIN is required' });
       failTransaction('PIN is required', null, senderWallet, amount, '02');
       await sendNotification(user, '❌ Withdrawal failed: PIN is required', 'error');
+      return res.status(400).json({ message: 'PIN is required' });
     }
 
     const validPin = await bcrypt.compare(pin, currentUser.pin);
     if (!validPin) {
-      return res.status(401).json({ message: 'Invalid PIN' });
       failTransaction('Invalid PIN', null, senderWallet, amount, '02');
       await sendNotification(user, '❌ Withdrawal failed: Invalid PIN', 'error');
+      return res.status(401).json({ message: 'Invalid PIN' });
     }
 
     
@@ -473,14 +471,18 @@ exports.withdrawal = async (req, res) => {
     const recipientCode = await getOrCreateRecipient(account_number, bank_code, currentUser.name);
     // console.log('Recipient code:', recipientCode);  
     if (!recipientCode) {
-      return res.status(500).json({ message: 'Failed to create or retrieve recipient code' });
       failTransaction('Failed to create or retrieve recipient code', null, senderWallet, amount, '03');
+      await sendNotification(user, '❌ Failed to create or retrieve recipient code', 'error');
+      return res.status(500).json({ message: 'Failed to create or retrieve recipient code' });
+
     }
    // get charges for withdrawal
        const charge = await Charge.findOne({ name: 'Withdrawal Charges' });
        if (!charge) {
-         return res.status(404).json({ message: 'Withdrawal Charges not found' });
          failTransaction('Withdrawal Charges not found', null, senderWallet, amount, '04');
+          await sendNotification(user, '❌ Withdrawal Charges not found', 'error');
+          return res.status(404).json({ message: 'Withdrawal Charges not found' });
+         
        }
        // Calculate charge amount if charge type is Flat put the charge amount as is, if charge type is Percentage calculate the percentage of the amount not greater than 500
        let chargeAmount = 0;
@@ -493,10 +495,14 @@ exports.withdrawal = async (req, res) => {
        }
  const senderBalanceBefore = senderWallet.balance;
     if (senderBalanceBefore < amount) {
-      return res.status(400).json({ message: 'Insufficient balance' });
       failTransaction('Insufficient balance', charge, senderWallet, amount, '05');
+      await sendNotification(user, '❌ Insufficient Balance', 'error');
+      return res.status(400).json({ message: 'Insufficient balance' });
+
     }
     if (isNaN(amount) || amount <= 0) {
+      failTransaction('Invalid Amount passed', charge, senderWallet, amount, '06')
+      await sendNotification()
       return res.status(400).json({ message: 'Invalid amount passed' });
     }
     amount =amount*100    // Make transfer
