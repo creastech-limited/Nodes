@@ -392,7 +392,7 @@ exports.validateWithdrawal = async (req, res) => {
 
 exports.withdrawal = async (req, res) => {
   try {
-    let { account_number, bank_code, amount, description } = req.body;
+    let {bank_name, account_number, bank_code, amount, description, pin} = req.body;
     const user = req.user?.id;
     if (!user) {
       return res.status(401).json({ message: 'Unauthorized' });
@@ -427,26 +427,47 @@ exports.withdrawal = async (req, res) => {
     const currentUser = await regUser.findById(user);
     if (!currentUser) {
       return res.status(404).json({ message: 'User not found' });
+
     }
     const senderWallet = await Wallet.findOne({ userId: currentUser._id });
     if (!senderWallet) {
       return res.status(404).json({ message: 'Wallet not found' });
       failTransaction('Sender wallet not found', null, senderWallet, amount, '63');
+      await sendNotification(user, '❌ Withdrawal failed: Wallet not found', 'error');
     }
 
     if (!account_number || !bank_code || !amount || !description) {
       return res.status(400).json({ message: 'Missing required fields' });
       failTransaction('Missing required fields', null, senderWallet, amount, '01');
+      await sendNotification(user, '❌ Withdrawal failed: Missing required fields', 'error');
     }
 
     if (!isDigitsOnly(account_number)) {
       return res.status(400).json({ message: 'Account number must contain digits only' });
       failTransaction('Invalid account number format', null, senderWallet, amount, '02');
+      await sendNotification(user, '❌ Withdrawal failed: Account number must contain digits only', 'error');
+
+
     }
 
     if (!isDigitsOnly(bank_code)) {
       return res.status(400).json({ message: 'Bank code must contain digits only' });
     }
+    //validate pin
+    if(!pin) {
+      return res.status(400).json({ message: 'PIN is required' });
+      failTransaction('PIN is required', null, senderWallet, amount, '02');
+      await sendNotification(user, '❌ Withdrawal failed: PIN is required', 'error');
+    }
+
+    const validPin = await bcrypt.compare(pin, currentUser.pin);
+    if (!validPin) {
+      return res.status(401).json({ message: 'Invalid PIN' });
+      failTransaction('Invalid PIN', null, senderWallet, amount, '02');
+      await sendNotification(user, '❌ Withdrawal failed: Invalid PIN', 'error');
+    }
+
+    
 
     // Get recipient code (cached or new)
     const recipientCode = await getOrCreateRecipient(account_number, bank_code, currentUser.name);
@@ -508,7 +529,7 @@ exports.withdrawal = async (req, res) => {
       receiverWalletId: senderWallet._id, // Assuming withdrawal goes to the same wallet
       transactionType: 'withdrawal_completed',
       category: 'debit',
-      amount,
+      amount:totalDebit,
       balanceBefore: senderBalanceBefore,
       balanceAfter: senderBalanceAfter,
       reference: transferResponse.data.reference,
@@ -522,6 +543,21 @@ exports.withdrawal = async (req, res) => {
         charges: chargeAmount,
       }
     });
+    // Send email notification
+    await sendEmail({
+      to: currentUser.email,
+      subject: 'Withdrawal Successful',
+      html: `
+        <p>Hello ${currentUser.name},</p>
+        <p>Your withdrawal of <strong>₦${amount}</strong> to account <strong>${account_number}</strong> (${bank_name}) was successful.</p>
+        <p>Reference: <strong>${trx.reference}</strong></p>
+        <p>Description: ${description}</p>
+        <p>Thank you!</p>
+      `
+    });
+
+    // send notification
+
 
     return res.status(200).json({
       message: 'Withdrawal successful',
