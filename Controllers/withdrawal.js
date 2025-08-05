@@ -430,13 +430,13 @@ exports.withdrawal = async (req, res) => {
     }
     const senderWallet = await Wallet.findOne({ userId: currentUser._id });
     if (!senderWallet) {
-       failTransaction('Sender wallet not found', null, amount, '63', user);
+       failTransaction('Sender wallet not found', null, amount, '63', currentUser._id);
       await sendNotification(user, '❌ Withdrawal failed: Wallet not found', 'error');
       return res.status(404).json({ message: 'Wallet not found' });
     }
 
     if (!account_number || !bank_code || !amount || !description) {
-       failTransaction('Missing required fields', null, amount, '01', user);
+       failTransaction('Missing required fields', null, amount, '01', currentUser._id);
       await sendNotification(user, '❌ Withdrawal failed: Missing required fields', 'error');
       return res.status(400).json({ message: 'Missing required fields' });
 
@@ -453,14 +453,14 @@ exports.withdrawal = async (req, res) => {
     }
     //validate pin
     if(!pin) {
-      failTransaction('PIN is required', null, senderWallet, amount, '02',user);
+      failTransaction('PIN is required', null, senderWallet, amount, '02',currentUser._id);
       await sendNotification(user, '❌ Withdrawal failed: PIN is required', 'error');
       return res.status(400).json({ message: 'PIN is required' });
     }
 
-    const validPin = await bcrypt.compare(pin, currentUser.pin);
+    const validPin = bcrypt.compare(pin, currentUser.pin);
     if (!validPin) {
-      failTransaction('Invalid PIN', null, senderWallet, amount, '02', user);
+      failTransaction('Invalid PIN', null, senderWallet, amount, '02', currentUser._id);
       await sendNotification(user, '❌ Withdrawal failed: Invalid PIN', 'error');
       return res.status(401).json({ message: 'Invalid PIN' });
     }
