@@ -843,7 +843,7 @@ exports.register = async (req, res) => {
     }
 
     const {
-       firstName,
+      firstName,
       lastName,
       name = firstName + ' ' + lastName,
       gender,

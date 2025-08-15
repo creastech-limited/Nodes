@@ -5,8 +5,8 @@ const router = express.Router();
 
 router.post('/createCharge',verifyToken, createCharge); // Route to create a charge
 router.get('/getAllCharges', getCharges); // Route to get all charges    
-router.put('/updateCharge/:id', updateCharge); // Route to update a charge by ID
-router.delete('/deleteCharge/:id', deleteCharge); // Route to delete a charge by ID
+router.put('/updateCharge/:id',verifyToken, updateCharge); // Route to update a charge by ID
+router.delete('/deleteCharge/:id',verifyToken, deleteCharge); // Route to delete a charge by ID
 
 
 

@@ -152,9 +152,51 @@ async function createChargesWallet(req, res) {
   }
 }
 
+//get all charges wallets
+async function getChargesWallets(req, res) {
+  try {
+    const wallets = await Wallet.find({ type: 'charges' });
+    if (wallets.length === 0) {
+      return res.status(404).json({ message: 'No charges wallets found' });
+    }
+    res.status(200).json(wallets);
+  } catch (error) {
+    console.error("Error fetching charges wallets:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
 
+//update charges wallet 
+async function updateChargesWallet(req, res) {
+  const { walletId } = req.params;
+  const { walletName, balance, description } = req.body;
 
+  if (!walletId) {
+    return res.status(400).json({ message: 'Wallet ID, name, and balance are required' });
+  }
 
+  try {
+    const updatedWallet = await Wallet.findByIdAndUpdate(walletId, {
+      walletName,
+      balance,
+      description
+    }, { new: true });
+
+    if (!updatedWallet) {
+      return res.status(404).json({ message: 'Charges wallet not found' });
+    }
+
+    res.status(200).json({
+      message: 'Charges wallet updated successfully',
+      wallet: updatedWallet
+    });
+  } catch (error) {
+    console.error("Error updating charges wallet:", error);
+    res.status(500).json({ message: error.message });
+  }
+}
+
+// Function to initialize wallets for all users
 async function initializeWalletsForUsers() {
   try {
     const users = await regUser.find();
@@ -239,5 +281,7 @@ module.exports = {
   createSystemWallet,
   initializeWalletsForUsers,
   createChargesWallet,
-  deleteWallet
+  deleteWallet,
+  getChargesWallets,
+  updateChargesWallet,
 };
