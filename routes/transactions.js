@@ -1,10 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const { initiateTransaction, verifyTransaction,verifyPinAndTransfer, reverseUnloggedTransaction,getAllTransactions, getTransactionById, updateTransferMetadata,deleteTransaction, verifyPinAndTransferToAgent} = require('../Controllers/transactionController');
+const { initiateTransaction, verifyTransaction,verifyPinAndTransfer, reverseUnloggedTransaction,getAllTransactions, getTransactionById, updateTransferMetadata,deleteTransaction, getAllWithdrawalTransactions, getAllTopupTransactions, verifyPinAndTransferToAgent} = require('../Controllers/transactionController');
 const verifyToken = require('./verifyToken');
 const { getBank, resolveAccountNumber, withdrawal, resolveAccount, reverseWithdrawal,validateWithdrawal } = require('../Controllers/withdrawal');
 // const {} = require('../Controllers/transactionController');
 
+
+
+// Route to get all withdrawal transactions
+router.get('/getAllWithdrawalTransactions', verifyToken, getAllWithdrawalTransactions);
+// Route to get all withdrawal transactions
+router.get('/getAllTopupTransactions', verifyToken, getAllTopupTransactions);
 // Route to initiate a transaction
 router.post('/initiateTransaction', verifyToken, initiateTransaction);
 // Route to verify a transaction

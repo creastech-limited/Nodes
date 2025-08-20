@@ -549,6 +549,25 @@ exports.withdrawal = async (req, res) => {
         charges: chargeAmount,
       }
     });
+    //log credit side of transaction to reflect in withdrawal charge wallet
+    await Transaction.create({
+      senderWalletId: senderWallet._id,
+      receiverWalletId: chargeWallet._id,
+      transactionType: 'withdrawal_charge',
+      category: 'credit',
+      amount: chargeAmount,
+      balanceBefore: chargeWallet.balance,
+      balanceAfter: chargeWallet.balance + chargeAmount,
+      reference: generateReference('WDCH'),
+      description: `Withdrawal charge of ₦${chargeAmount} for transaction ${trx.reference}`,
+      status: 'success',
+      errorCode: '00',
+      metadata: {
+        charges: chargeAmount,
+        senderId: user._id,
+      }
+    });
+
     // Send email notification
     await sendEmail({
       to: currentUser.email,

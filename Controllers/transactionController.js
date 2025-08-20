@@ -5,8 +5,129 @@ const Transaction = require('../Models/transactionSchema'); // Import Transactio
 const {regUser} = require('../Models/registeration'); // Import User model
 const Wallet = require('../Models/walletSchema'); // Import Wallet model
 const Charge = require('../Models/charges'); // Import Charges model
+const { generateReference } = require('../utils/generatereference');
 // const verifyToken = require('../routes/verifyToken'); // Import verifyToken middleware
 
+
+
+
+
+//Get all withdrawal wallet Transactions
+exports.getAllWithdrawalTransactions = async (req, res) => {
+  try {
+    // Ensure the user is authenticated
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized: No user ID in token'
+      });
+    }
+    //find charges wallet
+    const chargesWallet = await Wallet.findOne({ walletName: 'Withdrawal Charge Wallet' });
+    // console.log("Charges Wallet:", chargesWallet);
+    // Ensure the user is admin or school
+    const user = await regUser.findById(userId);
+    if (!user || (user.role !== 'admin' && user.role !== 'school')) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: You do not have permission to access this resource'
+      });
+    }
+    // Find all transactions with type 'withdrawal_completed'
+    const transactions = await Transaction.find({ transactionType: 'withdrawal_completed' })
+      .populate('senderWalletId')
+      .populate('receiverWalletId')
+      .sort({ createdAt: -1 }); // Optional: latest first
+
+      //update the metadata with the wallet information
+    transactions.forEach(tx => {
+      if (tx.senderWalletId) {
+        tx.metadata.chargesWalletName = chargesWallet.walletName; // Ensure charges wallet name is included
+        tx.metadata.chargesBalance = chargesWallet.balance; // Ensure senderWalletId is included
+        tx.metadata.transactionType= chargesWallet.lastTransactionType; // Include sender wallet balance
+        tx.metadata.walletId = chargesWallet._id; // Include sender wallet type
+        tx.metadata.currency = chargesWallet.currency; // Include sender wallet currency
+      }
+      if (tx.receiverWalletId) {
+        tx.metadata.chargesWalletName = chargesWallet.walletName; // Ensure charges wallet name is included
+        tx.metadata.chargesBalance = chargesWallet.balance; // Ensure senderWalletId is included
+        tx.metadata.transactionType= chargesWallet.lastTransactionType; // Include sender wallet balance
+        tx.metadata.walletId = chargesWallet._id; // Include sender wallet type
+        tx.metadata.currency = chargesWallet.currency; // Include sender wallet currency
+      }
+    });
+    res.status(200).json({
+      success: true,
+      message: `Total of ${transactions.length} withdrawal transactions retrieved successfully`,
+      data: transactions
+    });
+  } catch (error) {
+    console.error('Error fetching withdrawal transactions:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching withdrawal transactions'
+    });
+  }
+};
+//Get all Topup wallet Transactions
+exports.getAllTopupTransactions = async (req, res) => {
+  try {
+    // Ensure the user is authenticated
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized: No user ID in token'
+      });
+    }
+    //find charges wallet
+    const chargesWallet = await Wallet.findOne({ walletName: 'Topup Charge Wallet' });
+    // console.log("Charges Wallet:", chargesWallet);
+    // Ensure the user is admin or school
+    const user = await regUser.findById(userId);
+    if (!user || (user.role !== 'admin' && user.role !== 'school')) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: You do not have permission to access this resource'
+      });
+    }
+    // Find all transactions with type 'withdrawal_completed'
+    const transactions = await Transaction.find({ transactionType: 'wallet_topup' })
+      .populate('senderWalletId')
+      .populate('receiverWalletId')
+      .sort({ createdAt: -1 }); // Optional: latest first
+
+      //update the metadata with the wallet information
+    transactions.forEach(tx => {
+      if (tx.senderWalletId) {
+        tx.metadata.chargesWalletName = chargesWallet.walletName; // Ensure charges wallet name is included
+        tx.metadata.chargesBalance = chargesWallet.balance; // Ensure senderWalletId is included
+        tx.metadata.transactionType= chargesWallet.lastTransactionType; // Include sender wallet balance
+        tx.metadata.walletId = chargesWallet._id; // Include sender wallet type
+        tx.metadata.currency = chargesWallet.currency; // Include sender wallet currency
+      }
+      if (tx.receiverWalletId) {
+        tx.metadata.chargesWalletName = chargesWallet.walletName; // Ensure charges wallet name is included
+        tx.metadata.chargesBalance = chargesWallet.balance; // Ensure senderWalletId is included
+        tx.metadata.transactionType= chargesWallet.lastTransactionType; // Include sender wallet balance
+        tx.metadata.walletId = chargesWallet._id; // Include sender wallet type
+        tx.metadata.currency = chargesWallet.currency; // Include sender wallet currency
+      }
+    });
+    res.status(200).json({
+      success: true,
+      message: `Total of ${transactions.length} withdrawal transactions retrieved successfully`,
+      data: transactions
+    });
+  } catch (error) {
+    console.error('Error fetching withdrawal transactions:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching withdrawal transactions'
+    });
+  }
+};
 // Get all transactions
 exports.getAllTransactions = async (req, res) => {
   try {
@@ -604,6 +725,28 @@ exports.verifyTransaction = async (req, res) => {
       existingTxn.senderWalletId = userWallet._id;
       existingTxn.receiverWalletId = userWallet._id;
       await existingTxn.save();
+
+      //log credit transaction for wallet
+      await Transaction.create({
+        senderWalletId: userWallet._id,
+        receiverWalletId: topupChargesWallet._id,
+        transactionType: 'wallet_topup',
+        category: 'credit',
+        amount: topupAmount,
+        balanceBefore: topupChargesWallet.balance,
+        balanceAfter: topupChargesWallet.balance + topupAmount,
+        reference: generateReference('TPCH'),
+        description: 'Wallet top-up via Paystack',
+        status: 'success',
+        metadata: {
+          initiatedBy: user._id,
+          email: userEmail,
+          platform: 'web',
+          chargeAmount: chargeAmount * 100, // Store charge in kobo
+          topupAmount: topupAmount * 100, // Store topup amount in kobo
+        }
+
+      })
 
       return res.status(200).json({
         status: true,

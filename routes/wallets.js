@@ -31,7 +31,7 @@ router.get('/getWallet/:userId',verifyToken, getOneWallet);
 router.get('/getuserwallet',verifyToken, getUserWallet);
 //wallet to wallet transfer
 router.post('/walletToWalletTransfer',verifyToken, transferFunds);
-router.get('/getChargesWallets',verifyToken, getChargesWallets);
+router.get('/getChargesWallets', getChargesWallets);
 //update charges wallet
 router.put('/updateChargesWallet/:walletId',verifyToken, updateChargesWallet);
 

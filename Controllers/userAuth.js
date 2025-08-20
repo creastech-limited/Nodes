@@ -999,7 +999,7 @@ exports.register = async (req, res) => {
       status: 'Inactive',
     });
     let schoolDBID = null;
-    if (roleLower !== 'school'&&roleLower !== 'parent') {
+    if (roleLower !== 'school'&&roleLower !== 'parent'&&roleLower !== 'admin') {
   const existingSchool = await regUser.findOne({ schoolId: generatedSchoolId, role: 'school' });
   if (!existingSchool) {
     return res.status(404).json({ message: 'School with provided ID not found' });
@@ -1103,6 +1103,13 @@ exports.register = async (req, res) => {
     newUser.qrcode = qrCodeDataUrl;
     await newUser.save();
     const base64Image = qrCodeDataUrl.replace(/^data:image\/png;base64,/, '');
+    // If role is 'admin', remove QR code and delete wallet
+     if (roleLower === 'admin') {
+      newUser.qrcode = null;
+      await newUser.save();
+      await Wallet.deleteOne({ userId: newUser._id });
+    }
+    
 
     // const emailDetails = {
     //   to: [process.env.EMAIL_TO, newUser.email],
@@ -1326,7 +1333,7 @@ exports.register2 = async (req, res) => {
     });
     let schoolDBID = null;
 
-if (roleLower !== 'school' && roleLower !== 'parent') {
+if (roleLower !== 'school' && roleLower !== 'parent' && roleLower !== 'admin') {
   const existingSchool = await regUser.findOne({ schoolId: generatedSchoolId, role: 'school' });
   if (!existingSchool) {
     return res.status(404).json({ message: 'School with provided ID not found' });
@@ -1429,6 +1436,15 @@ if (roleLower !== 'school' && roleLower !== 'parent') {
     newUser.qrcode = qrCodeDataUrl;
     await newUser.save();
     const base64Image = qrCodeDataUrl.replace(/^data:image\/png;base64,/, '');
+
+        // if role is admin, remove qrcode and delete the wallet
+    if (roleLower === 'admin') {
+      newUser.qrcode = null;
+      await newUser.save();
+      await Wallet.deleteOne({ userId: newUser._id });
+    }
+
+    
 
     await sendEmail({
     to: newUser.email,
