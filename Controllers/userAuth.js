@@ -763,6 +763,15 @@ exports.updatePassword = async (req, res) => {
 
   exports.deleteUser = async (req, res) => {
       try {
+        const userId = req.user?.id; // User making the request
+        const currentUser = await regUser.findById(userId); // Fetch current user details
+        if (!currentUser) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+        //check if the current user is a school or admin or store
+        if (currentUser.role.toLowerCase() !== 'school' && currentUser.role.toLowerCase() !== 'admin' && currentUser.role.toLowerCase() !== 'store') {
+            return res.status(403).json({ message: "Forbidden: You are not authorized to delete this user" });
+        }
           const id = req.params.id;
           const result = await regUser.findByIdAndDelete(req.params.id);
           if (!result) {
