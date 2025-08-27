@@ -135,4 +135,15 @@ const classSchema = new mongoose.Schema({
 }, { timestamps: true });
 const ClassUser = mongoose.model('Class', classSchema);
 
-module.exports = {regUser, ClassUser};
+//beneficary model
+const beneficiarySchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
+  name: { type: String},
+  email: { type: String, required: true },
+  phone: { type: String},
+}, { timestamps: true });
+const Beneficiary = mongoose.model('Beneficiary', beneficiarySchema);
+
+module.exports = {regUser, ClassUser, Beneficiary};

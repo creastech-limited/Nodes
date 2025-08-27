@@ -1,5 +1,5 @@
 const QRCode = require('qrcode');
-const {regUser, ClassUser} = require('../Models/registeration');
+const {regUser, ClassUser, Beneficiary} = require('../Models/registeration');
 const bcrypt = require('bcryptjs');
 const sendEmail = require('../utils/email');
 const FeeStatus = require('../Models/fees');
@@ -39,8 +39,11 @@ exports.getParent = async (req, res) => {
     if (!currentUser) {
         return res.status(401).json({ message: "Unauthorized" });
     }
-    const { parentId } = req.params.id;
-    const parent = await regUser.findById(parentId);
+    //current user has to be a school
+    if (currentUser.role.toLowerCase() !== 'school' && currentUser.role.toLowerCase() !== 'student') {
+        return res.status(403).json({ message: "Forbidden: You are not authorized to view parent details" });
+    }
+    const parent = await regUser.find({ role: 'parent' }).select('firstName lastName name email phone'); //only get firstName, lastName, email, phone
     if (!parent || parent.role.toLowerCase() !== 'parent') {
         return res.status(404).json({ message: "Parent not found" });
     }
@@ -54,40 +57,59 @@ exports.getParent = async (req, res) => {
 exports.addBeneficiary = async (req, res) => {
   try {
     const userId = req.user?.id; // User making the request
-    const parentUser = await regUser.findById(userId); // Fetch current user details
-    if (!parentUser) {
+    const currentUser = await regUser.findById(userId); // Fetch current user details
+    if (!currentUser) {
         return res.status(401).json({ message: "Unauthorized" });
     }
-    if (parentUser.role.toLowerCase() !== 'parent') {
+    if (currentUser.role.toLowerCase() !== 'parent') {
         return res.status(403).json({ message: "Forbidden: You are not authorized to add beneficiary" });
     }
-    const beneficiaryId = req.params.id;
-    const beneficiary = await regUser.findById(beneficiaryId);
-    if (!beneficiary || beneficiary.role.toLowerCase() !== 'student') {
-        return res.status(404).json({ message: "Beneficiary student not found" });
+    const kidId = req.params.id;
+    const kid = await regUser.findById(kidId);
+    if (!kid || kid.role.toLowerCase() !== 'student') {
+        return res.status(404).json({ message: "Student not found" });
     }
-       
-    await parentUser.save();    
-    // Check for duplicate accountNumber
-    const duplicate = currentUser.beneficiary.some(b => b.email === email);
-    if (duplicate) {
-      return res.status(400).json({ message: "Beneficiary with this account number already exists" });
+    // Check if beneficiary with same email already exists for this user
+    const existingBeneficiary = await Beneficiary.findOne({ userId: currentUser._id, email:currentUser.email, phone:currentUser.phone });
+    if (existingBeneficiary) {
+        return res.status(400).json({ message: "Beneficiary with this email already exists" });
     }
-     // save beneficiary details to parent user
-      parentUser.beneficiary.push({
-        firstName: beneficiary.firstName,
-        lastName: beneficiary.lastName,
-        name: beneficiary.name,
-        email: beneficiary.email,
-        phone: beneficiary.phone
-      });  
-      await parentUser.save();
-    res.status(200).json({ message: "Beneficiary added successfully", beneficiary: parentUser.beneficiary });
+    const newBeneficiary = new Beneficiary({
+        userId: currentUser._id,
+        firstName: kid.firstName,
+        lastName: kid.lastName,
+        name: kid.name,
+        email: kid.email,
+        phone: kid.phone,
+    });
+    await newBeneficiary.save();
+    res.status(201).json({ message: "Beneficiary added successfully", beneficiary: newBeneficiary });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 }
-
+// get beneficiaries by id
+exports.getBeneficiaries = async (req, res) => {
+  try {
+    const userId = req.user?.id; // User making the request
+    const currentUser = await regUser.findById(userId); //
+    if (!currentUser) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+    if (currentUser.role.toLowerCase() !== 'parent') {
+        return res.status(403).json({ message: "Forbidden: You are not authorized to view beneficiaries" });
+    }
+    const beneficiaries = await Beneficiary.find({ userId: currentUser._id });
+    //send notification
+    await sendNotification(currentUser._id, `You have ${beneficiaries.length} beneficiaries.`);
+    res.status(200).json({
+      beneficiariesCount: beneficiaries.length,
+       beneficiaries 
+      });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
 //update guardian for student
 exports.updateGuardian = async (req, res) => {
   try {
@@ -104,22 +126,50 @@ exports.updateGuardian = async (req, res) => {
     if (!kid || kid.role.toLowerCase() !== 'student') { 
         return res.status(404).json({ message: "Student not found" });
     }
+    const { guardianEmail } = req.body;
     //find user where role is parent
-    const parents = await regUser.find({ role: 'parent' });
-    if (!parents) {
+    const parents = await regUser.findOne({email: guardianEmail, role: 'parent' });
+    if (!parents || parents.role.toLowerCase() !== 'parent') {
         return res.status(404).json({ message: "No parents found" });
     }
-
-    currentUser.guardian = {
-      fullName,
-      relationship,
-      email,
-      phone,
-      occupation,
-      address
+    //add guardian details to student
+    kid.guardian = {
+      fullName: parents.name,
+      relationship: 'Parent',
+      email: parents.email,
+      phone: parents.phone,
+      occupation: parents.occupation || '',
+      address: parents.address || ''
     };
-    await currentUser.save();
-    res.status(200).json({ message: "Guardian updated successfully", guardian: currentUser.guardian });
+    await kid.save();
+
+    res.status(200).json({ message: "Guardian updated successfully", guardian: kid.guardian });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+//get all students whose email matches guardian email
+exports.getStudentsByBeneficiaryEmail = async (req, res) => {
+  try {
+    const userId = req.user?.id; // User making the request
+    const currentUser = await regUser.findById(userId); // Fetch current user details
+    if (!currentUser) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+    if (currentUser.role.toLowerCase() !== 'parent') {
+        return res.status(403).json({ message: "Forbidden: You are not authorized to view students" });
+    }
+    const email = currentUser.email;
+    const myChild = await regUser.find({
+      "guardian.email": email,
+      role: "student"
+      }).select("firstName lastName name email phone student_id schoolId");
+
+    if (myChild.length === 0) {
+        return res.status(404).json({ message: "No students found with this email" });
+    }
+    res.status(200).json({ myChild });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
