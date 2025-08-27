@@ -31,7 +31,101 @@ function generateTokens(user) {
   return { accessToken, refreshToken };
 }
 
+//get parent user by student id
+exports.getParent = async (req, res) => {
+  try {
+    const userId = req.user?.id; // User making the request
+    const currentUser = await regUser.findById(userId); // Fetch current user details
+    if (!currentUser) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+    const { parentId } = req.params.id;
+    const parent = await regUser.findById(parentId);
+    if (!parent || parent.role.toLowerCase() !== 'parent') {
+        return res.status(404).json({ message: "Parent not found" });
+    }
+    res.status(200).json({ parent });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
+//add beneficiary
+exports.addBeneficiary = async (req, res) => {
+  try {
+    const userId = req.user?.id; // User making the request
+    const parentUser = await regUser.findById(userId); // Fetch current user details
+    if (!parentUser) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+    if (parentUser.role.toLowerCase() !== 'parent') {
+        return res.status(403).json({ message: "Forbidden: You are not authorized to add beneficiary" });
+    }
+    const beneficiaryId = req.params.id;
+    const beneficiary = await regUser.findById(beneficiaryId);
+    if (!beneficiary || beneficiary.role.toLowerCase() !== 'student') {
+        return res.status(404).json({ message: "Beneficiary student not found" });
+    }
+       
+    await parentUser.save();    
+    // Check for duplicate accountNumber
+    const duplicate = currentUser.beneficiary.some(b => b.email === email);
+    if (duplicate) {
+      return res.status(400).json({ message: "Beneficiary with this account number already exists" });
+    }
+     // save beneficiary details to parent user
+      parentUser.beneficiary.push({
+        firstName: beneficiary.firstName,
+        lastName: beneficiary.lastName,
+        name: beneficiary.name,
+        email: beneficiary.email,
+        phone: beneficiary.phone
+      });  
+      await parentUser.save();
+    res.status(200).json({ message: "Beneficiary added successfully", beneficiary: parentUser.beneficiary });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+//update guardian for student
+exports.updateGuardian = async (req, res) => {
+  try {
+    const userId = req.user?.id; // User making the request
+    const currentUser = await regUser.findById(userId); // Fetch current user details
+    if (!currentUser) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+    if (currentUser.role.toLowerCase() !== 'school' && currentUser.role.toLowerCase() !== 'student') {
+        return res.status(403).json({ message: "Forbidden: You are not authorized to update guardian" });
+    }
+    const kidId = req.params.id;
+    const kid = await regUser.findById(kidId);
+    if (!kid || kid.role.toLowerCase() !== 'student') { 
+        return res.status(404).json({ message: "Student not found" });
+    }
+    //find user where role is parent
+    const parents = await regUser.find({ role: 'parent' });
+    if (!parents) {
+        return res.status(404).json({ message: "No parents found" });
+    }
+
+    currentUser.guardian = {
+      fullName,
+      relationship,
+      email,
+      phone,
+      occupation,
+      address
+    };
+    await currentUser.save();
+    res.status(200).json({ message: "Guardian updated successfully", guardian: currentUser.guardian });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+// User Login
 exports.login = async (req, res) => {
 
   const { email, password } = req.body;
@@ -786,6 +880,15 @@ exports.updatePassword = async (req, res) => {
 
   exports.deleteAllUsers = async (req, res) => {
     try {
+      const userId = req.user?.id; // User making the request
+      const currentUser = await regUser.findById(userId); // Fetch current user details
+      if (!currentUser) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      // Check if the current user is a school or admin or store
+      if (currentUser.role.toLowerCase() !== 'school' && currentUser.role.toLowerCase() !== 'admin' && currentUser.role.toLowerCase() !== 'store') {
+        return res.status(403).json({ message: "Forbidden: You are not authorized to delete all users" });
+      }
       const result = await regUser.deleteMany({}); // No filter: deletes ALL users
       if (result.deletedCount === 0) {
         return res.status(404).json({ message: 'No users found to delete' });

@@ -5,7 +5,7 @@ const Transaction = require('../Models/transactionSchema'); // Import Transactio
 const {regUser} = require('../Models/registeration'); // Import User model
 const Wallet = require('../Models/walletSchema'); // Import Wallet model
 const Charge = require('../Models/charges'); // Import Charges model
-const { generateReference } = require('../utils/generatereference');
+const { generateReference, notification, emails} = require('../utils/generatereference');
 // const verifyToken = require('../routes/verifyToken'); // Import verifyToken middleware
 
 
@@ -23,6 +23,7 @@ exports.getAllWithdrawalTransactions = async (req, res) => {
         message: 'Unauthorized: No user ID in token'
       });
     }
+    //find charges wallet
     //find charges wallet
     const chargesWallet = await Wallet.findOne({ walletName: 'Withdrawal Charge Wallet' });
     // console.log("Charges Wallet:", chargesWallet);
@@ -747,6 +748,11 @@ exports.verifyTransaction = async (req, res) => {
         }
 
       })
+      //send notification to user
+      await notification(user._id, `Your wallet has been credited with ${topupAmount}. New balance is ${balanceAfter}.`);
+
+      //send email to user
+      await emails(user.email, 'Wallet Top-up Successful', `Your wallet has been credited with ${topupAmount}. New balance is ${balanceAfter}.`);
 
       return res.status(200).json({
         status: true,
@@ -904,6 +910,15 @@ exports.verifyPinAndTransfer = async (req, res) => {
     await senderTransaction.save();
     await receiverTransaction.save();
 
+    //send notification to sender
+    await notification(sender._id, `You have sent ${amount} to ${receiver.email}. New balance is ${senderBalanceAfter}.`);
+    //send notification to receiver
+    await notification(receiver._id, `You have received ${amount} from ${sender.email}. New balance is ${receiverBalanceAfter}.`);
+    //send email to sender
+    await emails(sender.email, 'Transfer Successful', `You have sent ${amount} to ${receiver.email}. New balance is ${senderBalanceAfter}.`);
+    //send email to receiver
+    await emails(receiver.email, 'Transfer Received', `You have received ${amount} from ${sender.email}. New balance is ${receiverBalanceAfter}.`);
+
     res.json({
       message: 'Transfer successful',
       transaction: {
@@ -978,7 +993,7 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
 
     const receiver = await regUser.findById(receiverId);
     if (!receiver) {
-      await failTransaction('Receiver not found', { reason: 'No user with this email', receiverEmail });
+      await failTransaction('Receiver not found', { reason: 'No user with this email', receiveremail });
       return res.status(404).json({ error: 'Receiver not found ' });
     }
 
@@ -1051,6 +1066,15 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
 
     await senderTransaction.save();
     await receiverTransaction.save();
+
+    //send notification to sender
+    await notification(sender._id, `You have sent ${amount} to ${receiver.email} with email: ${receiver.email}. New balance is ${senderBalanceAfter}.`);
+    //send notification to receiver
+    await notification(receiver._id, `You have received ${amount} from ${sender.name} with email: ${sender.email}. New balance is ${receiverBalanceAfter}.`);
+    //send email to sender
+    await emails(sender.email, 'Transfer Successful', `You have sent ${amount} to ${receiver.name} with email: ${receiver.email}. New balance is ${senderBalanceAfter}.`);
+    //send email to receiver
+    await emails(receiver.email, 'Transfer Received', `You have received ${amount} from ${sender.name} with email: ${sender.email}. New balance is ${receiverBalanceAfter}.`);
 
     res.json({
       message: 'Transfer successful',
