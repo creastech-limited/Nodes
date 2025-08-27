@@ -17,6 +17,15 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendEmail = async ({ to, subject, html, attachments}) => {
+  if(!subject){
+    subject = "No Subject"
+  } if(!html){
+    html = "<p>No Content</p>"
+  }
+  if (!to ) {
+    throw new Error('To is required to send an email.');
+  }
+  
   const mailOptions = {
     from: process.env.EMAIL_USER || process.env.EMAIL_USER,
     to,

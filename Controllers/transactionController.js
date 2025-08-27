@@ -5,7 +5,9 @@ const Transaction = require('../Models/transactionSchema'); // Import Transactio
 const {regUser} = require('../Models/registeration'); // Import User model
 const Wallet = require('../Models/walletSchema'); // Import Wallet model
 const Charge = require('../Models/charges'); // Import Charges model
-const { generateReference, notification, emails} = require('../utils/generatereference');
+const { generateReference} = require('../utils/generatereference');
+const {sendNotification}  = require('../utils/notification');
+const sendEmail = require('../utils/email');
 // const verifyToken = require('../routes/verifyToken'); // Import verifyToken middleware
 
 
@@ -749,10 +751,14 @@ exports.verifyTransaction = async (req, res) => {
 
       })
       //send notification to user
-      await notification(user._id, `Your wallet has been credited with ${topupAmount}. New balance is ${balanceAfter}.`);
+      await sendNotification(user._id, `Your wallet has been credited with ${topupAmount}. New balance is ${balanceAfter}.`);
 
       //send email to user
-      await emails(user.email, 'Wallet Top-up Successful', `Your wallet has been credited with ${topupAmount}. New balance is ${balanceAfter}.`);
+      await sendEmail({
+        to: user.email, 
+        subject: 'Wallet Top-up Successful', 
+        html: `Your wallet has been credited with ${topupAmount}. New balance is ${balanceAfter}.`
+    });
 
       return res.status(200).json({
         status: true,
@@ -906,18 +912,28 @@ exports.verifyPinAndTransfer = async (req, res) => {
         receiverEmail: receiver.email
       }
     });
+    // console.log("Receievr email:", receiver.email);
+    // console.log("Sender email:", sender.email);
+    const senderEmail = sender?.email;
+    console.log("Sender email:", senderEmail);
 
     await senderTransaction.save();
     await receiverTransaction.save();
 
     //send notification to sender
-    await notification(sender._id, `You have sent ${amount} to ${receiver.email}. New balance is ${senderBalanceAfter}.`);
+    await sendNotification(sender._id, `You have sent ${amount} to ${receiver.email}. New balance is ${senderBalanceAfter}.`);
     //send notification to receiver
-    await notification(receiver._id, `You have received ${amount} from ${sender.email}. New balance is ${receiverBalanceAfter}.`);
     //send email to sender
-    await emails(sender.email, 'Transfer Successful', `You have sent ${amount} to ${receiver.email}. New balance is ${senderBalanceAfter}.`);
+   const emailResponse =await sendEmail({
+      to: senderEmail, 
+      subject:'Transfer Successful', 
+      html: `You have sent ${amount} to ${receiverEmail}. New balance is ${senderBalanceAfter}.`
+  });
     //send email to receiver
-    await emails(receiver.email, 'Transfer Received', `You have received ${amount} from ${sender.email}. New balance is ${receiverBalanceAfter}.`);
+    await sendEmail({
+      to: receiverEmail, 
+      subject: 'Transfer Received', 
+      html: `You have received ${amount} from ${senderEmail}. New balance is ${receiverBalanceAfter}.`});
 
     res.json({
       message: 'Transfer successful',
@@ -1068,13 +1084,23 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
     await receiverTransaction.save();
 
     //send notification to sender
-    await notification(sender._id, `You have sent ${amount} to ${receiver.email} with email: ${receiver.email}. New balance is ${senderBalanceAfter}.`);
+    await sendNotification(sender._id, `You have sent ${amount} to ${receiver.email} with email: ${receiver.email}. New balance is ${senderBalanceAfter}.`);
     //send notification to receiver
-    await notification(receiver._id, `You have received ${amount} from ${sender.name} with email: ${sender.email}. New balance is ${receiverBalanceAfter}.`);
+    await sendNotification(receiver._id, `You have received ${amount} from ${sender.name} with email: ${sender.email}. New balance is ${receiverBalanceAfter}.`);
     //send email to sender
-    await emails(sender.email, 'Transfer Successful', `You have sent ${amount} to ${receiver.name} with email: ${receiver.email}. New balance is ${senderBalanceAfter}.`);
+    await sendEmail(
+      {
+        to: sender.email, 
+        subject: 'Transfer Successful', 
+        html:`You have sent ${amount} to ${receiver.name} with email: ${receiver.email}. New balance is ${senderBalanceAfter}.`
+  });
     //send email to receiver
-    await emails(receiver.email, 'Transfer Received', `You have received ${amount} from ${sender.name} with email: ${sender.email}. New balance is ${receiverBalanceAfter}.`);
+    await sendEmail(
+      {
+      to: receiver.email, 
+      subject: 'Transfer Received', 
+      html: `You have received ${amount} from ${sender.name} with email: ${sender.email}. New balance is ${receiverBalanceAfter}.`
+    });
 
     res.json({
       message: 'Transfer successful',
