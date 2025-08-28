@@ -591,23 +591,12 @@ exports.withdrawal = async (req, res) => {
     });
 
   } catch (err) {
-      await sendEmail({
-      to: 'taiwo.david@creastech.com',
-      subject: 'Server Error',
-      html: `
-        <p>Hello Admin,</p>
-        <p>The withdrawal of <strong>₦${amount}</strong> to account <strong>${account_number}</strong> (${bank_name}) was not successful.</p>
-        <p>Reference: <strong>${trx.reference}</strong></p>
-        <p>Description: ${description}</p>
-        <p>Error: ${err.message}</p>
-        <p>Thank you!</p>
-      `
-    });
-
+    console.error('Withdrawal error:', err)
     return res.status(500).json({ message: 'Withdrawal failed', error: err.message });
 
   }
 };
+
 
 // withdrawal rereversal
 
