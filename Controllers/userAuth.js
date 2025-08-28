@@ -100,8 +100,6 @@ exports.getBeneficiaries = async (req, res) => {
         return res.status(403).json({ message: "Forbidden: You are not authorized to view beneficiaries" });
     }
     const beneficiaries = await Beneficiary.find({ userId: currentUser._id });
-    //send notification
-    await sendNotification(currentUser._id, `You have ${beneficiaries.length} beneficiaries.`);
     res.status(200).json({
       beneficiariesCount: beneficiaries.length,
        beneficiaries 
