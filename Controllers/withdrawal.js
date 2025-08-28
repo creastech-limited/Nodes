@@ -591,7 +591,6 @@ exports.withdrawal = async (req, res) => {
     });
 
   } catch (err) {
-      await sendNotification(currentUser._id, '❌ Server Error','Error'); 
       await sendEmail({
       to: 'taiwo.david@creastech.com',
       subject: 'Server Error',
