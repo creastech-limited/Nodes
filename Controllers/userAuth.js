@@ -88,6 +88,34 @@ exports.addBeneficiary = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 }
+
+//remove beneficiary
+exports.removeBeneficiary = async (req, res) => {
+  try {
+    const userId = req.user?.id; // User making the request
+    const currentUser = await regUser.findById(userId); //
+    if (!currentUser) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+    if (currentUser.role.toLowerCase() !== 'parent') {
+        return res.status(403).json({ message: "Forbidden: You are not authorized to remove beneficiary" });
+    }
+    const beneficiaryId = req.params.id;
+    const beneficiary = await Beneficiary.findById(beneficiaryId);
+    if (!beneficiary) {
+
+        return res.status(404).json({ message: "Beneficiary not found" });
+    }
+    if (beneficiary.userId.toString() !== currentUser._id.toString()) {
+        return res.status(403).json({ message: "Forbidden: You can only remove your own beneficiaries" });
+    }
+    await Beneficiary.findByIdAndDelete(beneficiaryId);
+    res.status(200).json({ message: "Beneficiary removed successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
 // get beneficiaries by id
 exports.getBeneficiaries = async (req, res) => {
   try {

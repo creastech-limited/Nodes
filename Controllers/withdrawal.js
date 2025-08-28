@@ -582,7 +582,7 @@ exports.withdrawal = async (req, res) => {
     });
 
     // send notification
-      await sendNotification(user, `✅ Bank transfer successful: ₦${amount} to ${account_number}`, 'success');
+      await sendNotification(currentUser._id, `✅ Bank transfer successful: ₦${amount} to ${account_number}`, 'success');
 
 
     return res.status(200).json({
@@ -591,7 +591,7 @@ exports.withdrawal = async (req, res) => {
     });
 
   } catch (err) {
-      await sendNotification(user, '❌ Server Error','Error'); 
+      await sendNotification(currentUser._id, '❌ Server Error','Error'); 
       await sendEmail({
       to: 'taiwo.david@creastech.com',
       subject: 'Server Error',
