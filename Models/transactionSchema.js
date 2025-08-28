@@ -23,7 +23,7 @@ const transactionSchema = new mongoose.Schema({
       // Internal
       'internal_adjustment', 'commission_credit', 'commission_debit', 'wallet_to_loan_wallet', 'school_fee_allocation',
       // Withdrawal
-      'withdrawal_request', 'withdrawal_approved', 'withdrawal_rejected', 'withdrawal_completed', 'withdrawal_failed', 'withdrawal_reversal',
+      'withdrawal_request', 'withdrawal_approved', 'withdrawal_rejected', 'withdrawal_completed', 'withdrawal_failed', 'withdrawal_reversal', 'withdrawal_charge',
       // reverse
       'reverse_transaction', 'reversal_request', 'reversal_approved', 'reversal_rejected', 'reversal_completed', 'reversal_failed', 'reversal'
 
