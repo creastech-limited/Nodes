@@ -70,7 +70,7 @@ exports.addBeneficiary = async (req, res) => {
         return res.status(404).json({ message: "Student not found" });
     }
     // Check if beneficiary with same email already exists for this user
-    const existingBeneficiary = await Beneficiary.findOne({ userId: currentUser._id, email:currentUser.email, phone:currentUser.phone });
+    const existingBeneficiary = await Beneficiary.findOne({ userId: currentUser._id, email:kid.email, phone:kid.phone });
     if (existingBeneficiary) {
         return res.status(400).json({ message: "Beneficiary with this email already exists" });
     }
