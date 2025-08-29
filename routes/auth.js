@@ -17,7 +17,7 @@ const { updateUserProfilePicture } = require('../Controllers/userAuth');
 
 
 // Register route
-router.get('/getparent', verifyToken, getParent);
+router.get('/getparents', verifyToken, getParent);
 router.get('/getmychild', verifyToken, getStudentsByBeneficiaryEmail);
 router.put('/updateguardian', verifyToken, updateGuardian);
 router.post('/addbeneficiary/:id', verifyToken, addBeneficiary);
