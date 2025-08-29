@@ -9,7 +9,7 @@ const bcrypt = require('bcrypt');
 const regUser = require('../Models/registeration');
 const disputeData = require('../Models/dispute');
 const {getallUsers, getAllStudentsInSchool, getUserByFilter, getAllStoreInSchool, getAllAgentsInSchool, getAllStudentsCountInSchool, getAllStoreInSchoolCount, getAllAgentsInSchoolCount, getuserbyid,getuser,getAllStudents, getallSchools} = require('../Controllers/getAllusers');
-const {getAllClassesWithCounts,getStudentCountByClass,login,getSchoolClasses, register,register2,logout,updateUser, forgotPassword,resetWithToken, deleteUser,deleteAllUsers, updatePassword, verifySenderAndReceiver, getSchoolById, deactiveUser,activateUSer, addBeneficiary, getBeneficiaries, removeBeneficiary} = require('../Controllers/userAuth');
+const {getAllClassesWithCounts,getStudentCountByClass,login,getSchoolClasses, register,register2,logout,updateUser, forgotPassword,resetWithToken, deleteUser,deleteAllUsers, updatePassword, verifySenderAndReceiver, getSchoolById, deactiveUser,activateUSer, addBeneficiary, getBeneficiaries, removeBeneficiary, updateGuardian, getParent,getStudentsByBeneficiaryEmail} = require('../Controllers/userAuth');
 const { initiateTransaction, verifyTransaction} = require('../Controllers/transactionController');
 const verifyToken = require('./verifyToken');
 const {uploadProfileImage,compressAndSaveProfilePicture} = require('../Middleware/upload');
@@ -17,6 +17,9 @@ const { updateUserProfilePicture } = require('../Controllers/userAuth');
 
 
 // Register route
+router.get('/getparent', verifyToken, getParent);
+router.get('/getmychild', verifyToken, getStudentsByBeneficiaryEmail);
+router.put('/updateguardian', verifyToken, updateGuardian);
 router.post('/addbeneficiary/:id', verifyToken, addBeneficiary);
 router.delete('/removebeneficiary/:id', verifyToken, removeBeneficiary);
 router.get('/getbeneficiaries', verifyToken, getBeneficiaries);

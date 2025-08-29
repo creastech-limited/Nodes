@@ -10,6 +10,26 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const Wallet = require('../Models/walletSchema'); // Import Wallet model
 
+//function to proper case
+function toProperCase(str) {
+  if (typeof str !== "string") {
+    return ""; // or null if you prefer
+  }
+
+  if (str.trim() === "") {
+    return "";
+  }
+
+  return str
+    .toLowerCase()
+    .split(" ")
+    .filter(word => word.trim() !== "")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+
+
 function generateTokens(user) {
   const accessToken = jwt.sign(
     {
@@ -30,7 +50,31 @@ function generateTokens(user) {
 
   return { accessToken, refreshToken };
 }
+//get children by guardian email
+exports.getStudentsByBeneficiaryEmail = async (req, res) => {
+  try {
+    const userId = req.user?.id; // User making the request
+    const currentUser = await regUser.findById(userId); //
+    if (!currentUser) {
 
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+    if (currentUser.role.toLowerCase() !== 'parent') {
+        return res.status(403).json({ message: "Forbidden: You are not authorized to view students" });
+    }
+    const email = currentUser.email;
+    const myChild = await regUser.find({  
+      "guardian.email": email,
+      role: "student"
+      }).select("firstName lastName name email phone student_id schoolId");
+    if (myChild.length === 0) {
+        return res.status(404).json({ message: "No students found with this email" });
+    }
+    res.status(200).json({ myChild });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
 //get parent user by student id
 exports.getParent = async (req, res) => {
   try {
@@ -43,11 +87,16 @@ exports.getParent = async (req, res) => {
     if (currentUser.role.toLowerCase() !== 'school' && currentUser.role.toLowerCase() !== 'student') {
         return res.status(403).json({ message: "Forbidden: You are not authorized to view parent details" });
     }
-    const parent = await regUser.find({ role: 'parent' }).select('firstName lastName name email phone'); //only get firstName, lastName, email, phone
-    if (!parent || parent.role.toLowerCase() !== 'parent') {
+    const parent = await regUser.find({ role: 'parent' }).select('firstName lastName name email phone address'); //only get firstName, lastName, email, phone
+    // console.log(parent);
+    if (!parent) {
         return res.status(404).json({ message: "Parent not found" });
     }
-    res.status(200).json({ parent });
+    res.status(200).json({ 
+      message: "Parent details fetched successfully",
+      parentCount: parent.length,
+      parent
+     });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -147,12 +196,14 @@ exports.updateGuardian = async (req, res) => {
     if (currentUser.role.toLowerCase() !== 'school' && currentUser.role.toLowerCase() !== 'student') {
         return res.status(403).json({ message: "Forbidden: You are not authorized to update guardian" });
     }
-    const kidId = req.params.id;
-    const kid = await regUser.findById(kidId);
+    const { guardianEmail, kidEmail } = req.body;
+    console.log(kidEmail);
+    console.log(guardianEmail);
+    const kid = await regUser.findOne({email: kidEmail, role: 'student' });
     if (!kid || kid.role.toLowerCase() !== 'student') { 
         return res.status(404).json({ message: "Student not found" });
     }
-    const { guardianEmail } = req.body;
+    
     //find user where role is parent
     const parents = await regUser.findOne({email: guardianEmail, role: 'parent' });
     if (!parents || parents.role.toLowerCase() !== 'parent') {
@@ -164,8 +215,7 @@ exports.updateGuardian = async (req, res) => {
       relationship: 'Parent',
       email: parents.email,
       phone: parents.phone,
-      occupation: parents.occupation || '',
-      address: parents.address || ''
+      address: toProperCase(parents.address) || ''
     };
     await kid.save();
 
