@@ -847,30 +847,16 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
       await user.save();
   
       const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+      await sendEmail({
+      to: email,
+      subject: 'Password Reset Request',
+      html: `<p>Hello ${user.firstName || ''},</p>
+             <p>You requested a password reset. Click the link below to reset it:</p>
+             <a href="${resetLink}">Reset Password</a>
+              <p>This link will expire in 1 hour.</p>`
+    });
   
-      const emailDetails = {
-        to: `${user.email}`, // <-- send to actual user email
-        from: {
-          email: "davidt@yungmindsinnovative.com.ng",
-          name: 'Your Company Name'
-        },
-        subject: 'Password Reset Request',
-        html: `<p>Hello ${user.firstName || ''},</p>
-               <p>You requested a password reset. Click the link below to reset it:</p>
-               <a href="${resetLink}">${resetLink}</a>
-               <p>This link will expire in 1 hour.</p>`
-      };
-  
-      sgMail
-        .send(emailDetails)
-        .then(() => {
-          console.log('Reset email sent successfully to', user.email);
-          console.log('Reset email sent successfully to', user.resetPasswordToken);
-        })
-        .catch((error) => {
-          console.error('Failed to send reset email:', error.response?.body || error.message);
-        });
-  
+      
       res.status(200).json({
         success: true,
         message: `Reset password link has been sent to your email, ${user.email}`
@@ -880,6 +866,41 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
       res.status(500).json({ success: false, message: 'Error sending reset email' });
     }
   };
+//send reset link to email
+exports.sendResetLink = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await regUser.find({ email: email.toLowerCase().trim() });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    // Generate a reset token
+    const token = crypto.randomBytes(20).toString('hex');
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    await user.save();
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+    console.log("Reset link generated:", resetLink);
+    console.log("User email:", user.email);
+    // Send the reset link via email
+    await sendEmail({
+      to: email,
+      subject: 'Password Reset Request',
+      html: `<p>Hello ${user.firstName || ''},</p>
+             <p>You requested a password reset. Click the link below to reset it:</p>
+             <a href="${resetLink}">${resetLink}</a>
+              <p>This link will expire in 1 hour.</p>`
+    });
+    res.status(200).json({
+      success: true,
+      message: `Reset password link has been sent to your email, ${user.email}`
+    });
+  } catch (error) {
+    console.error('Send Reset Link Error:', error.message);
+    res.status(500).json({ success: false, message: 'Error sending reset email' });
+  }
+};
+
 //reset password
 exports.resetWithToken = async (req, res) => {
   try {
