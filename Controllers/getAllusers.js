@@ -112,6 +112,54 @@ exports.getAllStudents = async (req, res) => {
   }
 };
 
+exports.getMyChild = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    } 
+    // Find the user to get their email
+    const user = await regUser.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    // Find students where guardian email matches user's email
+    const students = await regUser.find({ role: 'student', 'guardian.email': user.email })
+      .populate({
+        path: 'Class',
+        select: 'className section description',
+      })
+      .select('-password -pin -refreshToken'); // Hide sensitive info
+
+      //get student class details
+    if (students.length === 0) {
+      return res.status(404).json({ success: false, message: 'No students found' });
+    }
+    
+    res.status(200).json({
+      success: true,
+      total: students.length,
+      data: students.map(student => {
+        return {
+          student_id: student._id,
+          class: student.Class ? student.academicDetails.classAdmittedTo : 'N/A',
+          firstName: student.firstName,
+          lastName: student.lastName,
+          fullName: student.name,
+          role: student.role,
+          email: student.email,
+          phone: student.phone,
+        };
+      })
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+
+
 exports.getuserbyid = async (req, res) => {
   try {
       const userId = req.params.id; // Get userId from request parameters

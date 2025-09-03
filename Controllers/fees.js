@@ -1027,12 +1027,6 @@ exports.getFeeForStudent = async (req, res) => {
     // Validate role
     if (userRole !== 'parent' && userRole !== 'student' && userRole !== 'school') {
       return res.status(403).json({ message: 'Access denied. Only students, parents, or schools can view fees.' });
-      await sendNotification({ 
-        userId: currentUserId,
-        title: 'Access Denied',
-        message: 'You do not have permission to view fees.',
-        read: false
-      });
     }
 
     const  {email} = req.params;
