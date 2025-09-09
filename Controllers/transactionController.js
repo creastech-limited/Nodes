@@ -785,7 +785,19 @@ exports.verifyTransaction = async (req, res) => {
   }
 };
 
+const getTransferCharge = async (userId) => {
+  const user = await regUser.findById(userId);
+  if (!user) {
+    throw new Error('User not found');
+  }
 
+  const charge = await Charge.findOne({ name: 'Transfer Charges' });
+  if (!charge) {
+    throw new Error('Transfer Charges not found');
+  }
+
+  return charge;
+};
 exports.verifyPinAndTransfer = async (req, res) => {
   const senderId = req.user?.id;
   const { receiverEmail, amount, pin, description = 'No description provided' } = req.body;
@@ -857,6 +869,9 @@ exports.verifyPinAndTransfer = async (req, res) => {
       });
       return res.status(400).json({ error: 'Wallet(s) not found' });
     }
+    //get transfer charges wallet
+    const transferCharge = await Charge.findOne({name: "Transfer Charges"});
+    if(!transferCharge)
 
     if (senderWallet.balance < amount) {
       await failTransaction('Insufficient balance', {
