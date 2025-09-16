@@ -76,6 +76,16 @@ const userSchema = new mongoose.Schema({
   schoolRegistrationLink: { type: String},
   isFirstLogin: { type: Boolean, default: true },
   isPinSet: { type: Boolean, default: false },
+  agentCanTopup: { type: Boolean, default: false },
+  storeCanTopup: { type: Boolean, default: false },
+  studentCanTopup: { type: Boolean, default: false },
+  schoolCanTopup: { type: Boolean, default: false },
+  studentCanTransfer: { type: Boolean, default: false },
+  studentCanWithdraw: { type: Boolean, default: false },
+  storeCanTransfer: { type: Boolean, default: false },
+  storeCanWithdraw: { type: Boolean, default: false },
+  agentCanTransfer: { type: Boolean, default: false },
+  agentCanWithdraw: { type: Boolean, default: false },
   beneficiary: [
     { 
       firstName: String,

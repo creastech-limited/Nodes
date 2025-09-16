@@ -252,13 +252,24 @@ exports.getuserbyid = async (req, res) => {
 exports.getuser = async (req, res) => {
   try {
       const userId = req.user?.id; // <-- Get userId from URL params
-      console.log("User ID from request:", userId);
-
+      // console.log("User ID from request:", userId);
       if (!userId) {
           return res.status(400).json({ message: 'User ID is required' });
       }
-
+      
       const data = await regUser.findById(userId);
+      //get school info for store, agent and students
+      const schoolInfo = await regUser.findOne({ schoolId: data.schoolId, role: 'school' });
+      const studentCanTransfer = schoolInfo ? schoolInfo.schoolCanTransfer : false;
+      const schoolCanWithdraw = schoolInfo ? schoolInfo.schoolCanWithdraw : false;
+      const storeCanTransfer = data.storeCanTransfer || false;
+      const storeCanWithdraw = data.storeCanWithdraw || false;
+      const agentCanTransfer = data.agentCanTransfer || false;
+      const agentCanWithdraw = data.agentCanWithdraw || false;
+      const studentCanTopup = data.studentCanTopup || false;
+      const storeCanTopup = data.storeCanTopup || false;
+      const agentCanTopup = data.agentCanTopup || false;
+      const schoolCanTopup = schoolInfo ? schoolInfo.schoolCanTopup : false;
       const wallet = await Wallet.findOne({ userId: data._id });
       if (!data) {
           return res.status(404).json({ message: 'Data not found' });
@@ -283,6 +294,17 @@ switch (role.toLowerCase()) {
 //give response with user data and dynamic link base d on role
       // Remove sensitive information from the response
       const { pin, password, ...safeUser} = data.toObject();
+      //add studentCanTransfer, schoolCanWithdraw, storeCanTransfer, storeCanWithdraw, agentCanTransfer, agentCanWithdraw to safeUser
+      safeUser.studentCanTransfer = studentCanTransfer;
+      safeUser.schoolCanWithdraw = schoolCanWithdraw;
+      safeUser.storeCanTransfer = storeCanTransfer;
+      safeUser.storeCanWithdraw = storeCanWithdraw;
+      safeUser.agentCanTransfer = agentCanTransfer;
+      safeUser.agentCanWithdraw = agentCanWithdraw;
+      safeUser.studentCanTopup = studentCanTopup;
+      safeUser.storeCanTopup = storeCanTopup;
+      safeUser.agentCanTopup = agentCanTopup;
+      safeUser.schoolCanTopup = schoolCanTopup;
       // Remove sensitive information from the response
       // Use toObject() to convert Mongoose document to plain object
       // This allows us to safely remove properties without affecting the original document
