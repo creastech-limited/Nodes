@@ -871,7 +871,16 @@ exports.verifyPinAndTransfer = async (req, res) => {
     }
     //get transfer charges wallet
     const transferCharge = await Charge.findOne({name: "Transfer Charges"});
-    if(!transferCharge)
+    if(!transferCharge){
+      return res.status(404).json({error: "Transfer Charges not found"});
+    }
+    // Calculate charge amount if charge type is Flat put the charge amount as is, if charge type is Percentage calculate the percentage of the amount not greater than 500
+    let chargeAmount = 0;
+    if (transferCharge.chargeType === 'Flat') {
+      chargeAmount = transferCharge.amount;
+    } else if (transferCharge.chargeType === 'Percentage') {
+      chargeAmount = Math.min((amount * transferCharge.amount) / 100, 500);
+    }
 
     if (senderWallet.balance < amount) {
       await failTransaction('Insufficient balance', {
@@ -881,12 +890,29 @@ exports.verifyPinAndTransfer = async (req, res) => {
       });
       return res.status(400).json({ error: 'Insufficient balance' });
     }
-
+// find transfer charges wallet
+    const transferChargesWallet = await Wallet.findOne({ walletName: 'Transfer Charges Wallet' });
+    if (!transferChargesWallet) {
+      return res.status(404).json({ message: 'Transfer Charge Wallet not found' });
+    }
+    // find transfer charges for school
+    // const transferCharge = await getTransferCharge(senderId);
+    // if (!transferCharge) {
+    //   return res.status(404).json({ error: 'Transfer Charges not found' });
+    // }
+    // const chargeAmount = transferCharge.chargeType === 'Flat' ? transferCharge.amount : Math.min((amount * transferCharge.amount) / 100, 500);
     // Transfer funds
     const senderBalanceBefore = senderWallet.balance;
-    const senderBalanceAfter = senderWallet.balance - amount;
+    const senderBalanceAfter = senderWallet.balance - amount - chargeAmount;
     const receiverBalanceBefore = receiverWallet.balance;
     const receiverBalanceAfter = receiverWallet.balance + amount;
+    //update transfer charges wallet
+    transferChargesWallet.balance += chargeAmount;
+    transferChargesWallet.lastTransaction = new Date();
+    transferChargesWallet.lastTransactionAmount = chargeAmount;
+    transferChargesWallet.lastTransactionType = 'credit';
+    await transferChargesWallet.save();
+
 
     senderWallet.balance = senderBalanceAfter;
     receiverWallet.balance = receiverBalanceAfter;
