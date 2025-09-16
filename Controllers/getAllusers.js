@@ -262,13 +262,13 @@ exports.getuser = async (req, res) => {
       const schoolInfo = await regUser.findOne({ schoolId: data.schoolId, role: 'school' });
       const studentCanTransfer = schoolInfo ? schoolInfo.schoolCanTransfer : false;
       const schoolCanWithdraw = schoolInfo ? schoolInfo.schoolCanWithdraw : false;
-      const storeCanTransfer = data.storeCanTransfer || false;
-      const storeCanWithdraw = data.storeCanWithdraw || false;
-      const agentCanTransfer = data.agentCanTransfer || false;
-      const agentCanWithdraw = data.agentCanWithdraw || false;
-      const studentCanTopup = data.studentCanTopup || false;
-      const storeCanTopup = data.storeCanTopup || false;
-      const agentCanTopup = data.agentCanTopup || false;
+      const storeCanTransfer = schoolInfo ? schoolInfo.storeCanTransfer : false;
+      const storeCanWithdraw = schoolInfo ? schoolInfo.storeCanWithdraw : false;
+      const agentCanTransfer = schoolInfo ? schoolInfo.agentCanTransfer : false;
+      const agentCanWithdraw = schoolInfo ? schoolInfo.agentCanWithdraw : false;
+      const studentCanTopup = schoolInfo ? schoolInfo.studentCanTopup : false;
+      const storeCanTopup = schoolInfo ? schoolInfo.storeCanTopup : false;
+      const agentCanTopup = schoolInfo ? schoolInfo.agentCanTopup : false;
       const schoolCanTopup = schoolInfo ? schoolInfo.schoolCanTopup : false;
       const wallet = await Wallet.findOne({ userId: data._id });
       if (!data) {
@@ -305,10 +305,30 @@ switch (role.toLowerCase()) {
       safeUser.storeCanTopup = storeCanTopup;
       safeUser.agentCanTopup = agentCanTopup;
       safeUser.schoolCanTopup = schoolCanTopup;
-      // Remove sensitive information from the response
-      // Use toObject() to convert Mongoose document to plain object
-      // This allows us to safely remove properties without affecting the original document
-// const { pin, password, ...safeUser} = data;
+      // Remove storeCanTransfer, storeCanWithdraw, agentCanTransfer, agentCanWithdraw from safeUser if role is parent
+      if (role === 'parent') {
+        delete safeUser.storeCanTransfer;
+        delete safeUser.storeCanWithdraw;
+        delete safeUser.agentCanTransfer;
+        delete safeUser.agentCanWithdraw;
+        delete safeUser.studentCanTransfer;
+        delete safeUser.studentCanTopup;
+        delete safeUser.schoolCanTopup;
+        delete safeUser.storeCanTopup;
+        delete safeUser.agentCanTopup;
+        delete safeUser.schoolCanWithdraw;
+        delete safeUser.schoolCanTransfer;
+        delete safeUser.studentCanWithdraw;
+        delete safeUser.schoolName;
+        delete safeUser.schoolAddress;
+        delete safeUser.schoolType;
+        delete safeUser.ownership;
+        delete safeUser.store_id;
+        delete safeUser.schoolRegistrationLink;
+      }
+
+      
+      
 
       res.status(200).json({
         message: `User found with the role: ${data.role}`,

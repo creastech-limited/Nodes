@@ -881,8 +881,10 @@ exports.verifyPinAndTransfer = async (req, res) => {
     } else if (transferCharge.chargeType === 'Percentage') {
       chargeAmount = Math.min((amount * transferCharge.amount) / 100, 500);
     }
-
-    if (senderWallet.balance < amount) {
+    amount = parseFloat(amount);
+    //Total Amount to be deducted from sender
+    const totalDeduction = amount + chargeAmount;
+    if (senderWallet.balance < totalDeduction) {
       await failTransaction('Insufficient balance', {
         reason: 'Sender does not have enough funds',
         currentBalance: senderWallet.balance,
@@ -903,7 +905,7 @@ exports.verifyPinAndTransfer = async (req, res) => {
     // const chargeAmount = transferCharge.chargeType === 'Flat' ? transferCharge.amount : Math.min((amount * transferCharge.amount) / 100, 500);
     // Transfer funds
     const senderBalanceBefore = senderWallet.balance;
-    const senderBalanceAfter = senderWallet.balance - amount - chargeAmount;
+    const senderBalanceAfter = senderWallet.balance - totalDeduction;
     const receiverBalanceBefore = receiverWallet.balance;
     const receiverBalanceAfter = receiverWallet.balance + amount;
     //update transfer charges wallet
@@ -934,6 +936,7 @@ exports.verifyPinAndTransfer = async (req, res) => {
       metadata: {
         receiverEmail: receiver.email,
         senderEmail: sender.email,
+        chargeAmount
       }
     });
 
@@ -953,6 +956,45 @@ exports.verifyPinAndTransfer = async (req, res) => {
         receiverEmail: receiver.email
       }
     });
+
+    //log transfer charge transaction
+    const chargeTransaction = new Transaction({
+      senderWalletId: senderWallet._id,
+      receiverWalletId: transferChargesWallet._id,
+      transactionType: 'transfer_charge',
+      category: 'debit',
+      amount: chargeAmount,
+      balanceBefore: senderBalanceAfter + chargeAmount,
+      balanceAfter: senderBalanceAfter,
+      reference: `TRX-${uuidv4()}`,
+      description: `Transfer charge for sending ${amount} to ${receiver.email}`,
+      status: 'success',
+      metadata: {
+        senderEmail: sender.email,
+        receiverEmail: receiver.email,
+        chargeAmount
+      }
+    });
+    //log charge transaction for transfer charges wallet
+    const chargeTransactionForChargeWallet = new Transaction({
+      senderWalletId: senderWallet._id,
+      receiverWalletId: transferChargesWallet._id,
+      transactionType: 'transfer_charge',
+      category: 'credit',
+      amount: chargeAmount,
+      balanceBefore: transferChargesWallet.balance - chargeAmount,
+      balanceAfter: transferChargesWallet.balance,
+      reference: `TRX-${uuidv4()}`,
+      description: `Transfer charge received from ${sender.email} for sending ${amount} to ${receiver.email}`,
+      status: 'success',
+      metadata: {
+        senderEmail: sender.email,
+        receiverEmail: receiver.email,
+        chargeAmount
+      }
+    });
+    await chargeTransactionForChargeWallet.save(); 
+    await chargeTransaction.save();
     // console.log("Receievr email:", receiver.email);
     // console.log("Sender email:", sender.email);
     const senderEmail = sender?.email;
