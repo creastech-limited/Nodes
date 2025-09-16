@@ -76,6 +76,106 @@ exports.getallUsers =  async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 }
+//get all users within a school
+exports.getallUsersInSchool = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+    const data = await regUser.findById(userId);
+    const users = await regUser.find({ schoolId: data.schoolId });
+    if (users.length === 0) {
+      return res.status(404).json({ message: 'No users found in this school' });
+    }
+    res.status(200).json({
+      message: `Found ${users.length} user(s) in school ${data.schoolName}`,
+     data: users.map(user => ({
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            role: user.role,
+          })),
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+//get all student within a school
+exports.getallStudentsInSchool = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+    const data = await regUser.findById(userId);
+    const users = await regUser.find({ schoolId: data.schoolId, role: 'student' });
+    if (users.length === 0) {
+      return res.status(404).json({ message: 'No users found in this school' });
+    }
+    res.status(200).json({
+      message: `Found ${users.length} user(s) in school ${data.schoolName}`,
+        data: users.map(user => ({
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+      })),
+});
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+//get all agents within a school
+exports.getallAgentsInSchool = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+    const data = await regUser.findById(userId);
+    const users = await regUser.find({ schoolId: data.schoolId, role: 'agent' });
+    if (users.length === 0) {
+      return res.status(404).json({ message: 'No users found in this school' });
+    }
+    res.status(200).json({
+      message: `Found ${users.length} user(s) in school ${data.schoolName}`,
+      data: users.map(user => ({
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    role: user.role,
+  })),
+});
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+//get all agents within a school
+exports.getallStoreInSchool = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+    const data = await regUser.findById(userId);
+    const users = await regUser.find({ schoolId: data.schoolId, role: 'store' });
+    if (users.length === 0) {
+      return res.status(404).json({ message: 'No users found in this school' });
+    }
+    res.status(200).json({
+      message: `Found ${users.length} user(s) in school ${data.schoolName}`,
+      data: users.map(user => ({
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    role: user.role,
+  })),
+});
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 exports.getAllStudents = async (req, res) => {
   try {
     const students = await regUser.find({ role: 'student' })
@@ -325,6 +425,31 @@ switch (role.toLowerCase()) {
         delete safeUser.ownership;
         delete safeUser.store_id;
         delete safeUser.schoolRegistrationLink;
+      };
+      if (role === 'student') {
+        delete safeUser.storeCanTransfer;
+        delete safeUser.storeCanWithdraw;
+        delete safeUser.agentCanTransfer;
+        delete safeUser.agentCanWithdraw;
+        delete safeUser.schoolCanTransfer;
+        delete safeUser.schoolCanWithdraw;
+        delete safeUser.storeCanTopup;
+        delete safeUser.agentCanTopup;
+        delete safeUser.schoolCanTopup;
+        delete safeUser.store_id;
+        delete safeUser.schoolRegistrationLink;
+      }
+      if (role === 'agent') {
+        delete safeUser.studentCanTransfer;
+        delete safeUser.studentCanTopup;
+        delete safeUser.schoolCanTopup;
+        delete safeUser.schoolCanTransfer;
+        delete safeUser.schoolCanWithdraw;
+        delete safeUser.studentCanWithdraw;
+        delete safeUser.schoolName;
+        delete safeUser.schoolAddress;
+        delete safeUser.schoolType;
+        delete safeUser.ownership;
       }
 
       

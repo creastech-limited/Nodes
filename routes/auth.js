@@ -8,7 +8,7 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const regUser = require('../Models/registeration');
 const disputeData = require('../Models/dispute');
-const {getallUsers, getAllStudentsInSchool, getUserByFilter, getAllStoreInSchool, getAllAgentsInSchool, getAllStudentsCountInSchool, getAllStoreInSchoolCount, getAllAgentsInSchoolCount, getuserbyid,getuser,getAllStudents, getallSchools, getMyChild} = require('../Controllers/getAllusers');
+const {getallUsers, getAllStudentsInSchool, getUserByFilter, getAllStoreInSchool, getAllAgentsInSchool, getAllStudentsCountInSchool, getAllStoreInSchoolCount, getAllAgentsInSchoolCount, getuserbyid,getuser,getAllStudents, getallSchools, getMyChild,getallUsersInSchool, getallStudentsInSchool,getallAgentsInSchool, getallStoreInSchool} = require('../Controllers/getAllusers');
 const {getAllClassesWithCounts,getStudentCountByClass,login,getSchoolClasses, register,register2,logout,updateUser, forgotPassword,resetWithToken, deleteUser,deleteAllUsers, updatePassword, verifySenderAndReceiver, getSchoolById, deactiveUser,activateUSer, addBeneficiary, getBeneficiaries, removeBeneficiary, updateGuardian, getParent,getStudentsByBeneficiaryEmail, sendResetLink,} = require('../Controllers/userAuth');
 const { initiateTransaction, verifyTransaction} = require('../Controllers/transactionController');
 const verifyToken = require('./verifyToken');
@@ -35,6 +35,10 @@ router.put('/update-user/:id', verifyToken, updateUser);
 router.get('/getclasse', verifyToken, getSchoolClasses)
 router.get('/getallclasseswithcount', verifyToken, getAllClassesWithCounts)
 router.get('/getallsudent', verifyToken, getAllStudents)
+router.get('/getallschooluser', verifyToken, getallUsersInSchool)
+router.get('/getallschoolstudent', verifyToken, getallStudentsInSchool)
+router.get('/getallschoolagent', verifyToken, getallAgentsInSchool)
+router.get('/getallschoolstore', verifyToken, getallStoreInSchool)
 router.get('/getallUsers', getallUsers);
 router.get('/getclasscount',verifyToken, getStudentCountByClass);
 router.get('/getuser/:id',verifyToken, getuserbyid);
