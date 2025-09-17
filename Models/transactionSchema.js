@@ -18,6 +18,7 @@ const transactionSchema = new mongoose.Schema({
     enum: [
       // Credit
       'deposit', 'wallet_transfer_received', 'loan_disbursement', 'refund', 'salary_payment', 'bonus', 'wallet_topup', 'fee_payment_received',
+    'transfer_charge',
       // Debit
       'withdrawal', 'wallet_transfer_sent', 'loan_repayment', 'purchase', 'fee_payment', 'subscription_payment', 'wallet_deduction', 'bank_transfer',
       // Internal

@@ -881,7 +881,6 @@ exports.verifyPinAndTransfer = async (req, res) => {
     } else if (transferCharge.chargeType === 'Percentage') {
       chargeAmount = Math.min((amount * transferCharge.amount) / 100, 500);
     }
-    amount = parseFloat(amount);
     //Total Amount to be deducted from sender
     const totalDeduction = amount + chargeAmount;
     if (senderWallet.balance < totalDeduction) {
