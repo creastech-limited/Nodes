@@ -83,6 +83,7 @@ const userSchema = new mongoose.Schema({
   studentCanTransfer: { type: Boolean, default: false },
   studentCanWithdraw: { type: Boolean, default: false },
   storeCanTransfer: { type: Boolean, default: false },
+  schoolCanTransfer: { type: Boolean, default: false },
   storeCanWithdraw: { type: Boolean, default: false },
   agentCanTransfer: { type: Boolean, default: false },
   agentCanWithdraw: { type: Boolean, default: false },
