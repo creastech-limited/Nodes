@@ -661,6 +661,8 @@ exports.initiateTransaction = async (req, res) => {
 exports.verifyTransaction = async (req, res) => {
   try {
     const reference = req.query.reference || req.params.reference;
+    // const paystack = process.env.PAYSTACK_SECRET_KEY;
+    // console.log(paystack)
 
     if (!reference) {
       return res.status(400).json({ status: false, message: 'Reference is required' });
