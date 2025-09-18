@@ -79,6 +79,7 @@ const userSchema = new mongoose.Schema({
   agentCanTopup: { type: Boolean, default: false },
   storeCanTopup: { type: Boolean, default: false },
   studentCanTopup: { type: Boolean, default: false },
+  studentCanPayBill: { type: Boolean, default: false },
   schoolCanTopup: { type: Boolean, default: false },
   studentCanTransfer: { type: Boolean, default: false },
   studentCanWithdraw: { type: Boolean, default: false },
