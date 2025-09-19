@@ -370,6 +370,7 @@ exports.getuser = async (req, res) => {
       const storeCanTopup = schoolInfo ? schoolInfo.storeCanTopup : false;
       const agentCanTopup = schoolInfo ? schoolInfo.agentCanTopup : false;
       const schoolCanTopup = schoolInfo ? schoolInfo.schoolCanTopup : false;
+      const schoolCanPayBill = schoolInfo ? schoolInfo.schoolCanPayBill : false;
       const wallet = await Wallet.findOne({ userId: data._id });
       if (!data) {
           return res.status(404).json({ message: 'Data not found' });
@@ -405,6 +406,7 @@ switch (role.toLowerCase()) {
       safeUser.storeCanTopup = storeCanTopup;
       safeUser.agentCanTopup = agentCanTopup;
       safeUser.schoolCanTopup = schoolCanTopup;
+      safeUser.schoolCanPayBill = schoolCanPayBill;
       // Remove storeCanTransfer, storeCanWithdraw, agentCanTransfer, agentCanWithdraw from safeUser if role is parent
       if (role === 'parent') {
         delete safeUser.storeCanTransfer;
@@ -425,6 +427,7 @@ switch (role.toLowerCase()) {
         delete safeUser.ownership;
         delete safeUser.store_id;
         delete safeUser.schoolRegistrationLink;
+        delete safeUser.schoolCanPayBill;
       };
       if (role === 'student') {
         delete safeUser.storeCanTransfer;
@@ -450,6 +453,7 @@ switch (role.toLowerCase()) {
         delete safeUser.schoolAddress;
         delete safeUser.schoolType;
         delete safeUser.ownership;
+        delete safeUser.schoolCanPayBill;
       }
 
       
