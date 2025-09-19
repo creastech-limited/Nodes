@@ -406,7 +406,7 @@ switch (role.toLowerCase()) {
       safeUser.storeCanTopup = storeCanTopup;
       safeUser.agentCanTopup = agentCanTopup;
       safeUser.schoolCanTopup = schoolCanTopup;
-      safeUser.schoolCanPayBill = schoolCanPayBill;
+      safeUser.studentCanPayBill = studentCanPayBill;
       // Remove storeCanTransfer, storeCanWithdraw, agentCanTransfer, agentCanWithdraw from safeUser if role is parent
       if (role === 'parent') {
         delete safeUser.storeCanTransfer;
@@ -427,7 +427,7 @@ switch (role.toLowerCase()) {
         delete safeUser.ownership;
         delete safeUser.store_id;
         delete safeUser.schoolRegistrationLink;
-        delete safeUser.schoolCanPayBill;
+        delete safeUser.studentCanPayBill;
       };
       if (role === 'student') {
         delete safeUser.storeCanTransfer;
@@ -453,7 +453,7 @@ switch (role.toLowerCase()) {
         delete safeUser.schoolAddress;
         delete safeUser.schoolType;
         delete safeUser.ownership;
-        delete safeUser.schoolCanPayBill;
+        delete safeUser.studentCanPayBill;
       }
 
       
