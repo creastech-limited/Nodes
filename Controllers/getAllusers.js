@@ -370,7 +370,7 @@ exports.getuser = async (req, res) => {
       const storeCanTopup = schoolInfo ? schoolInfo.storeCanTopup : false;
       const agentCanTopup = schoolInfo ? schoolInfo.agentCanTopup : false;
       const schoolCanTopup = schoolInfo ? schoolInfo.schoolCanTopup : false;
-      const schoolCanPayBill = schoolInfo ? schoolInfo.schoolCanPayBill : false;
+      const studentCanPayBill = schoolInfo ? schoolInfo.studentCanPayBill : false;
       const wallet = await Wallet.findOne({ userId: data._id });
       if (!data) {
           return res.status(404).json({ message: 'Data not found' });
