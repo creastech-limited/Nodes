@@ -1093,7 +1093,7 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
 
     const receiver = await regUser.findById(receiverId);
     if (!receiver) {
-      await failTransaction('Receiver not found', { reason: 'No user with this email', receiveremail });
+      await failTransaction('Receiver not found', { reason: 'No Receiver found' });
       return res.status(404).json({ error: 'Receiver not found ' });
     }
 
@@ -1108,7 +1108,17 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
       });
       return res.status(400).json({ error: 'Wallet(s) not found' });
     }
-
+     const transferCharge = await Charge.findOne({name: "Transfer Charges"});
+    if(!transferCharge){
+      return res.status(404).json({error: "Transfer Charges not found"});
+    }
+    // Calculate charge amount if charge type is Flat put the charge amount as is, if charge type is Percentage calculate the percentage of the amount not greater than 500
+    let chargeAmount = 0;
+    if (transferCharge.chargeType === 'Flat') {
+      chargeAmount = transferCharge.amount;
+    } else if (transferCharge.chargeType === 'Percentage') {
+      chargeAmount = Math.min((amount * transferCharge.amount) / 100, 500);
+    }
     if (senderWallet.balance < amount) {
       await failTransaction('Insufficient balance', {
         reason: 'Sender does not have enough funds',
@@ -1117,16 +1127,38 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
       });
       return res.status(400).json({ error: 'Insufficient balance' });
     }
-
+    //Total Amount to be deducted from sender
+    const totalDeduction = amount + chargeAmount;
+    if (senderWallet.balance < totalDeduction) {
+      await failTransaction('Insufficient balance', {
+        reason: 'Sender does not have enough funds',
+        currentBalance: senderWallet.balance,
+        transferAmount: amount
+      });
+      return res.status(400).json({ error: 'Insufficient balance' });
+    }
+// find transfer charges wallet
+    const transferChargesWallet = await Wallet.findOne({ walletName: 'Transfer Charges Wallet' });
+    if (!transferChargesWallet) {
+      return res.status(404).json({ message: 'Transfer Charge Wallet not found' });
+    }
     // Transfer funds
     const senderBalanceBefore = senderWallet.balance;
-    const senderBalanceAfter = senderWallet.balance - amount;
+    const senderBalanceAfter = senderWallet.balance - totalDeduction;
     const receiverBalanceBefore = receiverWallet.balance;
-    const receiverBalanceAfter = receiverWallet.balance + amount;
+    const receiverBalanceAfter = receiverWallet.balance + totalDeduction;
 
     senderWallet.balance = senderBalanceAfter;
     receiverWallet.balance = receiverBalanceAfter;
 
+    //update transfer charges wallet
+    transferChargesWallet.balance += chargeAmount;
+    transferChargesWallet.lastTransaction = new Date();
+    transferChargesWallet.lastTransactionAmount = chargeAmount;
+    transferChargesWallet.lastTransactionType = 'credit';
+
+    
+    await transferChargesWallet.save();
     await senderWallet.save();
     await receiverWallet.save();
 
@@ -1166,6 +1198,45 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
 
     await senderTransaction.save();
     await receiverTransaction.save();
+
+    //log transfer charge transaction
+    const chargeTransaction = new Transaction({
+      senderWalletId: senderWallet._id,
+      receiverWalletId: transferChargesWallet._id,
+      transactionType: 'transfer_charge',
+      category: 'debit',
+      amount: chargeAmount,
+      balanceBefore: senderBalanceAfter + chargeAmount,
+      balanceAfter: senderBalanceAfter,
+      reference: `TRX-${uuidv4()}`,
+      description: `Transfer charge for sending ${amount} to ${receiver.email}`,
+      status: 'success',
+      metadata: {
+        senderEmail: sender.email,
+        receiverEmail: receiver.email,
+        chargeAmount
+      }
+    });
+    //log charge transaction for transfer charges wallet
+    const chargeTransactionForChargeWallet = new Transaction({
+      senderWalletId: senderWallet._id,
+      receiverWalletId: transferChargesWallet._id,
+      transactionType: 'transfer_charge',
+      category: 'credit',
+      amount: chargeAmount,
+      balanceBefore: transferChargesWallet.balance - chargeAmount,
+      balanceAfter: transferChargesWallet.balance,
+      reference: `TRX-${uuidv4()}`,
+      description: `Transfer charge received from ${sender.email} for sending ${amount} to ${receiver.email}`,
+      status: 'success',
+      metadata: {
+        senderEmail: sender.email,
+        receiverEmail: receiver.email,
+        chargeAmount
+      }
+    });
+    await chargeTransactionForChargeWallet.save(); 
+    await chargeTransaction.save();
 
     //send notification to sender
     await sendNotification(sender._id, `You have sent ${amount} to ${receiver.email} with email: ${receiver.email}. New balance is ${senderBalanceAfter}.`);
