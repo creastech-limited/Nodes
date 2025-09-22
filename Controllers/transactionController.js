@@ -1146,7 +1146,7 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
     const senderBalanceBefore = senderWallet.balance;
     const senderBalanceAfter = senderWallet.balance - totalDeduction;
     const receiverBalanceBefore = receiverWallet.balance;
-    const receiverBalanceAfter = receiverWallet.balance + totalDeduction;
+    const receiverBalanceAfter = receiverWallet.balance + amount;
 
     senderWallet.balance = senderBalanceAfter;
     receiverWallet.balance = receiverBalanceAfter;
@@ -1157,7 +1157,7 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
     transferChargesWallet.lastTransactionAmount = chargeAmount;
     transferChargesWallet.lastTransactionType = 'credit';
 
-    
+
     await transferChargesWallet.save();
     await senderWallet.save();
     await receiverWallet.save();
