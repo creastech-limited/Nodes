@@ -37,7 +37,7 @@ router.get('/activate/:id', async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        user.status = 'Active'; // Set status to 'Active'
+        user.status = 'Inactive'; // Set status to 'Active'
         await user.save();
         res.status(200).json({ message: 'User activated successfully', user });
     } catch (error) {
@@ -48,18 +48,13 @@ router.get('/activate/:id', async (req, res) => {
 router.get('/activated/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    // console.log(id)
     const user = await regUser.findByIdAndUpdate(id, { status: 'Active' }, { new: true });
-
+    console.log(user.status)
     if (!user) {
       return res.status(404).send('Activation failed: user not found.');
     }
-
-    
-    // Redirect to login page
-    res.redirect(process.env.FRONTEND_URL_PROD); // Replace with your actual frontend login URL
-    // Optionally, you can send a success message
-    res.status(200).send('User activated successfully. You can now log in.');
-    //send a suucess email to the user
+     //send a suucess email to the user
     await sendEmail({
       to: user.email,
       subject: 'Account Activation Successful',
@@ -67,6 +62,12 @@ router.get('/activated/:id', async (req, res) => {
              <p>Your account has been successfully activated. You can now log in to your account.</p>
              <p>Thank you for using our service!</p>`
     });
+    
+    // Redirect to login page
+    res.redirect(process.env.FRONTEND_URL_PROD); // Replace with your actual frontend login URL
+    // Optionally, you can send a success message
+    // res.status(200).send('User activated successfully. You can now log in.');
+   
   } catch (err) {
     res.status(500).send('Server error during activation.');
   }
