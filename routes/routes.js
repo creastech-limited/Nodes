@@ -59,7 +59,7 @@ router.get('/activated/:id', async (req, res) => {
       to: user.email,
       subject: 'Account Activation Successful',
       html: `<p>Hello ${user.firstName},</p>
-             <p>Your account has been successfully activated. You can now log in to your account.<br/> <a href='${process.env.FRONTEND_URL_PROD}' target='_blank'>Login Now!</a></p>
+             <p>Your account has been successfully activated. You can now log in to your account.<br/> <a href='${process.env.NGROK_URL}' target='_blank'>Login Now!</a></p>
              <p>Thank you for using our service!</p>`
     });
     
