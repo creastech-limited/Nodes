@@ -50,7 +50,7 @@ router.get('/getstorebyidcount',verifyToken, getAllStoreInSchoolCount);
 router.get('/getagentbyid',verifyToken, getAllAgentsInSchool);
 router.get('/getagentbyidcount',verifyToken, getAllAgentsInSchoolCount);
 router.get('/getUserByFilter/:userid',verifyToken, getUserByFilter);
-router.post('/forgotpasword', forgotPassword);
+router.post('/forgotpassword', forgotPassword);
 router.post('/reset-password/:token', resetWithToken);
 router.post('/updatePassword', verifyToken, updatePassword);
 router.delete('/delete/:id',verifyToken, deleteUser);
