@@ -833,7 +833,7 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
       const {email} = req.body;
   
       const user = await regUser.findOne({ email: email.toLowerCase().trim() });
-      console.log("User found:", user);
+      // console.log("User found:", user);
   
       if (!user) {
         return res.status(404).json({ success: false, message: 'User not found' });
