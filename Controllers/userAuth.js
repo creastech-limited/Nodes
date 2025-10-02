@@ -336,12 +336,12 @@ exports.login = async (req, res) => {
       //     message: 'Failed to send login email',
       //   }); 
       // });
-    console.log("Access token generated:", accessToken);
-    console.log("User details:", {
-      id: user._id,});
+    // console.log("Access token generated:", accessToken);
+    // console.log("User details:", {
+    //   id: user._id,});
     // Send response
    return res.status(200).json({
-      message: 'Login successful',
+      message: 'Registeration successful',
       accessToken,
       user: {
         id: user._id,
@@ -1073,7 +1073,7 @@ exports.verifySenderAndReceiver = async (req, res) => {
 const getDefaultClasses = (schoolType) => {
   switch (schoolType.toLowerCase()) {
     case 'primary':
-      return ['Primary 1', 'Primary 2', 'Primary 3', 'Primary 4', 'Primary 5', 'Primary 6'];
+      return ['Nur 1','Nur 2','Primary 1', 'Primary 2', 'Primary 3', 'Primary 4', 'Primary 5', 'Primary 6'];
     case 'secondary':
       return ['JSS 1', 'JSS 2', 'JSS 3', 'SS 1', 'SS 2', 'SS 3'];
     case 'primary and secondary':
@@ -1370,33 +1370,17 @@ exports.register = async (req, res) => {
     }
     
 
-    // const emailDetails = {
-    //   to: [process.env.EMAIL_TO, newUser.email],
-    //   from: {
-    //     email: "davidt@yungmindsinnovative.com.ng",
-    //     name: 'Xpay School Wallet'
-    //   },
-    //   subject: 'Login Notification',
-    //   text: `Hello ${newUser.firstName},\n\nYou have successfully registered with the school wallet solution.\n\nBest regards,\nYour Company Name`,
-    //   html: `<p>Hello ${newUser.firstName},</p>
-    //          <p>You have successfully registered with the school wallet solution.<br/>
-    //          Click the link <a href='${process.env.NGROK_URL}/api/activated/${newUser._id}'>activate</a> to activate your account.</p>
-    //          <p>Best regards,<br>Your Company Name</p>`,
-    //   attachments: [
-    //     {
-    //       content: base64Image,
-    //       filename: 'qrcode.png',
-    //       type: 'image/png',
-    //       disposition: 'attachment'
-    //     }
-    //   ]
-    // };
-    await sendEmail({
-    to: newUser.email,
-    subject: 'Confirm Notification',
-    html: `<p>Hello ${newUser.firstName},</p>
+    const emailDetails = {
+      to: [process.env.EMAIL_TO, newUser.email],
+      from: {
+        email: "davidt@yungmindsinnovative.com.ng",
+        name: 'Xpay School Wallet'
+      },
+      subject: 'Register Notification',
+      text: `Hello ${newUser.firstName},\n\nYou have successfully registered with the school wallet solution.\n\nBest regards,\nYour Company Name`,
+      html: `<p>Hello ${newUser.firstName},</p>
              <p>You have successfully registered with the school wallet solution.<br/>
-             Click the link <a href='${process.env.NGROK_URL}/api/activate/${newUser._id}'>activate</a> to activate your account.</p>
+             Click the link <a href='${process.env.NGROK_URL}/api/activated/${newUser._id}'>activate</a> to activate your account.</p>
              <p>Best regards,<br>Your Company Name</p>`,
       attachments: [
         {
@@ -1406,9 +1390,25 @@ exports.register = async (req, res) => {
           disposition: 'attachment'
         }
       ]
-  });
+    };
+  //   await sendEmail({
+  //   to: newUser.email,
+  //   subject: 'Confirm Notification',
+  //   html: `<p>Hello ${newUser.firstName},</p>
+  //            <p>You have successfully registered with the school wallet solution.<br/>
+  //            Click the link <a href='${process.env.NGROK_URL}/api/activate/${newUser._id}'>activate</a> to activate your account.</p>
+  //            <p>Best regards,<br>Your Company Name</p>`,
+  //     attachments: [
+  //       {
+  //         content: base64Image,
+  //         filename: 'qrcode.png',
+  //         type: 'image/png',
+  //         disposition: 'attachment'
+  //       }
+  //     ]
+  // });
 
-    // await sgMail.send(emailDetails);
+    await sgMail.send(emailDetails);
 
     res.status(201).json({
       message: 'Registration successful',
