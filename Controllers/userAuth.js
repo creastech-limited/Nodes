@@ -305,11 +305,11 @@ exports.login = async (req, res) => {
       maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     });
    try {
-  // const emailResponse = await sendEmail({
-  //   to: user.email,
-  //   subject: 'Login Notification',
-  //   html: `<p>Hello ${user.firstName},</p><p>You have successfully logged in to your account.</p><p>Best regards,<br>Your Company Name</p>`
-  // });
+  const emailResponse = await sendEmail({
+    to: user.email,
+    subject: 'Login Notification',
+    html: `<p>Hello ${user.firstName},</p><p>You have successfully logged in to your account.</p><p>Best regards,<br>Your Company Name</p>`
+  });
 
   console.log("Email sent successfully:");
 } catch (error) {
@@ -1370,17 +1370,33 @@ exports.register = async (req, res) => {
     }
     
 
-    const emailDetails = {
-      to: [process.env.EMAIL_TO, newUser.email],
-      from: {
-        email: "davidt@yungmindsinnovative.com.ng",
-        name: 'Xpay School Wallet'
-      },
-      subject: 'Register Notification',
-      text: `Hello ${newUser.firstName},\n\nYou have successfully registered with the school wallet solution.\n\nBest regards,\nYour Company Name`,
-      html: `<p>Hello ${newUser.firstName},</p>
+    // const emailDetails = {
+    //   to: [process.env.EMAIL_TO, newUser.email],
+    //   from: {
+    //     email: "davidt@yungmindsinnovative.com.ng",
+    //     name: 'Xpay School Wallet'
+    //   },
+    //   subject: 'Register Notification',
+    //   text: `Hello ${newUser.firstName},\n\nYou have successfully registered with the school wallet solution.\n\nBest regards,\nYour Company Name`,
+    //   html: `<p>Hello ${newUser.firstName},</p>
+    //          <p>You have successfully registered with the school wallet solution.<br/>
+    //          Click the link <a href='${process.env.NGROK_URL}/api/activated/${newUser._id}'>activate</a> to activate your account.</p>
+    //          <p>Best regards,<br>Your Company Name</p>`,
+    //   attachments: [
+    //     {
+    //       content: base64Image,
+    //       filename: 'qrcode.png',
+    //       type: 'image/png',
+    //       disposition: 'attachment'
+    //     }
+    //   ]
+    // };
+    await sendEmail({
+    to: newUser.email,
+    subject: 'Confirm Notification',
+    html: `<p>Hello ${newUser.firstName},</p>
              <p>You have successfully registered with the school wallet solution.<br/>
-             Click the link <a href='${process.env.NGROK_URL}/api/activated/${newUser._id}'>activate</a> to activate your account.</p>
+             Click the link <a href='${process.env.NGROK_URL}/api/activate/${newUser._id}'>activate</a> to activate your account.</p>
              <p>Best regards,<br>Your Company Name</p>`,
       attachments: [
         {
@@ -1390,25 +1406,9 @@ exports.register = async (req, res) => {
           disposition: 'attachment'
         }
       ]
-    };
-  //   await sendEmail({
-  //   to: newUser.email,
-  //   subject: 'Confirm Notification',
-  //   html: `<p>Hello ${newUser.firstName},</p>
-  //            <p>You have successfully registered with the school wallet solution.<br/>
-  //            Click the link <a href='${process.env.NGROK_URL}/api/activate/${newUser._id}'>activate</a> to activate your account.</p>
-  //            <p>Best regards,<br>Your Company Name</p>`,
-  //     attachments: [
-  //       {
-  //         content: base64Image,
-  //         filename: 'qrcode.png',
-  //         type: 'image/png',
-  //         disposition: 'attachment'
-  //       }
-  //     ]
-  // });
+  });
 
-    await sgMail.send(emailDetails);
+    // await sgMail.send(emailDetails);
 
     res.status(201).json({
       message: 'Registration successful',
