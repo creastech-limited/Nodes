@@ -8,7 +8,11 @@ const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const XLSX = require('xlsx');
 const Wallet = require('../Models/walletSchema'); // Import Wallet model
+const { createUserFromPayload } = require('./registerHelpers');
+
 
 //function to proper case
 function toProperCase(str) {
@@ -1426,6 +1430,141 @@ exports.register = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB
+
+// middleware to handle file upload; expose as route-level middleware
+exports.uploadFileMiddleware = upload.single('file');
+
+// Helper: parse buffer of xlsx/csv into array of objects
+function parseSpreadsheetBuffer(buffer, filename) {
+  // For CSV/XLSX both use XLSX.read
+  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  const sheetName = workbook.SheetNames[0];
+  const sheet = workbook.Sheets[sheetName];
+  // Convert to JSON (header row expected)
+  const json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+  return json; // array of row objects keyed by header names
+}
+
+/**
+ * Bulk register endpoint.
+ * Accepts:
+ *  - multipart/form-data with 'file' (xlsx or csv) OR
+ *  - application/json with body: { users: [ { ... }, ... ] }
+ *
+ * Response:
+ *  { total: N, successes: [...], errors: [...] }
+ */
+exports.bulkRegister = async (req, res) => {
+  try {
+    let rows = [];
+
+    // If file uploaded (via uploadFileMiddleware)
+    if (req.file && req.file.buffer) {
+      // parse file buffer
+      try {
+        rows = parseSpreadsheetBuffer(req.file.buffer, req.file.originalname);
+      } catch (err) {
+        return res.status(400).json({ message: 'Unable to parse uploaded file', details: err.message });
+      }
+    } else if (Array.isArray(req.body.users)) {
+      // JSON body with users
+      rows = req.body.users;
+    } else if (req.body && typeof req.body === 'object' && Object.keys(req.body).length && req.is('application/json')) {
+      // maybe the client posted JSON array directly as body (e.g., raw array)
+      if (Array.isArray(req.body)) rows = req.body;
+      else if (Array.isArray(req.body.users)) rows = req.body.users;
+      else return res.status(400).json({ message: 'No file uploaded and no users array in body' });
+    } else {
+      return res.status(400).json({ message: 'No file uploaded and no users array in body' });
+    }
+
+    // Optionally accept a registration token header or body token to be used for every row
+    let decodedToken = {};
+    const token = req.body.token || req.headers['x-registration-token'] || null;
+    if (token) {
+      try {
+        decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+      } catch (err) {
+        return res.status(400).json({ message: 'Invalid/expired registration token' });
+      }
+    }
+
+    const successes = [];
+    const errors = [];
+
+    // Process rows sequentially to avoid race conditions on unique fields.
+    // If you want more speed, you can run in parallel batches, but ensure uniqueness checks handle concurrency.
+    for (let idx = 0; idx < rows.length; idx++) {
+      const row = rows[idx];
+
+      // Map headers from Excel to your expected fields.
+      // IMPORTANT: ensure the header names in the spreadsheet match these
+      const payload = {
+        firstName: row.firstName || row['First Name'] || row['firstname'] || row['FirstName'] || '',
+        lastName: row.lastName || row['Last Name'] || row['lastname'] || row['LastName'] || '',
+        email: row.email || row['Email'] || '',
+        phone: row.phone || row['Phone'] || '',
+        role: row.role || row['Role'] || 'student',
+        password: row.password || row['Password'] || 'DefaultPassword123!', // you may want to force a random password
+        schoolId: row.schoolId || row['School ID'] || row['SchoolId'] || '',
+        schoolName: row.schoolName || row['School Name'] || '',
+        schoolType: row.schoolType || row['School Type'] || '',
+        schoolAddress: row.schoolAddress || row['School Address'] || '',
+        store_id: row.store_id || row['Store ID'] || '',
+        storeName: row.storeName || row['Store Name'] || '',
+        storeType: row.storeType || row['Store Type'] || '',
+        // add any other fields you expect from the sheet (dateOfBirth, gender, address etc.)
+        dateOfBirth: row.dateOfBirth || row['Date Of Birth'] || row['DOB'] || null,
+        gender: row.gender || row['Gender'] || '',
+        street: row.street || row['Street'] || '',
+        city: row.city || row['City'] || '',
+        state: row.state || row['State'] || '',
+        zipCode: row.zipCode || row['Zip'] || '',
+        guardianFullName: row.guardianFullName || row['Guardian Full Name'] || '',
+        guardianEmail: row.guardianEmail || row['Guardian Email'] || '',
+        guardianPhone: row.guardianPhone || row['Guardian Phone'] || '',
+        classAdmittedTo: row.classAdmittedTo || row['Class'] || row['classAdmittedTo'] || '',
+        section: row.section || row['Section'] || '',
+        boarding: row.boarding || row['Boarding'] || '',
+        // ...any other fields you need
+      };
+
+      try {
+        // call your helper that contains the single-user create logic
+        const result = await createUserFromPayload(payload, decodedToken);
+        if (result.success) {
+          successes.push({
+            row: idx + 1,
+            id: result.user._id,
+            email: result.user.email,
+            message: 'Created'
+          });
+        } else {
+          errors.push({ row: idx + 1, error: result.error || 'Unknown error' });
+        }
+      } catch (err) {
+        // log error and continue
+        console.error(`Row ${idx + 1} error:`, err);
+        errors.push({ row: idx + 1, error: err.message || 'Server error' });
+      }
+    }
+
+    res.status(200).json({
+      total: rows.length,
+      successes,
+      errors
+    });
+  } catch (err) {
+    console.error('Bulk register error', err);
+    res.status(500).json({ message: 'Server error', details: err.message });
+  }
+};
+
+
+
+
 exports.register2 = async (req, res) => {
   try {
     let decodedToken = {};
@@ -1788,6 +1927,9 @@ if (roleLower !== 'school' && roleLower !== 'parent' && roleLower !== 'admin') {
       res.status(500).json({ status: false, message: 'Server error fetching wallet' });
     }
   };
+
+
+
   
 exports.getStudentCountByClass = async (req, res) => {
   try {
