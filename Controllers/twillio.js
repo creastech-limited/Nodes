@@ -27,7 +27,7 @@ exports.sendWhatsappOtp = async (req, res) => {
     // Store OTP in session/DB/Redis for verification later
     // Example just returning (don’t do this in production)
     return res.status(200).json({
-      message: "OTP sent successfully via WhatsApp",
+      message: "OTP sent successfully via WhatsApps",
       sid: message.sid,
       otp // 🔴 remove this in production
     });
