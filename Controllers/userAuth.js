@@ -309,13 +309,13 @@ exports.login = async (req, res) => {
       maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     });
    try {
-  const emailResponse = await sendEmail({
-    to: user.email,
-    subject: 'Login Notification',
-    html: `<p>Hello ${user.firstName},</p><p>You have successfully logged in to your account.</p><p>Best regards,<br>Your Company Name</p>`
-  });
+  // const emailResponse = await sendEmail({
+  //   to: user.email,
+  //   subject: 'Login Notification',
+  //   html: `<p>Hello ${user.firstName},</p><p>You have successfully logged in to your account.</p><p>Best regards,<br>Your Company Name</p>`
+  // });
 
-  console.log("Email sent successfully:");
+  // console.log("Email sent successfully:");
 } catch (error) {
   console.error("Failed to send login email:", error.message);
 }
