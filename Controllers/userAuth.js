@@ -1508,7 +1508,7 @@ exports.bulkRegister = async (req, res) => {
         phone: row.phone || row['Phone'] || '',
         role: row.role || row['Role'] || 'student',
         password: row.password || row['Password'] || 'DefaultPassword123!', // you may want to force a random password
-        // schoolId: row.schoolId || row['School ID'] || row['SchoolId'] || '',
+        schoolId: row.schoolId || row['School ID'] || row['SchoolId'] || '',
         schoolName: row.schoolName || row['School Name'] || '',
         schoolType: row.schoolType || row['School Type'] || '',
         schoolAddress: row.schoolAddress || row['School Address'] || '',
@@ -1536,7 +1536,8 @@ exports.bulkRegister = async (req, res) => {
         payload.password = Math.random().toString(36).slice(-10);
 
         // ✅ 3. Assign schoolId from the URL parameter
-        payload.schoolId = schoolId;
+        payload.schoolId = req.query.schoolId || '';
+        
 
 
         // call your helper that contains the single-user create logic
