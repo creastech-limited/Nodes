@@ -923,6 +923,8 @@ exports.deleteFee = async (req, res) => {
   try {
     const feeId = req.params.id;
     const deletedFee = await Fee.findByIdAndDelete(feeId);
+    //delete all fee payments associated with this fee
+    await FeePayment.deleteMany({ feeId });
     if (!deletedFee) {
       return res.status(404).json({ message: 'Fee not found' });
     }
@@ -953,6 +955,29 @@ exports.deleteAllFeesForStudents = async (req, res) => {
       return res.status(404).json({ message: 'No fees found for this student' });
     }
 
+    res.status(200).json({
+      message: 'All fees deleted successfully',
+      data: deletedFees
+    });
+  } catch (error) {
+    console.error('Error deleting fees for student:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+//delete all fees payment for a particlar id
+exports.deleteFeepaymentWithFeeId  = async (req, res) => {
+  try {
+    const { feeId } = req.params;
+    console.log('Fee ID:', feeId); // Log the feeId for debugging
+    if (!feeId) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+    // Delete all fees for the student
+    const deletedFees = await FeePayment.deleteMany({ feeId });
+
+    if (deletedFees.deletedCount === 0) {
+      return res.status(404).json({ message: 'No fees found for this feeId' });
+    }
     res.status(200).json({
       message: 'All fees deleted successfully',
       data: deletedFees

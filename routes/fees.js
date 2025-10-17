@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const {raiseFeeForClass,payFee,getFeeForStudent,getAllFees,deleteFee,getFeeById,deleteAllFeesForStudents, getFeesForSchool,getFeeForStudentById, updateFeeForClass, deleteFeePaymentByFeeId} = require('../Controllers/fees');
+const {raiseFeeForClass,payFee,getFeeForStudent,getAllFees,deleteFee,getFeeById,deleteAllFeesForStudents, getFeesForSchool,getFeeForStudentById, updateFeeForClass, deleteFeePaymentByFeeId,deleteFeepaymentWithFeeId} = require('../Controllers/fees');
 const verifyToken = require('./verifyToken');
 
 router.post('/raise', verifyToken, raiseFeeForClass);//api/fees/raise
