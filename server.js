@@ -113,6 +113,15 @@ app.get('/api/users/getusers/:id', (req, res) => {
     data: user,
   });
 });
+// Health check route for AWS / Monitoring
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'UP',
+    message: '🚀 Loan Core API is healthy and running',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 
 // port
 const PORT = process.env.PORT || 3000;
