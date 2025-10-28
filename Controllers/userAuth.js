@@ -1395,22 +1395,22 @@ exports.register = async (req, res) => {
     //     }
     //   ]
     // };
-  //   await sendEmail({
-  //   to: newUser.email,
-  //   subject: 'Confirm Notification',
-  //   html: `<p>Hello ${newUser.firstName},</p>
-  //            <p>You have successfully registered with the school wallet solution.<br/>
-  //            Click the link <a href='${process.env.NGROK_URL}/api/activate/${newUser._id}'>activate</a> to activate your account.</p>
-  //            <p>Best regards,<br>Your Company Name</p>`,
-  //     attachments: [
-  //       {
-  //         content: base64Image,
-  //         filename: 'qrcode.png',
-  //         type: 'image/png',
-  //         disposition: 'attachment'
-  //       }
-  //     ]
-  // });
+    await sendEmail({
+    to: newUser.email,
+    subject: 'Confirm Notification',
+    html: `<p>Hello ${newUser.firstName},</p>
+             <p>You have successfully registered with the school wallet solution.<br/>
+             Click the link <a href='${process.env.NGROK_URL}/api/activate/${newUser._id}'>activate</a> to activate your account.</p>
+             <p>Best regards,<br>Your Company Name</p>`,
+      attachments: [
+        {
+          content: base64Image,
+          filename: 'qrcode.png',
+          type: 'image/png',
+          disposition: 'attachment'
+        }
+      ]
+  });
 
     // await sgMail.send(emailDetails);
 
