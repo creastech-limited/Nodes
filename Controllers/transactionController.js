@@ -1,7 +1,7 @@
 const axios = require('axios');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
-const Transaction = require('../Models/transactionSchema'); // Import Transaction model
+const {Transaction, TransactionLimit} = require('../Models/transactionSchema'); // Import Transaction model
 const {regUser} = require('../Models/registeration'); // Import User model
 const Wallet = require('../Models/walletSchema'); // Import Wallet model
 const Charge = require('../Models/charges'); // Import Charges model
@@ -756,11 +756,11 @@ exports.verifyTransaction = async (req, res) => {
       await sendNotification(user._id, `Your wallet has been credited with ${topupAmount}. New balance is ${balanceAfter}.`);
 
       //send email to user
-      await sendEmail({
-        to: user.email, 
-        subject: 'Wallet Top-up Successful', 
-        html: `Your wallet has been credited with ${topupAmount}. New balance is ${balanceAfter}.`
-    });
+    //   await sendEmail({
+    //     to: user.email, 
+    //     subject: 'Wallet Top-up Successful', 
+    //     html: `Your wallet has been credited with ${topupAmount}. New balance is ${balanceAfter}.`
+    // });
 
       return res.status(200).json({
         status: true,
@@ -1014,10 +1014,10 @@ exports.verifyPinAndTransfer = async (req, res) => {
       html: `You have sent ${amount} to ${receiverEmail}. New balance is ${senderBalanceAfter}.`
   });
     //send email to receiver
-    await sendEmail({
-      to: receiverEmail, 
-      subject: 'Transfer Received', 
-      html: `You have received ${amount} from ${senderEmail}. New balance is ${receiverBalanceAfter}.`});
+    // await sendEmail({
+    //   to: receiverEmail, 
+    //   subject: 'Transfer Received', 
+    //   html: `You have received ${amount} from ${senderEmail}. New balance is ${receiverBalanceAfter}.`});
 
     res.json({
       message: 'Transfer successful',
@@ -1243,19 +1243,19 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
     //send notification to receiver
     await sendNotification(receiver._id, `You have received ${amount} from ${sender.name} with email: ${sender.email}. New balance is ${receiverBalanceAfter}.`);
     //send email to sender
-    await sendEmail(
-      {
-        to: sender.email, 
-        subject: 'Transfer Successful', 
-        html:`You have sent ${amount} to ${receiver.name} with email: ${receiver.email}. New balance is ${senderBalanceAfter}.`
-  });
+  //   await sendEmail(
+  //     {
+  //       to: sender.email, 
+  //       subject: 'Transfer Successful', 
+  //       html:`You have sent ${amount} to ${receiver.name} with email: ${receiver.email}. New balance is ${senderBalanceAfter}.`
+  // });
     //send email to receiver
-    await sendEmail(
-      {
-      to: receiver.email, 
-      subject: 'Transfer Received', 
-      html: `You have received ${amount} from ${sender.name} with email: ${sender.email}. New balance is ${receiverBalanceAfter}.`
-    });
+    // await sendEmail(
+    //   {
+    //   to: receiver.email, 
+    //   subject: 'Transfer Received', 
+    //   html: `You have received ${amount} from ${sender.name} with email: ${sender.email}. New balance is ${receiverBalanceAfter}.`
+    // });
 
     res.json({
       message: 'Transfer successful',
@@ -1474,3 +1474,83 @@ exports.reverseUnloggedTransaction = async (req, res) => {
     });
   }
 };
+
+// controllers/transactionLimitController.js
+export const setTransactionLimit = async (req, res) => {
+  try {
+    const { studentId, dailyLimit, perTransactionLimit, weeklyLimit } = req.body;
+    const parentId = req.user.id; // from JWT
+
+    let limit = await TransactionLimit.findOne({ studentId, parentId });
+
+    if (limit) {
+      limit.dailyLimit = dailyLimit;
+      limit.perTransactionLimit = perTransactionLimit;
+      limit.weeklyLimit = weeklyLimit;
+      await limit.save();
+    } else {
+      limit = await TransactionLimit.create({
+        studentId,
+        parentId,
+        dailyLimit,
+        perTransactionLimit,
+        weeklyLimit,
+      });
+    }
+
+    res.json({ success: true, message: "Transaction limit set successfully", limit });
+  } catch (err) {
+    console.error("Error setting limit:", err);
+    res.status(500).json({ error: "Failed to set transaction limit" });
+  }
+};
+// get transaction limit for a student
+export const getTransactionLimit = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const parentId = req.user.id;
+
+    const limit = await TransactionLimit.findOne({ studentId, parentId });
+    if (!limit) return res.status(404).json({ message: "No limit found for this student" });
+
+    res.json(limit);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch transaction limit" });
+  }
+};
+
+//get all transaction limits set by a parent
+export const getAllTransactionLimits = async (req, res) => {
+  try {
+    const parentId = req.user.id;
+    const limits = await TransactionLimit.find({ parentId });
+    res.json(limits);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch transaction limits" });
+  }
+};
+
+//get all transaction limits
+export const getAllLimits = async (req, res) => {
+  try {
+    const limits = await TransactionLimit.find();
+    res.json(limits);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch transaction limits" });
+  }
+};
+
+//delete transaction limit
+export const deleteTransactionLimit = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const parentId = req.user.id;
+    const limit = await TransactionLimit.findOneAndDelete({ _id: id, parentId });
+    if (!limit) return res.status(404).json({ message: "Transaction limit not found" });
+    res.json({ message: "Transaction limit deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete transaction limit" });
+  }
+};
+
+//
