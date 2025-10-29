@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { initiateTransaction, verifyTransaction,verifyPinAndTransfer, reverseUnloggedTransaction,getAllTransactions, getTransactionById, updateTransferMetadata,deleteTransaction, getAllWithdrawalTransactions, getAllTopupTransactions, verifyPinAndTransferToAgent} = require('../Controllers/transactionController');
+const { initiateTransaction, verifyTransaction,verifyPinAndTransfer, reverseUnloggedTransaction,getAllTransactions, getTransactionById, updateTransferMetadata,deleteTransaction, getAllWithdrawalTransactions, getAllTopupTransactions, verifyPinAndTransferToAgent, setDefaultLimitForAllStudents, getAllLimits, deleteAllTransactionLimits, getLimitById, updateTransactionLimit} = require('../Controllers/transactionController');
 const verifyToken = require('./verifyToken');
 const { getBank, resolveAccountNumber, withdrawal, resolveAccount, reverseWithdrawal,validateWithdrawal } = require('../Controllers/withdrawal');
 // const {} = require('../Controllers/transactionController');
@@ -34,6 +34,10 @@ router.post('/reverseunloggedtransaction', reverseUnloggedTransaction);
 //route to reverse withdrawal
 router.post('/reversewithdrawal', verifyToken, reverseWithdrawal);
 router.post('/validateaccount', verifyToken, validateWithdrawal);
-
+router.post('/setdefaultlimit', verifyToken, setDefaultLimitForAllStudents);
+router.get('/getalllimits', verifyToken, getAllLimits);
+router.delete('/deletealltransactionlimits', verifyToken, deleteAllTransactionLimits);
+router.get('/getlimitbyid/:studentId', verifyToken, getLimitById);
+router.put('/updatetransactionlimit/:studentId', verifyToken, updateTransactionLimit);
 
 module.exports = router

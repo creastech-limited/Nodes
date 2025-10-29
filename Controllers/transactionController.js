@@ -1,3 +1,5 @@
+const cron = require("node-cron");
+import cron from "node-cron";
 const axios = require('axios');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
@@ -1037,244 +1039,457 @@ exports.verifyPinAndTransfer = async (req, res) => {
   }
 };
 
+// exports.verifyPinAndTransferToAgent = async (req, res) => {
+//   const receiverId = req.user?.id;
+//   const { senderEmail, amount, pin, description = 'No description provided' } = req.body;
+
+//   const failTransaction = async (reason, extra = {}) => {
+//     try {
+//       const receiverWallet = receiverId ? await Wallet.findOne({ userId: receiverId }) : null;
+//       const senderWallet = senderEmail
+//         ? await Wallet.findOne({ userId: (await regUser.findOne({ email: senderEmail }))?._id })
+//         : null;
+  
+//       if (senderWallet) {
+//         await new Transaction({
+//           senderWalletId: senderWallet._id,
+//           receiverWalletId: receiverWallet?._id,
+//           transactionType: 'wallet_transfer_sent',
+//           category: 'debit',
+//           amount: amount || 0,
+//           balanceBefore: senderWallet.balance,
+//           balanceAfter: senderWallet.balance,
+//           reference: `TRX-${uuidv4()}`,
+//           description,
+//           status: 'failed',
+//           metadata: {
+//             reason,
+//             ...(senderEmail ? { senderEmail } : { senderEmail: 'No recipient email provided' }),
+//             ...extra
+//           }
+//         }).save();
+//       }
+//     } catch (err) {
+//       console.error('Error saving failed transaction:', err.message);
+//     }
+//   };
+  
+
+//   try {
+//     const sender = await regUser.findOne({email: senderEmail});
+//     if (!sender) {
+//       await failTransaction('Sender not found', { reason: 'Sender account does not exist' });
+//       return res.status(404).json({ error: 'Sender not found' });
+//     }
+
+//     if (!sender.pin) {
+//       await failTransaction('PIN not set', { reason: 'Sender has not set a PIN' });
+//       return res.status(400).json({ error: 'PIN not set' });
+//     }
+
+//     const isPinValid = await bcrypt.compare(pin, sender.pin);
+//     if (!isPinValid) {
+//       await failTransaction('Invalid PIN', { reason: 'Provided PIN is incorrect' });
+//       return res.status(400).json({ error: 'Invalid PIN' });
+//     }
+
+//     const receiver = await regUser.findById(receiverId);
+//     if (!receiver) {
+//       await failTransaction('Receiver not found', { reason: 'No Receiver found' });
+//       return res.status(404).json({ error: 'Receiver not found ' });
+//     }
+
+//     const senderWallet = await Wallet.findOne({ userId: sender._id });
+//     const receiverWallet = await Wallet.findOne({ userId: receiver._id });
+
+//     if (!senderWallet || !receiverWallet) {
+//       await failTransaction('Wallet(s) not found', {
+//         reason: 'Either sender or receiver wallet is missing',
+//         senderWalletFound: !!senderWallet,
+//         receiverWalletFound: !!receiverWallet
+//       });
+//       return res.status(400).json({ error: 'Wallet(s) not found' });
+//     }
+//      const transferCharge = await Charge.findOne({name: "Transfer Charges"});
+//     if(!transferCharge){
+//       return res.status(404).json({error: "Transfer Charges not found"});
+//     }
+//     // Calculate charge amount if charge type is Flat put the charge amount as is, if charge type is Percentage calculate the percentage of the amount not greater than 500
+//     let chargeAmount = 0;
+//     if (transferCharge.chargeType === 'Flat') {
+//       chargeAmount = transferCharge.amount;
+//     } else if (transferCharge.chargeType === 'Percentage') {
+//       chargeAmount = Math.min((amount * transferCharge.amount) / 100, 500);
+//     }
+//     if (senderWallet.balance < amount) {
+//       await failTransaction('Insufficient balance', {
+//         reason: 'Sender does not have enough funds',
+//         currentBalance: senderWallet.balance,
+//         transferAmount: amount
+//       });
+//       return res.status(400).json({ error: 'Insufficient balance' });
+//     }
+//     //Total Amount to be deducted from sender
+//     const totalDeduction = amount + chargeAmount;
+//     if (senderWallet.balance < totalDeduction) {
+//       await failTransaction('Insufficient balance', {
+//         reason: 'Sender does not have enough funds',
+//         currentBalance: senderWallet.balance,
+//         transferAmount: amount
+//       });
+//       return res.status(400).json({ error: 'Insufficient balance' });
+//     }
+// // find transfer charges wallet
+//     const transferChargesWallet = await Wallet.findOne({ walletName: 'Transfer Charges Wallet' });
+//     if (!transferChargesWallet) {
+//       return res.status(404).json({ message: 'Transfer Charge Wallet not found' });
+//     }
+//     // Transfer funds
+//     const senderBalanceBefore = senderWallet.balance;
+//     const senderBalanceAfter = senderWallet.balance - totalDeduction;
+//     const receiverBalanceBefore = receiverWallet.balance;
+//     const receiverBalanceAfter = receiverWallet.balance + amount;
+
+//     senderWallet.balance = senderBalanceAfter;
+//     receiverWallet.balance = receiverBalanceAfter;
+
+//     //update transfer charges wallet
+//     transferChargesWallet.balance += chargeAmount;
+//     transferChargesWallet.lastTransaction = new Date();
+//     transferChargesWallet.lastTransactionAmount = chargeAmount;
+//     transferChargesWallet.lastTransactionType = 'credit';
+
+
+//     await transferChargesWallet.save();
+//     await senderWallet.save();
+//     await receiverWallet.save();
+
+//     const senderTransaction = new Transaction({
+//       senderWalletId: senderWallet._id,
+//       receiverWalletId: receiverWallet._id,
+//       transactionType: 'wallet_transfer_sent',
+//       category: 'debit',
+//       amount,
+//       balanceBefore: senderBalanceBefore,
+//       balanceAfter: senderBalanceAfter,
+//       reference: `TRX-${uuidv4()}`,
+//       description,
+//       status: 'success',
+//       metadata: {
+//         receiverEmail: receiver.email,
+//         senderEmail: sender.email,
+//       }
+//     });
+
+//     const receiverTransaction = new Transaction({
+//       senderWalletId: senderWallet._id,
+//       receiverWalletId: receiverWallet._id,
+//       transactionType: 'wallet_transfer_received',
+//       category: 'credit',
+//       amount,
+//       balanceBefore: receiverBalanceBefore,
+//       balanceAfter: receiverBalanceAfter,
+//       reference: `TRX-${uuidv4()}`,
+//       description,
+//       status: 'success',
+//       metadata: {
+//         senderEmail: sender.email,
+//         receiverEmail: receiver.email
+//       }
+//     });
+
+//     await senderTransaction.save();
+//     await receiverTransaction.save();
+
+//     //log transfer charge transaction
+//     const chargeTransaction = new Transaction({
+//       senderWalletId: senderWallet._id,
+//       receiverWalletId: transferChargesWallet._id,
+//       transactionType: 'transfer_charge',
+//       category: 'debit',
+//       amount: chargeAmount,
+//       balanceBefore: senderBalanceAfter + chargeAmount,
+//       balanceAfter: senderBalanceAfter,
+//       reference: `TRX-${uuidv4()}`,
+//       description: `Transfer charge for sending ${amount} to ${receiver.email}`,
+//       status: 'success',
+//       metadata: {
+//         senderEmail: sender.email,
+//         receiverEmail: receiver.email,
+//         chargeAmount
+//       }
+//     });
+//     //log charge transaction for transfer charges wallet
+//     const chargeTransactionForChargeWallet = new Transaction({
+//       senderWalletId: senderWallet._id,
+//       receiverWalletId: transferChargesWallet._id,
+//       transactionType: 'transfer_charge',
+//       category: 'credit',
+//       amount: chargeAmount,
+//       balanceBefore: transferChargesWallet.balance - chargeAmount,
+//       balanceAfter: transferChargesWallet.balance,
+//       reference: `TRX-${uuidv4()}`,
+//       description: `Transfer charge received from ${sender.email} for sending ${amount} to ${receiver.email}`,
+//       status: 'success',
+//       metadata: {
+//         senderEmail: sender.email,
+//         receiverEmail: receiver.email,
+//         chargeAmount
+//       }
+//     });
+//     await chargeTransactionForChargeWallet.save(); 
+//     await chargeTransaction.save();
+
+//     //send notification to sender
+//     await sendNotification(sender._id, `You have sent ${amount} to ${receiver.email} with email: ${receiver.email}. New balance is ${senderBalanceAfter}.`);
+//     //send notification to receiver
+//     await sendNotification(receiver._id, `You have received ${amount} from ${sender.name} with email: ${sender.email}. New balance is ${receiverBalanceAfter}.`);
+//     //send email to sender
+//   //   await sendEmail(
+//   //     {
+//   //       to: sender.email, 
+//   //       subject: 'Transfer Successful', 
+//   //       html:`You have sent ${amount} to ${receiver.name} with email: ${receiver.email}. New balance is ${senderBalanceAfter}.`
+//   // });
+//     //send email to receiver
+//     // await sendEmail(
+//     //   {
+//     //   to: receiver.email, 
+//     //   subject: 'Transfer Received', 
+//     //   html: `You have received ${amount} from ${sender.name} with email: ${sender.email}. New balance is ${receiverBalanceAfter}.`
+//     // });
+
+//     res.json({
+//       message: 'Transfer successful',
+//       transaction: {
+//         amount,
+//         sender: sender.email,
+//         receiver: receiver.email,
+//         description,
+//         senderTransactionRef: senderTransaction.reference,
+//         receiverTransactionRef: receiverTransaction.reference
+//       }
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     await failTransaction('Unexpected error', { reason: error.message });
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+
+
 exports.verifyPinAndTransferToAgent = async (req, res) => {
   const receiverId = req.user?.id;
-  const { senderEmail, amount, pin, description = 'No description provided' } = req.body;
+  const { senderEmail, amount, pin, description = "No description provided" } = req.body;
+  const numericAmount = Number(amount);
 
   const failTransaction = async (reason, extra = {}) => {
     try {
       const receiverWallet = receiverId ? await Wallet.findOne({ userId: receiverId }) : null;
-      const senderWallet = senderEmail
-        ? await Wallet.findOne({ userId: (await regUser.findOne({ email: senderEmail }))?._id })
-        : null;
-  
+      const sender = senderEmail ? await regUser.findOne({ email: senderEmail }) : null;
+      const senderWallet = sender ? await Wallet.findOne({ userId: sender._id }) : null;
+
       if (senderWallet) {
         await new Transaction({
           senderWalletId: senderWallet._id,
           receiverWalletId: receiverWallet?._id,
-          transactionType: 'wallet_transfer_sent',
-          category: 'debit',
-          amount: amount || 0,
+          transactionType: "wallet_transfer_sent",
+          category: "debit",
+          amount: numericAmount || 0,
           balanceBefore: senderWallet.balance,
           balanceAfter: senderWallet.balance,
           reference: `TRX-${uuidv4()}`,
           description,
-          status: 'failed',
-          metadata: {
-            reason,
-            ...(senderEmail ? { senderEmail } : { senderEmail: 'No recipient email provided' }),
-            ...extra
-          }
+          status: "failed",
+          metadata: { reason, senderEmail: senderEmail || "N/A", ...extra },
         }).save();
       }
     } catch (err) {
-      console.error('Error saving failed transaction:', err.message);
+      console.error("Error saving failed transaction:", err.message);
     }
   };
-  
 
   try {
-    const sender = await regUser.findOne({email: senderEmail});
-    if (!sender) {
-      await failTransaction('Sender not found', { reason: 'Sender account does not exist' });
-      return res.status(404).json({ error: 'Sender not found' });
-    }
+    const sender = await regUser.findOne({ email: senderEmail });
+    if (!sender) return res.status(404).json({ error: "Sender not found" });
 
-    if (!sender.pin) {
-      await failTransaction('PIN not set', { reason: 'Sender has not set a PIN' });
-      return res.status(400).json({ error: 'PIN not set' });
-    }
-
+    if (!sender.pin) return res.status(400).json({ error: "PIN not set" });
     const isPinValid = await bcrypt.compare(pin, sender.pin);
-    if (!isPinValid) {
-      await failTransaction('Invalid PIN', { reason: 'Provided PIN is incorrect' });
-      return res.status(400).json({ error: 'Invalid PIN' });
-    }
+    if (!isPinValid) return res.status(400).json({ error: "Invalid PIN" });
 
     const receiver = await regUser.findById(receiverId);
-    if (!receiver) {
-      await failTransaction('Receiver not found', { reason: 'No Receiver found' });
-      return res.status(404).json({ error: 'Receiver not found ' });
-    }
+    if (!receiver) return res.status(404).json({ error: "Receiver not found" });
 
     const senderWallet = await Wallet.findOne({ userId: sender._id });
     const receiverWallet = await Wallet.findOne({ userId: receiver._id });
+    if (!senderWallet || !receiverWallet)
+      return res.status(400).json({ error: "Wallet(s) not found" });
 
-    if (!senderWallet || !receiverWallet) {
-      await failTransaction('Wallet(s) not found', {
-        reason: 'Either sender or receiver wallet is missing',
-        senderWalletFound: !!senderWallet,
-        receiverWalletFound: !!receiverWallet
-      });
-      return res.status(400).json({ error: 'Wallet(s) not found' });
+    // ✅ Check Transaction Limits for Students
+    let limit;
+    if (sender.role === "student") {
+      limit = await TransactionLimit.findOne({ studentId: sender._id });
+      if (!limit)
+        return res.status(400).json({ error: "Transaction limit not set for this student" });
+
+      // Per Transaction Check
+      if (numericAmount > limit.perTransactionLimit)
+        return res
+          .status(400)
+          .json({ error: `You cannot send more than ${limit.perTransactionLimit} per transaction` });
+
+      // Daily Check
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayEnd = new Date();
+      todayEnd.setHours(23, 59, 59, 999);
+
+      const todayTransactions = await Transaction.aggregate([
+        {
+          $match: {
+            senderWalletId: senderWallet._id,
+            createdAt: { $gte: todayStart, $lte: todayEnd },
+            status: "success",
+            category: "debit", // ✅ only count sent transactions
+          },
+        },
+        { $group: { _id: null, totalSent: { $sum: "$amount" } } },
+      ]);
+
+      const totalSentToday = todayTransactions[0]?.totalSent || 0;
+      console.log("Total sent today:", totalSentToday);
+
+      if (totalSentToday + numericAmount > limit.dailyLimit)
+        return res
+          .status(400)
+          .json({ error: `Daily limit exceeded. Limit: ${limit.dailyLimit}, Sent: ${totalSentToday}` });
+
+      // Weekly Check
+      const now = new Date();
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+
+      const weeklyTransactions = await Transaction.aggregate([
+        {
+          $match: {
+            senderWalletId: senderWallet._id,
+            createdAt: { $gte: startOfWeek, $lte: endOfWeek },
+            status: "success",
+            category: "debit", // ✅ only count sent transactions
+          },
+        },
+        { $group: { _id: null, totalSent: { $sum: "$amount" } } },
+      ]);
+
+      const totalSentWeek = weeklyTransactions[0]?.totalSent || 0;
+      console.log("Total sent this week:", totalSentWeek);
+
+      if (totalSentWeek + numericAmount > limit.weeklyLimit)
+        return res
+          .status(400)
+          .json({ error: `Weekly limit exceeded. Limit: ${limit.weeklyLimit}, Sent: ${totalSentWeek}` });
     }
-     const transferCharge = await Charge.findOne({name: "Transfer Charges"});
-    if(!transferCharge){
-      return res.status(404).json({error: "Transfer Charges not found"});
-    }
-    // Calculate charge amount if charge type is Flat put the charge amount as is, if charge type is Percentage calculate the percentage of the amount not greater than 500
+
+    // ✅ Transfer Charges
+    const transferCharge = await Charge.findOne({ name: "Transfer Charges" });
+    if (!transferCharge) return res.status(404).json({ error: "Transfer Charges not found" });
+
     let chargeAmount = 0;
-    if (transferCharge.chargeType === 'Flat') {
-      chargeAmount = transferCharge.amount;
-    } else if (transferCharge.chargeType === 'Percentage') {
-      chargeAmount = Math.min((amount * transferCharge.amount) / 100, 500);
-    }
-    if (senderWallet.balance < amount) {
-      await failTransaction('Insufficient balance', {
-        reason: 'Sender does not have enough funds',
-        currentBalance: senderWallet.balance,
-        transferAmount: amount
-      });
-      return res.status(400).json({ error: 'Insufficient balance' });
-    }
-    //Total Amount to be deducted from sender
-    const totalDeduction = amount + chargeAmount;
-    if (senderWallet.balance < totalDeduction) {
-      await failTransaction('Insufficient balance', {
-        reason: 'Sender does not have enough funds',
-        currentBalance: senderWallet.balance,
-        transferAmount: amount
-      });
-      return res.status(400).json({ error: 'Insufficient balance' });
-    }
-// find transfer charges wallet
-    const transferChargesWallet = await Wallet.findOne({ walletName: 'Transfer Charges Wallet' });
-    if (!transferChargesWallet) {
-      return res.status(404).json({ message: 'Transfer Charge Wallet not found' });
-    }
-    // Transfer funds
+    if (transferCharge.chargeType === "Flat") chargeAmount = transferCharge.amount;
+    else if (transferCharge.chargeType === "Percentage")
+      chargeAmount = Math.min((numericAmount * transferCharge.amount) / 100, 500);
+
+    const totalDeduction = numericAmount + chargeAmount;
+    if (senderWallet.balance < totalDeduction)
+      return res.status(400).json({ error: "Insufficient balance" });
+
+    // ✅ Process Transaction
+    const transferChargesWallet = await Wallet.findOne({ walletName: "Transfer Charges Wallet" });
+    if (!transferChargesWallet)
+      return res.status(404).json({ message: "Transfer Charge Wallet not found" });
+
     const senderBalanceBefore = senderWallet.balance;
-    const senderBalanceAfter = senderWallet.balance - totalDeduction;
+    const senderBalanceAfter = senderBalanceBefore - totalDeduction;
     const receiverBalanceBefore = receiverWallet.balance;
-    const receiverBalanceAfter = receiverWallet.balance + amount;
+    const receiverBalanceAfter = receiverBalanceBefore + numericAmount;
 
     senderWallet.balance = senderBalanceAfter;
     receiverWallet.balance = receiverBalanceAfter;
-
-    //update transfer charges wallet
     transferChargesWallet.balance += chargeAmount;
     transferChargesWallet.lastTransaction = new Date();
     transferChargesWallet.lastTransactionAmount = chargeAmount;
-    transferChargesWallet.lastTransactionType = 'credit';
+    transferChargesWallet.lastTransactionType = "credit";
 
+    await Promise.all([
+      transferChargesWallet.save(),
+      senderWallet.save(),
+      receiverWallet.save(),
+    ]);
 
-    await transferChargesWallet.save();
-    await senderWallet.save();
-    await receiverWallet.save();
+    // ✅ Update Transaction Limit
+    if (sender.role === "student" && limit) {
+      limit.currentDailySpent += numericAmount + chargeAmount;
+      limit.currentWeeklySpent += numericAmount + chargeAmount;
+      await limit.save();
+    }
 
+    // ✅ Log Transactions
     const senderTransaction = new Transaction({
       senderWalletId: senderWallet._id,
       receiverWalletId: receiverWallet._id,
-      transactionType: 'wallet_transfer_sent',
-      category: 'debit',
-      amount,
+      transactionType: "wallet_transfer_sent",
+      category: "debit",
+      amount: numericAmount,
       balanceBefore: senderBalanceBefore,
       balanceAfter: senderBalanceAfter,
       reference: `TRX-${uuidv4()}`,
       description,
-      status: 'success',
-      metadata: {
-        receiverEmail: receiver.email,
-        senderEmail: sender.email,
-      }
+      status: "success",
+      metadata: { receiverEmail: receiver.email, senderEmail: sender.email },
     });
 
     const receiverTransaction = new Transaction({
       senderWalletId: senderWallet._id,
       receiverWalletId: receiverWallet._id,
-      transactionType: 'wallet_transfer_received',
-      category: 'credit',
-      amount,
+      transactionType: "wallet_transfer_received",
+      category: "credit",
+      amount: numericAmount,
       balanceBefore: receiverBalanceBefore,
       balanceAfter: receiverBalanceAfter,
       reference: `TRX-${uuidv4()}`,
       description,
-      status: 'success',
-      metadata: {
-        senderEmail: sender.email,
-        receiverEmail: receiver.email
-      }
+      status: "success",
+      metadata: { senderEmail: sender.email, receiverEmail: receiver.email },
     });
 
-    await senderTransaction.save();
-    await receiverTransaction.save();
+    await Promise.all([senderTransaction.save(), receiverTransaction.save()]);
 
-    //log transfer charge transaction
-    const chargeTransaction = new Transaction({
-      senderWalletId: senderWallet._id,
-      receiverWalletId: transferChargesWallet._id,
-      transactionType: 'transfer_charge',
-      category: 'debit',
-      amount: chargeAmount,
-      balanceBefore: senderBalanceAfter + chargeAmount,
-      balanceAfter: senderBalanceAfter,
-      reference: `TRX-${uuidv4()}`,
-      description: `Transfer charge for sending ${amount} to ${receiver.email}`,
-      status: 'success',
-      metadata: {
-        senderEmail: sender.email,
-        receiverEmail: receiver.email,
-        chargeAmount
-      }
-    });
-    //log charge transaction for transfer charges wallet
-    const chargeTransactionForChargeWallet = new Transaction({
-      senderWalletId: senderWallet._id,
-      receiverWalletId: transferChargesWallet._id,
-      transactionType: 'transfer_charge',
-      category: 'credit',
-      amount: chargeAmount,
-      balanceBefore: transferChargesWallet.balance - chargeAmount,
-      balanceAfter: transferChargesWallet.balance,
-      reference: `TRX-${uuidv4()}`,
-      description: `Transfer charge received from ${sender.email} for sending ${amount} to ${receiver.email}`,
-      status: 'success',
-      metadata: {
-        senderEmail: sender.email,
-        receiverEmail: receiver.email,
-        chargeAmount
-      }
-    });
-    await chargeTransactionForChargeWallet.save(); 
-    await chargeTransaction.save();
-
-    //send notification to sender
-    await sendNotification(sender._id, `You have sent ${amount} to ${receiver.email} with email: ${receiver.email}. New balance is ${senderBalanceAfter}.`);
-    //send notification to receiver
-    await sendNotification(receiver._id, `You have received ${amount} from ${sender.name} with email: ${sender.email}. New balance is ${receiverBalanceAfter}.`);
-    //send email to sender
-  //   await sendEmail(
-  //     {
-  //       to: sender.email, 
-  //       subject: 'Transfer Successful', 
-  //       html:`You have sent ${amount} to ${receiver.name} with email: ${receiver.email}. New balance is ${senderBalanceAfter}.`
-  // });
-    //send email to receiver
-    // await sendEmail(
-    //   {
-    //   to: receiver.email, 
-    //   subject: 'Transfer Received', 
-    //   html: `You have received ${amount} from ${sender.name} with email: ${sender.email}. New balance is ${receiverBalanceAfter}.`
-    // });
+    // ✅ Send Notifications
+    await sendNotification(sender._id, `You sent ₦${numericAmount} to ${receiver.email}. New balance: ₦${senderBalanceAfter}`);
+    await sendNotification(receiver._id, `You received ₦${numericAmount} from ${sender.name}. New balance: ₦${receiverBalanceAfter}`);
 
     res.json({
-      message: 'Transfer successful',
+      message: "Transfer successful",
       transaction: {
-        amount,
+        amount: numericAmount,
         sender: sender.email,
         receiver: receiver.email,
         description,
-        senderTransactionRef: senderTransaction.reference,
-        receiverTransactionRef: receiverTransaction.reference
-      }
+        senderRef: senderTransaction.reference,
+        receiverRef: receiverTransaction.reference,
+      },
     });
   } catch (error) {
-    console.error(error);
-    await failTransaction('Unexpected error', { reason: error.message });
+    console.error("Error in verifyPinAndTransferToAgent:", error);
+    await failTransaction("Unexpected error", { reason: error.message });
     res.status(500).json({ error: error.message });
   }
 };
-
   
 
 exports.updateTransferMetadata = async (req, res) => {
@@ -1476,10 +1691,17 @@ exports.reverseUnloggedTransaction = async (req, res) => {
 };
 
 // controllers/transactionLimitController.js
-export const setTransactionLimit = async (req, res) => {
+exports.setTransactionLimit = async (req, res) => {
   try {
     const { studentId, dailyLimit, perTransactionLimit, weeklyLimit } = req.body;
     const parentId = req.user.id; // from JWT
+    if (!studentId || dailyLimit == null || perTransactionLimit == null || weeklyLimit == null) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+    if (dailyLimit < 0 || perTransactionLimit < 0 || weeklyLimit < 0) {
+      return res.status(400).json({ error: "Limits must be non-negative values" });
+    }
+    
 
     let limit = await TransactionLimit.findOne({ studentId, parentId });
 
@@ -1504,8 +1726,27 @@ export const setTransactionLimit = async (req, res) => {
     res.status(500).json({ error: "Failed to set transaction limit" });
   }
 };
+//update transaction limit
+exports.updateTransactionLimit = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const { dailyLimit, perTransactionLimit, weeklyLimit } = req.body;
+    const parentId = req.user.id;
+
+    const limit = await TransactionLimit.findOneAndUpdate(
+      { studentId: studentId },
+      { dailyLimit, perTransactionLimit, weeklyLimit },
+      { new: true }
+    );
+    if (!limit) return res.status(404).json({ message: "Transaction limit not found" });
+    res.json({ success: true, message: "Transaction limit updated successfully", limit });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update transaction limit" });
+  }
+}; 
+
 // get transaction limit for a student
-export const getTransactionLimit = async (req, res) => {
+exports.getTransactionLimit = async (req, res) => {
   try {
     const { studentId } = req.params;
     const parentId = req.user.id;
@@ -1520,7 +1761,7 @@ export const getTransactionLimit = async (req, res) => {
 };
 
 //get all transaction limits set by a parent
-export const getAllTransactionLimits = async (req, res) => {
+exports.getAllTransactionLimits = async (req, res) => {
   try {
     const parentId = req.user.id;
     const limits = await TransactionLimit.find({ parentId });
@@ -1529,9 +1770,31 @@ export const getAllTransactionLimits = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch transaction limits" });
   }
 };
+//get limit by id
+exports.getLimitById = async (req, res) => {
+  try {
+    const id = req.user?.id;
+    if (!id) return res.status(400).json({ message: "User ID is required" });
+    const user = await regUser.findById(id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    // if (user.role !== 'parent' && user.role !== 'school') {
+    //   return res.status(403).json({ message: "Only Parents can access their transaction limits" });
+    // }
+    const { studentId } = req.params;
+    console.log("Fetching limit for student ID:", studentId);
+    const student = await regUser.findById(studentId);
+    if (!student) return res.status(404).json({ message: "Student not found" });
+    console.log("Fetching limit for student ID:", student.name);
+    const limit = await TransactionLimit.findOne({studentId});
+    if (!limit) return res.status(404).json({ message: "Transaction limit not found" });
+    res.json(limit);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch transaction limit" });
+  }
+};
 
 //get all transaction limits
-export const getAllLimits = async (req, res) => {
+exports.getAllLimits = async (req, res) => {
   try {
     const limits = await TransactionLimit.find();
     res.json(limits);
@@ -1541,7 +1804,7 @@ export const getAllLimits = async (req, res) => {
 };
 
 //delete transaction limit
-export const deleteTransactionLimit = async (req, res) => {
+exports.deleteTransactionLimit = async (req, res) => {
   try {
     const { id } = req.params;
     const parentId = req.user.id;
@@ -1554,3 +1817,66 @@ export const deleteTransactionLimit = async (req, res) => {
 };
 
 //
+exports.setDefaultLimitForAllStudents = async (req, res) => {
+  try {
+    const students = await regUser.find({ role: "student" });
+
+    let createdCount = 0;
+    for (const student of students) {
+      const exists = await TransactionLimit.findOne({ studentId: student._id });
+      if (!exists) {
+        await TransactionLimit.create({
+          studentId: student._id,
+          dailyLimit: 5000,
+          weekLyLimit: 500000,
+        });
+        createdCount++;
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Default transaction limit set for ${createdCount} students.`,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+//delete all transaction limits
+exports.deleteAllTransactionLimits = async (req, res) => {
+  try {
+    await TransactionLimit.deleteMany({});
+    res.json({ message: "All transaction limits deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete transaction limits" });
+  }
+};
+// ✅ Reset Daily Limits — every day at midnight
+cron.schedule("0 0 * * *", async () => {
+  try {
+    const now = new Date();
+    const result = await TransactionLimit.updateMany(
+      {},
+      { $set: { currentDailySpent: 0, lastResetDate: now} }
+    );
+    console.log(`Daily limits reset for ${result.nModified} students at midnight.`);
+  } catch (error) {
+    console.error("Error resetting daily limits:", error);
+  }
+});
+
+// ✅ Reset Weekly Limits — every Sunday at midnight
+cron.schedule("0 0 * * 0", async () => {
+  try {
+    const now = new Date();
+    const result = await TransactionLimit.updateMany(
+      {},
+      { $set: { currentWeeklySpent: 0, lastResetDate: now } }
+    );
+    console.log(`Weekly limits reset for ${result.nModified} students at midnight on Sunday.`);
+  }
+  catch (error) {
+    console.error("Error resetting weekly limits:", error);
+  }
+});

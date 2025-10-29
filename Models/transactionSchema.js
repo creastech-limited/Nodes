@@ -79,4 +79,47 @@ const transactionSchema = new mongoose.Schema({
   timestamps: true
 });
 
-module.exports = mongoose.model('Transaction', transactionSchema);
+
+// models/TransactionLimit.js
+
+const transactionLimitSchema = new mongoose.Schema({
+  studentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "regUser",
+    required: true,
+  },
+  parentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "regUser",
+  },
+  dailyLimit: {
+    type: Number,
+    default: 10000,
+  },
+  perTransactionLimit: {
+    type: Number,
+    default: 5000,
+  },
+  weeklyLimit: {
+    type: Number,
+    default: 25000,
+  },
+  currentDailySpent: {
+    type: Number,
+    default: 0,
+  },
+  currentWeeklySpent: {
+    type: Number,
+    default: 0,
+  },
+  lastResetDate: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+const TransactionLimit = mongoose.model("TransactionLimit", transactionLimitSchema);
+const Transaction = mongoose.model('Transaction', transactionSchema);
+
+
+module.exports = { Transaction, TransactionLimit };

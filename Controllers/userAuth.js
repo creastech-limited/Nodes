@@ -1,4 +1,5 @@
 const QRCode = require('qrcode');
+const {TransactionLimit} = require('../Models/transactionSchema');
 const {regUser, ClassUser, Beneficiary} = require('../Models/registeration');
 const bcrypt = require('bcryptjs');
 const sendEmail = require('../utils/email');
@@ -206,6 +207,16 @@ exports.updateGuardian = async (req, res) => {
     const kid = await regUser.findOne({email: kidEmail, role: 'student' });
     if (!kid || kid.role.toLowerCase() !== 'student') { 
         return res.status(404).json({ message: "Student not found" });
+    }
+    //update TransactionLimit with guardian id
+    const limit = await TransactionLimit.findOne({ studentId: kid._id });
+    if (limit) {
+      const guardianUser = await regUser.findOne({email: guardianEmail, role: 'parent' });
+      if (!guardianUser || guardianUser.role.toLowerCase() !== 'parent') {
+          return res.status(404).json({ message: "No parent found for guardian email" });
+      }
+      limit.parentId = guardianUser._id;
+      await limit.save();
     }
     
     //find user where role is parent
@@ -1302,6 +1313,8 @@ exports.register = async (req, res) => {
       foundClass.students.push(newUser._id);
       await foundClass.save();
 
+      //set the Transaction Limit for the student based on class
+
       // Optional: push student to class' student list
       // await ClassUser.findByIdAndUpdate(foundClass._id, { $push: { students: newUser._id } });
     }
@@ -1330,6 +1343,17 @@ exports.register = async (req, res) => {
     }
 
     await newUser.save();
+
+    // ✅ Create default Transaction Limit automatically for students only
+if (roleLower === 'student') {
+  try {
+    await TransactionLimit.create({
+      studentId: newUser._id,   // link to the student
+    });
+  } catch (limitError) {
+    console.error('Error creating default transaction limit:', limitError);
+  }
+}
 
     // Create classes for school if role is 'school'
     if (roleLower === 'school') {

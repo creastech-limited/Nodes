@@ -40,7 +40,7 @@ const disputeSchema = new mongoose.Schema({
   },
   resolvedBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User', // Reference to the admin or user resolving the dispute
+    ref: 'regUser', // Reference to the admin or user resolving the dispute
   },
   transactionId: {
     type: mongoose.Schema.Types.ObjectId,

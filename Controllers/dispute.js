@@ -182,6 +182,13 @@ console.log('School ID:', schoolID);
     // Optionally: notify admins, log activity, etc.
     await sendNotification(user._id, 'Dispute creation', 'Dispute created successfully', 'success');
 
+    //send email to Admins
+    const adminEmail = "itsupport@creastech" // Ensure this is set in your environment variables
+    await sendEmail(
+      adminEmail, 
+      'New Dispute Created', 
+      `A new dispute has been created by ${user.name}. Dispute ID: ${savedDispute._id}. Please review it in the admin panel.`
+    );
     
 
     res.status(201).json({
@@ -399,11 +406,11 @@ exports.updateDispute = async (req, res) => {
       return res.status(404).json({ message: 'Dispute not found' });
     }
     //get the name of the user who raised the dispute
-      if (!disputes || disputes.length === 0) {
+      if (!dispute || dispute.length === 0) {
         return res.status(404).json({ message: 'No disputes found for this school' });
       }
       const disputesWithUserNames = await Promise.all(
-        disputes.map(async (dispute) => {
+        dispute.map(async (dispute) => {
           const raisedByUser = await regUser.findById(dispute.userId);
           return {
             ...dispute.toObject(),
@@ -413,6 +420,18 @@ exports.updateDispute = async (req, res) => {
       );
       if (disputesWithUserNames.length === 0) {
         return res.status(404).json({ message: 'No disputes found for this school' });
+      }
+      // Optionally: notify user about dispute resolution
+      await sendNotification(dispute.userId, 'Dispute Update', `Your dispute has been updated to status: ${status}`, 'info');
+
+      //send email to user about dispute resolution
+      const raisedByUser = await regUser.findById(dispute.userId);
+      if (raisedByUser) {
+        await sendEmail(
+          raisedByUser.email,
+          'Dispute Status Updated',
+          `Hello ${raisedByUser.name},\n\nYour dispute with ID: ${dispute._id} has been updated to status: ${status}.\n\nThank you.`
+        );
       }
   
       res.status(200).json({
