@@ -1,5 +1,5 @@
 const cron = require("node-cron");
-import cron from "node-cron";
+// import cron from "node-cron";
 const axios = require('axios');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
