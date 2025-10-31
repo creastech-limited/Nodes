@@ -1354,7 +1354,7 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
           },
         },
         //sum the amount and trasnfer charges
-        { $group: { _id: null, totalSent: { $sum:$dd["$amount", "$transferCharges"]} } }
+        { $group: { _id: null, totalSent: { $sum:$add["$amount", "$transferCharges"]} } }
         ,
       ]);
 
@@ -1385,7 +1385,7 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
             category: "debit", // ✅ only count sent transactions
           },
         },
-        { $group: { _id: null, totalSent: { $sum:$dd["$amount", "$transferCharges"]} } },
+        { $group: { _id: null, totalSent: { $sum:$add["$amount", "$transferCharges"]} } },
       ]);
 
       const totalSentWeek = weeklyTransactions[0]?.totalSent || 0;
