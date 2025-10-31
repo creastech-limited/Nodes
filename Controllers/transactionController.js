@@ -1353,7 +1353,9 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
             category: "debit", // ✅ only count sent transactions
           },
         },
-        { $group: { _id: null, totalSent: { $sum: "$amount" } } },
+        //sum the amount and trasnfer charges
+        { $group: { _id: null, totalSent: { $sum:$dd["$amount", "$transferCharges"]} } }
+        ,
       ]);
 
       const totalSentToday = todayTransactions[0]?.totalSent || 0;
@@ -1383,7 +1385,7 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
             category: "debit", // ✅ only count sent transactions
           },
         },
-        { $group: { _id: null, totalSent: { $sum: "$amount" } } },
+        { $group: { _id: null, totalSent: { $sum:$dd["$amount", "$transferCharges"]} } },
       ]);
 
       const totalSentWeek = weeklyTransactions[0]?.totalSent || 0;
@@ -1472,6 +1474,19 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
     // ✅ Send Notifications
     await sendNotification(sender._id, `You sent ₦${numericAmount} to ${receiver.email}. New balance: ₦${senderBalanceAfter}`);
     await sendNotification(receiver._id, `You received ₦${numericAmount} from ${sender.name}. New balance: ₦${receiverBalanceAfter}`);
+    //if the user has guardian email, send Notifications to guardian
+    const guardianEmailAddr = sender?.guardian.email;
+    const guardian = regUser.findOne({email: guardianEmailAddr});
+    console.log("Guardian email:", guardianEmailAddr);
+    if(sender.guardianEmail){
+      await sendNotificationToGuardian(guardian._id, `Your ward ${sender.name} sent ₦${numericAmount} to ${receiver.email}. New balance: ₦${senderBalanceAfter}`);   
+    await sendEmail({
+      to: guardianEmailAddr,
+      subject: "Transfer Successful",
+      html: `You have sent ₦${numericAmount} to ${receiver.email}. New balance is ₦${senderBalanceAfter}.`,
+    });
+    await s
+    }
 
     res.json({
       message: "Transfer successful",
