@@ -2,7 +2,7 @@ const disputeData = require('../Models/dispute');
 const {regUser} = require('../Models/registeration');
 const jwt = require('jsonwebtoken');
 const Wallet = require('../Models/walletSchema'); // adjust to your wallet model name
-const Transaction = require('../Models/transactionSchema'); // adjust to your transaction model name
+const {Transaction} = require('../Models/transactionSchema'); // adjust to your transaction model name
 const { sendEmail } = require('../utils/email'); // adjust to your email utility path
 const {sendNotification} = require('../utils/notification'); // adjust to your notification utility path
 const { get } = require('mongoose');
@@ -95,7 +95,6 @@ exports.createDispute = async (req, res) => {
           transactionId,
           paymentCategory,
           amount,
-          school,
           supportingDocuments
     } = req.body;
 
@@ -111,18 +110,18 @@ exports.createDispute = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     //check if user is a student
-    if(user.role == 'student'){
-      school = user.schoolId
-    }
+    // if(user.role == 'student'){
+    //   school = user.schoolId
+    // }
 
     if (user.status !== 'Active') {
       return res.status(403).json({ message: 'User is not active' });
     }
-     const schoolRecord = await regUser.findOne({schoolId: school});
+    //  const schoolRecord = await regUser.findOne({schoolId: school});
     // if (!schoolRecord) {
     //   return res.status(404).json({ message: 'School not found' });
     // }
-    console.log('School found:', schoolRecord._id);
+    // console.log('School found:', schoolRecord._id);
     // ✅ Determine school ID
     // const schoolID = user.schoolId || school;
     // if (!schoolID) {
@@ -178,7 +177,6 @@ exports.createDispute = async (req, res) => {
       disputeDate: new Date(),
       paymentCategory,
       amount: cleanedAmount,
-      schoolId: schoolRecord._id,
       supportingDocuments
     });
 
@@ -188,12 +186,12 @@ exports.createDispute = async (req, res) => {
     await sendNotification(user._id, 'Dispute creation', 'Dispute created successfully', 'success');
 
     //send email to Admins
-    const adminEmail = "itsupport@creastech" // Ensure this is set in your environment variables
-    await sendEmail(
-      adminEmail, 
-      'New Dispute Created', 
-      `A new dispute has been created by ${user.name}. Dispute ID: ${savedDispute._id}. Please review it in the admin panel.`
-    );
+    // const adminEmail = "itsupport@creastech" // Ensure this is set in your environment variables
+    // await sendEmail(
+    //   adminEmail, 
+    //   'New Dispute Created', 
+    //   `A new dispute has been created by ${user.name}. Dispute ID: ${savedDispute._id}. Please review it in the admin panel.`
+    // );
     
 
     res.status(201).json({
@@ -215,6 +213,8 @@ exports.getAllDisputes = async (req, res) => {
       .populate('transactionId')
       .populate('resolvedBy', 'fullName email') 
       .sort({ createdAt: -1 });
+      // console.log('Disputes fetched:', disputes.length);
+      // console.log('Disputes data:', disputes);
 
       const disputesWithUserNames = await Promise.all(
         disputes.map(async (dispute) => {
@@ -490,6 +490,16 @@ exports.deleteDispute = async (req, res) => {
       });
   } catch (error) {
     console.error('Error deleting dispute:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+//delete all disputes - for testing purposes only
+exports.deleteAllDisputes = async (req, res) => {
+  try {
+    const result = await disputeData.deleteMany({});
+    res.status(200).json({ message: `${result.deletedCount} disputes deleted successfully` });
+  } catch (error) {
+    console.error('Error deleting all disputes:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

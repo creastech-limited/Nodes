@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const disputeSchema = new mongoose.Schema({
   userId: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
+    ref: 'regUser', 
     required: true 
   },
   schoolId: {
@@ -16,13 +16,13 @@ const disputeSchema = new mongoose.Schema({
   disputeType: {
     type: String,
     required: true,
-    enum: [
-  'Billing Issue',         // Incorrect or duplicate bills
-  'Account Discrepancy',   // Wallet balance or account mismatch
-  'Transaction Error',     // Failed or unverified payments
-  'Service Concern',       // Issues with provided services (e.g. access to platform, fees not reflecting)
-  'Other'                  // Any other issue not classified above
-], // Types of disputes
+//     enum: [
+//   'Billing Issue',         // Incorrect or duplicate bills
+//   'Account Discrepancy',   // Wallet balance or account mismatch
+//   'Transaction Error',     // Failed or unverified payments
+//   'Service Concern',       // Issues with provided services (e.g. access to platform, fees not reflecting)
+//   'Other'                  // Any other issue not classified above
+// ], // Types of disputes
   },
   description: { 
     type: String, 

@@ -6,7 +6,7 @@ const Model = require('../Models/models'); // Corrected import statement
 const router = express.Router();
 const verifyToken = require('./verifyToken');
 
-const {createDispute,getSchoolDisputes,getUserDisputes,updateDispute,deleteDispute,getAllDisputes} = require('../Controllers/dispute');
+const {createDispute,getSchoolDisputes,getUserDisputes,updateDispute,deleteDispute,getAllDisputes, deleteAllDisputes} = require('../Controllers/dispute');
 // const {getDisputeById, getDisputeByFilter, getAllDisputes} = require('../Controllers/getDispute');  
 
 
@@ -22,6 +22,7 @@ router.get('/getuserdispute', verifyToken, getUserDisputes);
 router.put('/updatedispute/:id', verifyToken, updateDispute);
 //delete dispute
 router.delete('/deletedispute/:id', deleteDispute);
+router.delete('/deletealldispute', deleteAllDisputes);
 
 
 
