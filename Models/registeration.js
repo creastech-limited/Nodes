@@ -88,6 +88,7 @@ const userSchema = new mongoose.Schema({
   storeCanWithdraw: { type: Boolean, default: false },
   agentCanTransfer: { type: Boolean, default: false },
   agentCanWithdraw: { type: Boolean, default: false },
+  referalCode: { type: String, },
   beneficiary: [
     { 
       firstName: String,
@@ -158,4 +159,29 @@ const beneficiarySchema = new mongoose.Schema({
 }, { timestamps: true });
 const Beneficiary = mongoose.model('Beneficiary', beneficiarySchema);
 
-module.exports = {regUser, ClassUser, Beneficiary};
+
+//agent Model
+const agentSchema = new mongoose.Schema({
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
+  name: { type: String},
+  email: { type: String, required: true },
+  password: { type: String, required: true },
+  agentCode: { type: String, unique: true },
+  schoolId: { type: String, required: true },
+  phone: { type: String, required: true },
+  address: { type: String },
+  
+}, { timestamps: true });
+
+agentSchema.pre('save', async function (next) {
+  if(!this.agentCode){
+    //generate the last five digists from the id
+    this.agentCode = `${this._id.toString().slice(-5).toUpperCase()}`;
+  }
+  next();
+});
+const Agent = mongoose.model('Agent', agentSchema);
+
+
+module.exports = {regUser, ClassUser, Beneficiary, Agent};

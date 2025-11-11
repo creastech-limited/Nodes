@@ -21,7 +21,7 @@ exports.sendWhatsappOtp = async (req, res) => {
     const message = await client.messages.create({
       from: "whatsapp:+14155238886", // Twilio Sandbox or approved number
       body: `Your authentication code is: ${otp} from David`,
-      to: `whatsapp:+${phoneNumber}`,
+      to: `whatsapp:+234${phoneNumber}`,
     });
 
     // Store OTP in session/DB/Redis for verification later

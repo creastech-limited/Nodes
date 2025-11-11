@@ -90,40 +90,45 @@ exports.createDispute = async (req, res) => {
     const userId = req.user?.id;
 
     const {
-      disputeType,
-      description,
-      transactionId,
-      paymentCategory,
-      amount,
-      school,
-      supportingDocuments
+          disputeType,
+          description,
+          transactionId,
+          paymentCategory,
+          amount,
+          school,
+          supportingDocuments
     } = req.body;
 
     // ✅ Validate required fields
     if (!disputeType || !description || !transactionId || !amount) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
+    
 
     // ✅ Check if user exists and is active
     const user = await regUser.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+    //check if user is a student
+    if(user.role == 'student'){
+      school = user.schoolId
+    }
 
     if (user.status !== 'Active') {
       return res.status(403).json({ message: 'User is not active' });
     }
-    const schoolRecord = await regUser.findOne({_id: school});
-    if (!schoolRecord) {
-      return res.status(404).json({ message: 'School not found' });
-    }
+     const schoolRecord = await regUser.findOne({schoolId: school});
+    // if (!schoolRecord) {
+    //   return res.status(404).json({ message: 'School not found' });
+    // }
     console.log('School found:', schoolRecord._id);
     // ✅ Determine school ID
-    const schoolID = user.schoolId || school;
-    if (!schoolID) {
-      return res.status(400).json({ message: 'School ID is required' });
-    }
-console.log('School ID:', schoolID);
+    // const schoolID = user.schoolId || school;
+    // if (!schoolID) {
+    //   return res.status(400).json({ message: 'School ID is required' });
+    // }
+// console.log('School ID:', schoolID);
     // ✅ Validate and parse amount
     const cleanedAmount = parseFloat(amount);
     if (isNaN(cleanedAmount) || cleanedAmount <= 0) {

@@ -1145,6 +1145,7 @@ exports.register = async (req, res) => {
       pin,
       lastLogin,
       agent_id,
+      referalCode,
       schoolRegistrationLink,
       refreshToken,
       status = 'Inactive',
@@ -1269,6 +1270,7 @@ exports.register = async (req, res) => {
       role,
       pin: '',
       lastLogin,
+      referalCode,
       registrationDate: new Date(),
       status: 'Inactive',
     });

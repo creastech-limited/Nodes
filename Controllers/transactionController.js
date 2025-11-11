@@ -1354,7 +1354,10 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
           },
         },
         //sum the amount and trasnfer charges
-        { $group: { _id: null, totalSent: { $sum:$add["$amount", "$transferCharges"]} } }
+        { $group: { 
+          _id: null, 
+          totalSent: { $sum:{$add:["$amount", "$transferCharges"]} } }
+        }
         ,
       ]);
 
