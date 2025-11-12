@@ -1616,7 +1616,7 @@ exports.bulkRegister = async (req, res) => {
         payload.password = Math.random().toString(36).slice(-10);
 
         // ✅ 3. Assign schoolId from the URL parameter
-        payload.schoolId = req.query.schoolId || '';
+        payload.schoolId = schoolId || '';
         
 
 
