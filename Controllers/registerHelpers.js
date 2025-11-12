@@ -289,16 +289,17 @@ async function createUserFromPayload(payload, decodedToken = {}, req) {
     await newUser.save();
 
     const base64Image = qrCodeDataUrl.replace(/^data:image\/png;base64,/, '');
+    console.log('Generated QR Code for user:', newUser.email);
 
     // email notification
-    await sendEmail({
-      to: newUser.email, 
-      subject: 'Confirm Notification',
-      html: `<p>Hello ${newUser.firstName},</p>
+    const emailResponse = await sendEmail(
+       newUser.email, 
+       'Confirm Notification',
+       `<p>Hello ${newUser.firstName},</p>
              <p>You have successfully registered with the school wallet solution.<br/>
              Click the link <a href='${process.env.NGROK_URL}/api/activate/${newUser._id}'>activate</a> to activate your account.</p>
              <p>Best regards,<br>Your Company Name</p>`,
-      attachments: [
+       [
         {
           content: base64Image,
           filename: 'qrcode.png',
@@ -306,13 +307,14 @@ async function createUserFromPayload(payload, decodedToken = {}, req) {
           disposition: 'attachment'
         }
       ]
-    });
+    );
 
     if (roleLower === 'admin') {
       newUser.qrcode = null;
       await newUser.save();
       await Wallet.deleteOne({ userId: newUser._id });
     }
+    console.log('Email response:', emailResponse);  
 
     return { success: true, user: newUser };
   } catch (err) {
