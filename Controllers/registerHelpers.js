@@ -34,6 +34,18 @@ async function generateUniqueAccountNumber() {
 // ✅ Main helper
 async function createUserFromPayload(payload, decodedToken = {}) {
   try {
+    const userId = req.user?.id;
+    if(!userId){
+      return { success: false, error: 'Unauthorized: No user ID found in request' };
+    }
+    console.log("Creating user initiated by user ID:", userId);
+    const currentUser = await regUser.findById(userId);
+    if (!currentUser) {
+      return { success: false, error: 'Current user not found' };
+    }
+    const schoolRole = currentUser.role.toLowerCase();
+    const schoolId = currentUser.schoolId || '';
+    console.log("Creating user initiated by user with role:", schoolRole, "and schoolId:", schoolId); 
     const {
       firstName,
       lastName,
@@ -90,8 +102,8 @@ async function createUserFromPayload(payload, decodedToken = {}) {
 
     // role, schoolId resolution
     const roleLower = role ? role.toLowerCase() : 'student';
-    const tokenSchoolId = decodedToken.id || payload.schoolId || '';
-    let resolvedSchoolId = tokenSchoolId;
+    const tokenSchoolId = schoolId||decodedToken.id || payload.schoolId || '';
+    let resolvedSchoolId = schoolId || tokenSchoolId || '';
     let resolvedSchoolName = decodedToken.name || schoolName || '';
     let resolvedSchoolType = decodedToken.type || schoolType || '';
     let resolvedSchoolAddress = decodedToken.address || schoolAddress || '';

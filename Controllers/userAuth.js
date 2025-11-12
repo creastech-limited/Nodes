@@ -1534,6 +1534,7 @@ exports.bulkRegister = async (req, res) => {
     }
     const schoolRole = currentUser.role.toLowerCase()
     const schoolId = currentUser.schoolId || '';
+    console.log("Bulk register initiated by user with role:", schoolRole, "and schoolId:", schoolId);
     if (schoolRole !== 'school') {
       return res.status(403).json({ message: 'Forbidden: Only school can bulk register' });
     }
