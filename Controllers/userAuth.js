@@ -1522,6 +1522,8 @@ function parseSpreadsheetBuffer(buffer, filename) {
 exports.bulkRegister = async (req, res) => {
   try {
     const userId = req.user?._id;
+    console.log("Bulk register initiated by user ID:", userId);
+
     if(!userId){
       return res.status(401).json({ message: 'Unauthorized: No user ID found in request' });
     }
