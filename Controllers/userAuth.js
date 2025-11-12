@@ -1521,6 +1521,20 @@ function parseSpreadsheetBuffer(buffer, filename) {
  */
 exports.bulkRegister = async (req, res) => {
   try {
+    const userId = req.user?._id;
+    if(!userId){
+      return res.status(401).json({ message: 'Unauthorized: No user ID found in request' });
+    }
+
+    const currentUser = await regUser.findById(userId);
+    if (!currentUser) {
+      return res.status(401).json({ message: 'Unauthorized: User not found' });
+    }
+    const schoolRole = currentUser.role.toLowerCase()
+    const schoolId = currentUser.schoolId || '';
+    if (schoolRole !== 'school') {
+      return res.status(403).json({ message: 'Forbidden: Only school can bulk register' });
+    }
     let rows = [];
 
     // If file uploaded (via uploadFileMiddleware)
@@ -1571,7 +1585,7 @@ exports.bulkRegister = async (req, res) => {
         phone: row.phone || row['Phone'] || '',
         role: row.role || row['Role'] || 'student',
         password: row.password || row['Password'] || 'DefaultPassword123!', // you may want to force a random password
-        schoolId: row.schoolId || row['School ID'] || row['SchoolId'] || '',
+        schoolId: schoolId || row['School ID'] || row['SchoolId'] || '',
         schoolName: row.schoolName || row['School Name'] || '',
         schoolType: row.schoolType || row['School Type'] || '',
         schoolAddress: row.schoolAddress || row['School Address'] || '',

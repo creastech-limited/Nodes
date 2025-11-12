@@ -17,7 +17,7 @@ const { updateUserProfilePicture } = require('../Controllers/userAuth');
 
 
 // Register route
-router.post('/bulkregister', uploadFileMiddleware, bulkRegister)
+router.post('/bulkregister',verifyToken, uploadFileMiddleware, bulkRegister)
 router.post('/resetlink', sendResetLink);
 router.get('/getparents', verifyToken, getParent);
 router.get('/getmychild', verifyToken, getStudentsByBeneficiaryEmail);
