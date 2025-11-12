@@ -34,7 +34,7 @@ async function generateUniqueAccountNumber() {
 // ✅ Main helper
 async function createUserFromPayload(payload, decodedToken = {}) {
   try {
-    const userId = req.user?.id;
+    const userId = decodedToken.user?.id;
     if(!userId){
       return { success: false, error: 'Unauthorized: No user ID found in request' };
     }
