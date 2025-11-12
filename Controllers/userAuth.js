@@ -321,11 +321,11 @@ exports.login = async (req, res) => {
       maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     });
    try {
-  const emailResponse = await sendEmail({
-    to: user.email,
-    subject: 'Login Notification',
-    html: `<p>Hello ${user.firstName},</p><p>You have successfully logged in to your account.</p><p>Best regards,<br>Your Company Name</p>`
-  });
+  // const emailResponse = await sendEmail({
+  //   to: user.email,
+  //   subject: 'Login Notification',
+  //   html: `<p>Hello ${user.firstName},</p><p>You have successfully logged in to your account.</p><p>Best regards,<br>Your Company Name</p>`
+  // });
 
   // console.log("Email sent successfully:");
 } catch (error) {
@@ -1521,7 +1521,7 @@ function parseSpreadsheetBuffer(buffer, filename) {
  */
 exports.bulkRegister = async (req, res) => {
   try {
-    const userId = req.user?._id;
+    const userId = req.user?.id;
     console.log("Bulk register initiated by user ID:", userId);
 
     if(!userId){
