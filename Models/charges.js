@@ -21,6 +21,10 @@ const chargesSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  schoolId: {
+    type:String,
+    required: false,
+  },
   status: {
     type: String,
     enum: ['Active', 'Inactive'],

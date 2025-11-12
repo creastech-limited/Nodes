@@ -1,6 +1,7 @@
 const QRCode = require('qrcode');
 const {TransactionLimit} = require('../Models/transactionSchema');
 const {regUser, ClassUser, Beneficiary} = require('../Models/registeration');
+const Charge = require('../Models/charges');
 const bcrypt = require('bcryptjs');
 const sendEmail = require('../utils/email');
 const FeeStatus = require('../Models/fees');
@@ -320,11 +321,11 @@ exports.login = async (req, res) => {
       maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     });
    try {
-  // const emailResponse = await sendEmail({
-  //   to: user.email,
-  //   subject: 'Login Notification',
-  //   html: `<p>Hello ${user.firstName},</p><p>You have successfully logged in to your account.</p><p>Best regards,<br>Your Company Name</p>`
-  // });
+  const emailResponse = await sendEmail({
+    to: user.email,
+    subject: 'Login Notification',
+    html: `<p>Hello ${user.firstName},</p><p>You have successfully logged in to your account.</p><p>Best regards,<br>Your Company Name</p>`
+  });
 
   // console.log("Email sent successfully:");
 } catch (error) {
@@ -1336,6 +1337,38 @@ exports.register = async (req, res) => {
       case 'school':
         roleSpecificId = { schoolId: generatedSchoolId };
         dynamicSchoolLink = `/?schoolId=${encodeURIComponent(generatedSchoolId)}&schoolName=${encodeURIComponent(schoolName)}&schoolAddress=${encodeURIComponent(schoolAddress)}&schoolType=${encodeURIComponent(schoolType)}&ownership=${encodeURIComponent(ownership)}`;
+        //create transfer charge for school
+      let transferCharges =   await Charge.create({
+          name: `${newUser.schoolName} Transfer Charge`,
+          schoolId: generatedSchoolId,
+          chargeType: 'Flat',
+          amount: 2,
+          description: 'Default transfer charge for school',
+        });
+        //create withdrawal charge for school
+      let withdrawalCharges =  await Charge.create({
+          name: `${newUser.schoolName} Withdrawal Charge`,
+          schoolId: generatedSchoolId,
+          chargeType: 'Flat',
+          amount: 100,
+          description: 'Default withdrawal charge for school',
+        });
+        //create funding charge for school
+       let fundingCharge = await Charge.create({
+          name: `${newUser.schoolName} Funding Charge`,
+          schoolId: generatedSchoolId,
+          chargeType: 'Percentage',
+          amount: 1.9,
+          description: 'Default funding charge for school',
+        });
+        //create transfer to agent charge for school
+       let transferToAgent = await Charge.create({
+          name: `${newUser.schoolName} Transfer to Agent Charge`,
+          schoolId: generatedSchoolId,
+          chargeType: 'Flat',
+          amount: 7,
+          description: 'Default transfer to agent charge for school',
+        });
         break;
     }
 
@@ -1356,7 +1389,7 @@ if (roleLower === 'student') {
     console.error('Error creating default transaction limit:', limitError);
   }
 }
-
+//
     // Create classes for school if role is 'school'
     if (roleLower === 'school') {
       const defaultClasses = getDefaultClasses(schoolType);
@@ -1421,22 +1454,22 @@ if (roleLower === 'student') {
     //     }
     //   ]
     // };
-  //   await sendEmail({
-  //   to: newUser.email,
-  //   subject: 'Confirm Notification',
-  //   html: `<p>Hello ${newUser.firstName},</p>
-  //            <p>You have successfully registered with the school wallet solution.<br/>
-  //            Click the link <a href='${process.env.NGROK_URL}/api/activate/${newUser._id}'>activate</a> to activate your account.</p>
-  //            <p>Best regards,<br>Xpay</p>`,
-  //     attachments: [
-  //       {
-  //         content: base64Image,
-  //         filename: 'qrcode.png',
-  //         type: 'image/png',
-  //         disposition: 'attachment'
-  //       }
-  //     ]
-  // });
+    await sendEmail({
+    to: newUser.email,
+    subject: 'Confirm Notification',
+    html: `<p>Hello ${newUser.firstName},</p>
+             <p>You have successfully registered with the school wallet solution.<br/>
+             Click the link <a href='${process.env.NGROK_URL}/api/activate/${newUser._id}'>activate</a> to activate your account.</p>
+             <p>Best regards,<br>Xpay</p>`,
+      attachments: [
+        {
+          content: base64Image,
+          filename: 'qrcode.png',
+          type: 'image/png',
+          disposition: 'attachment'
+        }
+      ]
+  });
 
     // await sgMail.send(emailDetails);
 
@@ -1447,6 +1480,10 @@ if (roleLower === 'student') {
         email: newUser.email,
         name: newUser.name,
         accountNumber: newUser.accountNumber,
+        transferCharge: transferCharges.amount,
+        withdrawalCharge: withdrawalCharges.amount,
+        fundingCharge: fundingCharge.amount,
+        transferToAgentCharge: transferTogent.amount,
         ...roleSpecificId,
         ...(dynamicSchoolLink && { schoolRegistrationLink: dynamicSchoolLink })
       }
