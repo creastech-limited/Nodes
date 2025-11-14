@@ -437,19 +437,32 @@ exports.initiateTransaction = async (req, res) => {
 console.log(charge.chargeType)
     // Calculate charge amount if charge type is Flat put the charge amount as is, if charge type is Percentage calculate the percentage of the amount not greater than 500
     let chargeAmount = 0;
-    if (charge.chargeType === 'Flat') {
-      chargeAmount = charge.amount;
-    } else if (charge.chargeType === 'Percentage') {
-      if(amount >0 && amount <=50000){
-      chargeAmount = Math.min((amount * charge.amount) / 100, 2500);
-      } else if(amount >50000 && amount <=150000){
-      chargeAmount = Math.min((amount * charge.amount2) / 100, 2500);
-      } else if(amount >150000){
-      chargeAmount = Math.min((amount * charge.amount3) / 100, 2500);
-      }
-    } else {
-      return res.status(400).json({ message: 'Invalid charges type' });
+
+if (charge.chargeType === 'Flat') {
+    chargeAmount = charge.amount;
+
+    } 
+    else if (charge.chargeType === 'Percentage') {
+
+    let computedPercent = 0;
+    if (amount > 0 && amount <= 50000) {
+        computedPercent = (amount * (charge.amount || 0)) / 100;
+    } 
+    else if (amount > 50000 && amount <= 150000) {
+        computedPercent = (amount * (charge.amount2 || 0)) / 100;
+    } 
+    else if (amount > 150000) {
+        computedPercent = (amount * (charge.amount3 || 0)) / 100;
+    } 
+    else {
+        return res.status(400).json({ message: "Invalid amount value" });
     }
+    chargeAmount = Math.min(computedPercent, 2500);
+
+} else {
+    return res.status(400).json({ message: 'Invalid charge type' });
+}
+
     
 
     // Fetch user's wallet
