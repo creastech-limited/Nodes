@@ -873,14 +873,14 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
       await user.save();
   
       const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
-      await sendEmail({
-      to: email,
-      subject: 'Password Reset Request',
-      html: `<p>Hello ${user.firstName || ''},</p>
+      await sendEmail(
+      email,
+      'Password Reset Request',
+      `<p>Hello ${user.firstName || ''},</p>
              <p>You requested a password reset. Click the link below to reset it:</p>
              <a href="${resetLink}">Reset Password</a>
               <p>This link will expire in 1 hour.</p>`
-    });
+    );
   
       
       res.status(200).json({
@@ -909,14 +909,14 @@ exports.sendResetLink = async (req, res) => {
     console.log("Reset link generated:", resetLink);
     console.log("User email:", user.email);
     // Send the reset link via email
-    await sendEmail({
-      to: email,
-      subject: 'Password Reset Request',
-      html: `<p>Hello ${user.firstName || ''},</p>
+    await sendEmail(
+      email,
+      'Password Reset Request',
+      `<p>Hello ${user.firstName || ''},</p>
              <p>You requested a password reset. Click the link below to reset it:</p>
              <a href="${resetLink}">${resetLink}</a>
               <p>This link will expire in 1 hour.</p>`
-    });
+  );
     res.status(200).json({
       success: true,
       message: `Reset password link has been sent to your email, ${user.email}`
@@ -2013,14 +2013,14 @@ if (roleLower !== 'school' && roleLower !== 'parent' && roleLower !== 'admin') {
 
     
 
-    await sendEmail({
-    to: newUser.email,
-    subject: 'Login Notification',
-    html: `<p>Hello ${newUser.firstName},</p>
+    await sendEmail(
+    newUser.email,
+    'Login Notification',
+    `<p>Hello ${newUser.firstName},</p>
              <p>You have successfully registered with the school wallet solution.<br/>
              Click the link <a href='${process.env.NGROK_URL}/api/activated/${newUser._id}'>activate</a> to activate your account.</p>
              <p>Best regards,<br>Your Company Name</p>`,
-      attachments: [
+      [
         {
           content: base64Image,
           filename: 'qrcode.png',
@@ -2028,7 +2028,7 @@ if (roleLower !== 'school' && roleLower !== 'parent' && roleLower !== 'admin') {
           disposition: 'attachment'
         }
       ]
-  });
+  );
 
     // const emailDetails = {
     //   to: [process.env.EMAIL_TO, newUser.email],
