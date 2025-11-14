@@ -434,7 +434,7 @@ exports.initiateTransaction = async (req, res) => {
       if (!charge) {
         return res.status(404).json({ message: 'Topup Charge not found' });
       }
-
+console.log(charge.chargeType)
     // Calculate charge amount if charge type is Flat put the charge amount as is, if charge type is Percentage calculate the percentage of the amount not greater than 500
     let chargeAmount = 0;
     if (charge.chargeType === 'Flat') {
