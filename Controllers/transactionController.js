@@ -1014,11 +1014,11 @@ exports.verifyPinAndTransfer = async (req, res) => {
     await sendNotification(sender._id, `You have sent ${amount} to ${receiver.email}. New balance is ${senderBalanceAfter}.`);
     //send notification to receiver
     //send email to sender
-   const emailResponse =await sendEmail({
-      to: senderEmail, 
-      subject:'Transfer Successful', 
-      html: `You have sent ${amount} to ${receiverEmail}. New balance is ${senderBalanceAfter}.`
-  });
+   const emailResponse =await sendEmail(
+      senderEmail, 
+      'Transfer Successful', 
+      `You have sent ${amount} to ${receiverEmail}. New balance is ${senderBalanceAfter}.`
+  );
     //send email to receiver
     // await sendEmail({
     //   to: receiverEmail, 

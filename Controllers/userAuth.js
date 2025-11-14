@@ -1170,6 +1170,10 @@ exports.register = async (req, res) => {
     let resolvedSchoolType = decodedToken.type || req.body.schoolType || req.query.schoolType || '';
     let resolvedSchoolAddress = decodedToken.address || req.body.schoolAddress || req.query.schoolAddress || '';
     let resolvedOwnership = decodedToken.ownership || req.query.ownership || '';
+    let transferCharges = null;
+    let withdrawalCharges = null;
+    let fundingCharge = null;
+    let transferToAgent = null;
     // Check if schoolId is provided for student or store roles
     if ((roleLower === 'student' || roleLower === 'store') && schoolId) {
       const schoolUser = await regUser.findOne({ schoolId, role: 'school' });
@@ -1506,7 +1510,7 @@ if (roleLower === 'student') {
       </p>
 
       <p>
-        <a href="${process.env.NGROK_URL}/api/activate/${newUser._id}"
+        <a href="${process.env.NGROK_URL}/api/activated/${newUser._id}"
            style="color: #0066cc; text-decoration: none; font-weight: bold;">
            Activate Account
         </a>
@@ -1557,11 +1561,11 @@ if (roleLower === 'student') {
         email: newUser.email,
         name: newUser.name,
         accountNumber: newUser.accountNumber,
-        transferCharge: transferCharges.amount,
-        withdrawalCharge: withdrawalCharges.amount,
-        fundingCharge: fundingCharge.amount,
-        transferToAgentCharge: transferTogent.amount,
-        ...roleSpecificId,
+        ...(transferCharges && { transferCharge: transferCharges.amount }),
+    ...(withdrawalCharges && { withdrawalCharge: withdrawalCharges.amount }),
+    ...(fundingCharge && { fundingCharge: fundingCharge.amount }),
+    ...(transferToAgent && { transferToAgentCharge: transferToAgent.amount }),
+    ...roleSpecificId,
         ...(dynamicSchoolLink && { schoolRegistrationLink: dynamicSchoolLink })
       }
     });

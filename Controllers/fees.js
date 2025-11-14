@@ -156,16 +156,16 @@ exports.updateFeeForClass = async (req, res) => {
         });
 
         emailPromises.push(
-          sendEmail({
-            to: [student.email, fallbackEmail],
-            subject: 'New Fee Notification',
-            html: `
+          sendEmail(
+           [student.email, fallbackEmail],
+            'New Fee Notification',
+             `
               <p>Hello ${student.name},</p>
               <p>You have an updated fee of <strong>₦${amount || existingFee.amount}</strong> for <strong>${feeType}</strong>.</p>
               <p>Term: ${term} | Session: ${session} | Due: ${dueDate || existingFee.dueDate}</p>
               <p>Please log in to your portal to view details.</p>
             `
-          })
+          )
         );
       } catch (studentErr) {
         console.error(`Error processing student ${student._id}:`, studentErr);
