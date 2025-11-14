@@ -581,16 +581,16 @@ exports.raiseFeeForClass = async (req, res) => {
         });
 
         // Email
-        emailPromises.push(sendEmail({
-          to: [student.email, 'taiwodavid19@gmail.com'],
-          subject: 'New Fee Notification',
-          html: `
+        emailPromises.push(sendEmail(
+           [student.email],
+           'New Fee Notification',
+           `
             <p>Hello ${student.name},</p>
             <p>You have a new fee of <strong>₦${amount}</strong> for <strong>${feeType}</strong>.</p>
             <p>Term: ${term} | Session: ${session} | Due: ${dueDate}</p>
             <p>Please log in to your portal to view details.</p>
           `
-        }));
+      ));
       } catch (studentErr) {
         console.error(`Error processing student ${student._id}:`, studentErr);
       }
@@ -1304,38 +1304,38 @@ exports.payFee = async (req, res) => {
     await sendNotification(schoolUser._id, `💰 ${payer.name} paid ₦${amount} for ${student.name}'s ${fee.feeType} (${fee.term}, ${fee.session})`, 'info');
     }
     // Send email to payer
-    await sendEmail({
-      to: payer.email,
-      subject: 'Fee Payment Successful',
-      html: `
+    await sendEmail(
+      payer.email,
+      'Fee Payment Successful',
+      `
         <p>Hello ${payer.name},</p>
         <p>Your payment of <strong>₦${amount}</strong> for <strong>${fee.feeType}</strong> (${fee.term}, ${fee.session}) has been successfully processed.</p>
         <p>Thank you for your payment!</p>
       `
-    });
+    );
     
 
     // Send email to student
-    await sendEmail({
-      to: student.email,
-      subject: 'Fee Payment Notification',
-      html: `
+    await sendEmail(
+      student.email,
+      'Fee Payment Notification',
+      `
         <p>Hello ${student.name},</p>
         <p>Your fee of <strong>₦${amount}</strong> for <strong>${fee.feeType}</strong> (${fee.term}, ${fee.session}) has been successfully paid by ${payer.name}.</p>
         <p>Thank you!</p>
       `
-    });
+    );
     // Send email to school
     if (schoolUser) {
-      await sendEmail({
-        to: schoolUser.email,
-        subject: 'Fee Payment Received',
-        html: `
+      await sendEmail(
+        schoolUser.email,
+        'Fee Payment Received',
+        `
           <p>Hello ${schoolUser.name},</p>
           <p>You have received a payment of <strong>₦${amount}</strong> for ${student.name}'s <strong>${fee.feeType}</strong> (${fee.term}, ${fee.session}).</p>
           <p>Thank you!</p>
         `
-      });
+      );
     }
 
     res.status(200).json({ message: 'Fee payment successful', feeStatus });

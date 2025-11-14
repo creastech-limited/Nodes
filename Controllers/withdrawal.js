@@ -568,17 +568,16 @@ exports.withdrawal = async (req, res) => {
     });
 
     // Send email notification
-    await sendEmail({
-      to: currentUser.email,
-      subject: 'Withdrawal Successful',
-      html: `
-        <p>Hello ${currentUser.name},</p>
+    await sendEmail(
+      currentUser.email,
+      'Withdrawal Successful',
+      ` <p>Hello ${currentUser.name},</p>
         <p>Your withdrawal of <strong>₦${amount}</strong> to account <strong>${account_number}</strong> (${bank_name}) was successful.</p>
         <p>Reference: <strong>${trx.reference}</strong></p>
         <p>Description: ${description}</p>
         <p>Thank you!</p>
       `
-    });
+    );
 
     // send notification
       await sendNotification(currentUser._id, `✅ Bank transfer successful: ₦${amount} to ${account_number}`, 'success');
