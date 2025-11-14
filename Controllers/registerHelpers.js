@@ -66,7 +66,7 @@ async function createUserFromPayload(payload, decodedToken = {}, req) {
       agent_id,
       schoolRegistrationLink,
       refreshToken,
-      status = 'Inactive',
+      status = 'Active',
       // address + guardian fields
       street,
       city,

@@ -855,6 +855,10 @@ exports.verifyPinAndTransfer = async (req, res) => {
       await failTransaction('Invalid PIN', { reason: 'Provided PIN is incorrect' });
       return res.status(400).json({ error: 'Invalid PIN' });
     }
+    if(sender.email === receiverEmail){
+      await failTransaction('Self-transfer not allowed', { reason: 'Sender and receiver emails are the same' });
+      return res.status(400).json({ error: 'You cannot transfer to yourself' });
+    }
 
     const receiver = await regUser.findOne({ email: receiverEmail });
     if (!receiver) {
@@ -1316,6 +1320,10 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
     if (!sender.pin) return res.status(400).json({ error: "PIN not set" });
     const isPinValid = await bcrypt.compare(pin, sender.pin);
     if (!isPinValid) return res.status(400).json({ error: "Invalid PIN" });
+    if (sender.email === receiverEmail) {
+      return res.status(400).json({ error: "You cannot transfer to yourself" });
+      
+    }
 
     const receiver = await regUser.findById(receiverId);
     if (!receiver) return res.status(404).json({ error: "Receiver not found" });
@@ -1493,13 +1501,22 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
     console.log("Guardian email:", guardianEmailAddr);
     if(sender.guardianEmail){
       await sendNotificationToGuardian(guardian._id, `Your ward ${sender.name} sent ₦${numericAmount} to ${receiver.email}. New balance: ₦${senderBalanceAfter}`);   
-    await sendEmail({
-      to: guardianEmailAddr,
-      subject: "Transfer Successful",
-      html: `You have sent ₦${numericAmount} to ${receiver.email}. New balance is ₦${senderBalanceAfter}.`,
-    });
-    await s
+    await sendEmail(
+      guardianEmailAddr,
+      "Transfer Successful",
+      `${sender.name} have sent ₦${numericAmount} to ${receiver.name}. New balance is ₦${senderBalanceAfter}.`,
+    );
     }
+    await sendEmail(
+      sender.email,
+      "Transfer Successful",
+      `You have sent ₦${numericAmount} to ${receiver.email}. New balance is ₦${senderBalanceAfter}.`,
+    );
+    await sendEmail( 
+      receiver.email,
+      "Transfer Received",
+      `You have received ₦${numericAmount} from ${sender.name}. New balance is ₦${receiverBalanceAfter}.`,
+    );
 
     res.json({
       message: "Transfer successful",

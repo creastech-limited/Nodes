@@ -8,6 +8,8 @@ const FeeStatus = require('../Models/fees');
 const {Fee, FeePayment} = require('../Models/fees');
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+import fs from 'fs';
+const xpayImage = fs.readFileSync("Images/xpay.png").toString("base64");
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
@@ -1454,22 +1456,89 @@ if (roleLower === 'student') {
     //     }
     //   ]
     // };
-    await sendEmail({
-    to: newUser.email,
-    subject: 'Confirm Notification',
-    html: `<p>Hello ${newUser.firstName},</p>
-             <p>You have successfully registered with the school wallet solution.<br/>
-             Click the link <a href='${process.env.NGROK_URL}/api/activate/${newUser._id}'>activate</a> to activate your account.</p>
-             <p>Best regards,<br>Xpay</p>`,
-      attachments: [
-        {
-          content: base64Image,
-          filename: 'qrcode.png',
-          type: 'image/png',
-          disposition: 'attachment'
-        }
-      ]
-  });
+
+
+
+
+  //   await sendEmail(
+  //   newUser.email,
+  //   'Confirm Notification',
+  //   `<p>Hello ${newUser.firstName},</p>
+  //            <p>You have successfully registered with the school wallet solution.<br/>
+  //            Click the link <a href='${process.env.NGROK_URL}/api/activate/${newUser._id}'>activate</a> to activate your account.</p>
+  //            <p>Best regards,<br>Xpay</p>`,
+  //     [
+  //       {
+  //         content: base64Image,
+  //         filename: 'qrcode.png',
+  //         type: 'image/png',
+  //         disposition: 'attachment'
+  //       }
+  //     ]
+  // );
+    await sendEmail(
+    newUser.email,
+  'Confirm Notification',
+`
+<table width="100%" cellpadding="0" cellspacing="0" style="font-family: Arial, sans-serif;">
+  <tr>
+    <td style="padding: 20px;">
+
+      <!-- Logo -->
+      <div style="text-align: center; margin-bottom: 20px;">
+        <img src="cid:xpay_logo" alt="XPay Logo" style="width:150px;" />
+      </div>
+
+      <!-- Main Message -->
+      <p>Hello ${newUser.firstName},</p>
+
+      <p>
+        You have successfully registered with the <strong>School Wallet Solution</strong>.<br/>
+        Click the link below to activate your account:
+      </p>
+
+      <p>
+        <a href="${process.env.NGROK_URL}/api/activate/${newUser._id}"
+           style="color: #0066cc; text-decoration: none; font-weight: bold;">
+           Activate Account
+        </a>
+      </p>
+
+      <p>Best regards,<br/>Xpay</p>
+
+      <!-- Footer -->
+      <hr style="margin: 30px 0;" />
+
+      <p style="font-size: 14px; color: #555;">
+        <strong>Mobile & WhatsApp:</strong> 07084755837, 09019832344<br/>
+        <strong>Instagram:</strong> Creastechlimited | shekoni.abiodun@creastech.com<br/>
+        <strong>Website:</strong> www.creastech.com<br/>
+        <strong>Office Address:</strong> 16A Oguntona Crescent, Gbagada Phase 1, Lagos
+      </p>
+
+      <!-- Inline Image (after address) -->
+      <div style="text-align:center; margin-top:20px;">
+        <img 
+          src="data:image/png;base64,${xpayImage}" 
+          alt="XPay Footer Image" 
+          style="width:180px; margin-top:10px;"
+        />
+      </div>
+
+    </td>
+  </tr>
+</table>
+`,
+[
+  {
+    content: base64Image,
+    filename: 'qrcode.png',
+    type: 'image/png',
+    disposition: 'attachment'
+  }
+]
+
+  );
 
     // await sgMail.send(emailDetails);
 
@@ -1613,10 +1682,10 @@ exports.bulkRegister = async (req, res) => {
 
       try {
         // ✅ 2. Generate a unique password for each user
-        payload.password = Math.random().toString(36).slice(-10);
+        // payload.password = Math.random().toString(36).slice(-10);
 
         // ✅ 3. Assign schoolId from the URL parameter
-        payload.schoolId = schoolId || '';
+        // payload.schoolId = schoolId || '';
         
 
 
