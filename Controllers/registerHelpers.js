@@ -296,7 +296,7 @@ async function createUserFromPayload(payload, decodedToken = {}, req) {
        newUser.email, 
        'Confirm Notification',
        `<p>Hello ${newUser.firstName},</p>
-             <p>You have successfully registered with the school wallet solution.<br/>
+             <p>You have successfully registered with the Xpay wallet solution.<br/>
              Click the link <a href='${process.env.NGROK_URL}/api/activate/${newUser._id}'>activate</a> to activate your account.</p>
              <p>Best regards,<br>Your Company Name</p>`,
        [
@@ -314,7 +314,7 @@ async function createUserFromPayload(payload, decodedToken = {}, req) {
       await newUser.save();
       await Wallet.deleteOne({ userId: newUser._id });
     }
-    console.log('Email response:', emailResponse);  
+    // console.log('Email response:', emailResponse);  
 
     return { success: true, user: newUser };
   } catch (err) {

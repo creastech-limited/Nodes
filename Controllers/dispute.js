@@ -186,12 +186,12 @@ exports.createDispute = async (req, res) => {
     await sendNotification(user._id, 'Dispute creation', 'Dispute created successfully', 'success');
 
     //send email to Admins
-    // const adminEmail = "itsupport@creastech" // Ensure this is set in your environment variables
-    // await sendEmail(
-    //   adminEmail, 
-    //   'New Dispute Created', 
-    //   `A new dispute has been created by ${user.name}. Dispute ID: ${savedDispute._id}. Please review it in the admin panel.`
-    // );
+    const adminEmail = "itsupport@creastech" // Ensure this is set in your environment variables
+    await sendEmail(
+      adminEmail, 
+      'New Dispute Created', 
+      `A new dispute has been created by ${user.name}. Dispute ID: ${savedDispute._id}. Please review it in the admin panel.`
+    );
     
 
     res.status(201).json({

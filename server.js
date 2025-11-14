@@ -15,6 +15,7 @@ const app = express();
 app.use(cors({
   origin: [
     "http://localhost:8080", "http://localhost:5000","http://localhost:3000","http://127.0.0.1:5503","http://localhost:5174","http://localhost:5173", "https://xpay.jolade-boluwatife.workers.dev","https://nodes-production-2b39.up.railway.app", "nodes-production-2b39.up.railway.app", "https://nodes-staging.up.railway.app/api/users/register","https://nodes-production-12.up.railway.app","https://xmwhs-prod.onrender.com","https://xmwhs-m2fk.onrender.com","https://xmwhs-3ftj.onrender.com","https://d2d3engv7ow8ch.cloudfront.net","https://d2flijhjzhgpyx.cloudfront.net","https://test.creastech.com","https://nodes-mxxd.onrender.com",
+    "https://app.xpay.ng",
   "http://localhost:3000",
   "http://127.0.0.1:3000",
   "http://10.0.2.2",      // Android emulator localhost
