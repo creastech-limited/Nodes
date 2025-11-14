@@ -1380,16 +1380,26 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
       endOfWeek.setHours(23, 59, 59, 999);
 
       const weeklyTransactions = await Transaction.aggregate([
-        {
-          $match: {
-            senderWalletId: senderWallet._id,
-            createdAt: { $gte: startOfWeek, $lte: endOfWeek },
-            status: "success",
-            category: "debit", // ✅ only count sent transactions
-          },
-        },
-        { $group: { _id: null, totalSent: { $sum:$add["$amount", "$transferCharges"]} } },
-      ]);
+  {
+    $match: {
+      senderWalletId: senderWallet._id,
+      createdAt: { $gte: startOfWeek, $lte: endOfWeek },
+      status: "success",
+      category: "debit",
+    },
+  },
+  {
+    $group: {
+      _id: null,
+      totalSent: {
+        $sum: {
+          $add: ["$amount", "$transferCharges"]
+        }
+      }
+    }
+  }
+]);
+
 
       const totalSentWeek = weeklyTransactions[0]?.totalSent || 0;
       console.log("Total sent this week:", totalSentWeek);
