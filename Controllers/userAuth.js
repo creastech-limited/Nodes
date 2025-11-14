@@ -8,8 +8,16 @@ const FeeStatus = require('../Models/fees');
 const {Fee, FeePayment} = require('../Models/fees');
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-import fs from 'fs';
-const xpayImage = fs.readFileSync("Images/xpay.png").toString("base64");
+const fs = require("fs");
+const path = require("path");
+
+const imagePath = path.join(__dirname, "..", "Images", "xpay.png");
+
+console.log("Looking for:", imagePath);  // DEBUG
+
+const xpayImage = fs.readFileSync(imagePath).toString("base64");
+
+
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
