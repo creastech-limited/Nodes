@@ -402,9 +402,10 @@ exports.initiateTransaction = async (req, res) => {
     console.log("User ID:", userId);
     //find Wallet by Name Topup charges
     const systemWalletId = process.env.SYSTEM_WALLET_ID; // Get system wallet ID from request body
+    const userInfo = await regUser.findById(userId);
     const userEmail = await regUser.findById(userId).select('email').then(user => user.email);
 
-    console.log("User Email:", userEmail);
+    // console.log("User Email:", userEmail);
 
     if (!userId || !userEmail) {
       return res.status(401).json({ message: 'Unauthorized: user info not available' });
@@ -420,7 +421,7 @@ exports.initiateTransaction = async (req, res) => {
     }
    
     // get charges for topup
-    const charge = await Charge.findOne({ name: 'Topup Charges' });
+    const charge = await Charge.findOne({ name:`${userInfo.schoolName} Funding Charge`|| 'Topup Charges', schoolId: userInfo.schoolId });
     if (!charge) {
       return res.status(404).json({ message: 'Topup Charge not found' });
     }
@@ -429,7 +430,13 @@ exports.initiateTransaction = async (req, res) => {
     if (charge.chargeType === 'Flat') {
       chargeAmount = charge.amount;
     } else if (charge.chargeType === 'Percentage') {
-      chargeAmount = Math.min((amount * charge.amount) / 100, 500);
+      if(amount >0 && amount <=50000){
+      chargeAmount = Math.min((amount * charge.amount) / 100, 2500);
+      } else if(amount >50000 && amount <=150000){
+      chargeAmount = Math.min((amount * charge.amount2) / 100, 2500);
+      } else if(amount >150000){
+      chargeAmount = Math.min((amount * charge.amount3) / 100, 2500);
+      }
     } else {
       return res.status(400).json({ message: 'Invalid charges type' });
     }

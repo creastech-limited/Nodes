@@ -14,7 +14,11 @@ exports.getallSchools = async (req, res) => {
           school_id: school._id,
           schoolName: school.schoolName,
           schoolAddress: school.schoolAddress,
-          schoolType: school.schoolType
+          schoolType: school.schoolType,
+          schoolEmail: school.email,
+          schoolPhone: school.phone,
+          schoolId: school.schoolId,
+          schoolStatus: school.status,
         };
       })
     });

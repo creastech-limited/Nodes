@@ -48,33 +48,49 @@ exports.getCharges = async (req, res) => {
 //update charge
 exports.updateCharge = async (req, res) => {
     const { id } = req.params;
-    const { name, chargeType, amount, description } = req.body;
+    const { name, chargeType, amount, amount2, amount3, description } = req.body;
 
-    if (!name || !chargeType || amount === undefined) {
-        return res.status(400).json({ message: 'All fields are required' });
+    // Build update object only with provided fields
+    let updateData = { name, chargeType, amount,amount2, amount3, description };
+
+    // Remove undefined, null or empty values
+    Object.keys(updateData).forEach(key => {
+        if (updateData[key] === undefined || updateData[key] === null || updateData[key] === '') {
+            delete updateData[key];
+        }
+    });
+
+    // If nothing to update
+    if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ message: "No fields provided to update" });
     }
-    if (chargeType !== 'Flat' && chargeType !== 'Percentage') {
+
+    // Validate chargeType **only if provided**
+    if (updateData.chargeType && updateData.chargeType !== 'Flat' && updateData.chargeType !== 'Percentage') {
         return res.status(400).json({ message: 'Invalid charge type' });
     }
 
     try {
-        const charge = await Charge.findByIdAndUpdate(id, {
-            name,
-            chargeType,
-            amount,
-            description
-        }, { new: true });
+        const charge = await Charge.findByIdAndUpdate(id, updateData, { new: true });
 
         if (!charge) {
             return res.status(404).json({ message: 'Charge not found' });
         }
 
-        res.status(200).json({ message: 'Charge updated successfully', charge });
+        return res.status(200).json({
+            message: 'Charge updated successfully',
+            charge
+        });
+
     } catch (error) {
         console.error("Error updating charge:", error);
-        res.status(500).json({ message: 'Server error', error: error.message });
+        return res.status(500).json({
+            message: 'Server error',
+            error: error.message
+        });
     }
-}
+};
+
 // Function to delete a charge
 exports.deleteCharge = async (req, res) => {
     const { id } = req.params;

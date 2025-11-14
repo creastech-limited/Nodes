@@ -17,6 +17,16 @@ const chargesSchema = new mongoose.Schema({
     required: true,
     min: 0,
   },
+  amount2: {
+    type: Number,
+    required: false,
+    min: 0,
+  },
+  amount3: {
+    type: Number,
+    required: false,
+    min: 0,
+  },
   description: {
     type: String,
     trim: true,

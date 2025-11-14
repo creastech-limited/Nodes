@@ -157,7 +157,7 @@ exports.updateFeeForClass = async (req, res) => {
 
         emailPromises.push(
           sendEmail(
-           [student.email, fallbackEmail],
+           student.email,
             'New Fee Notification',
              `
               <p>Hello ${student.name},</p>
