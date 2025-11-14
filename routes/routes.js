@@ -39,7 +39,7 @@ router.get('/activate/:id', async (req, res) => {
         }
         user.status = 'Inactive'; // Set status to 'Active'
         await user.save();
-        res.status(200).json({ message: 'User activated successfully', user });
+        res.status(200).json({ message: 'User activated successfully', });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -55,13 +55,13 @@ router.get('/activated/:id', async (req, res) => {
       return res.status(404).send('Activation failed: user not found.');
     }
      //send a suucess email to the user
-    await sendEmail({
-      to: user.email,
-      subject: 'Account Activation Successful',
-      html: `<p>Hello ${user.firstName},</p>
-             <p>Your account has been successfully activated. You can now log in to your account.<br/> <a href='${process.env.NGROK_URL}' target='_blank'>Login Now!</a></p>
-             <p>Thank you for using our service!</p>`
-    });
+    await sendEmail(
+      user.email,
+      'Account Activation Successful',
+      `<p>Hello ${user.firstName},</p>
+        <p>Your account has been successfully activated. You can now log in to your account.<br/> <a href='${process.env.NGROK_URL}' target='_blank'>Login Now!</a></p>
+        <p>Thank you for using our service!</p>`
+    );
     
     // Redirect to login page
     res.redirect(process.env.FRONTEND_URL_PROD); // Replace with your actual frontend login URL
