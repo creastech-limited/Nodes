@@ -421,10 +421,20 @@ exports.initiateTransaction = async (req, res) => {
     }
    
     // get charges for topup
-    const charge = await Charge.findOne({ name:`${userInfo.schoolName} Funding Charge`|| 'Topup Charges', schoolId: userInfo.schoolId });
-    if (!charge) {
-      return res.status(404).json({ message: 'Topup Charge not found' });
-    }
+    let charge = await Charge.findOne({
+        name: `${userInfo.schoolName} Funding Charge`,
+        schoolId: userInfo.schoolId
+      });
+
+      if (!charge) {
+        charge = await Charge.findOne({
+          name: 'Topup Charges',
+        });
+      }
+      if (!charge) {
+        return res.status(404).json({ message: 'Topup Charge not found' });
+      }
+
     // Calculate charge amount if charge type is Flat put the charge amount as is, if charge type is Percentage calculate the percentage of the amount not greater than 500
     let chargeAmount = 0;
     if (charge.chargeType === 'Flat') {
