@@ -1,6 +1,7 @@
 const {regUser,Class} = require('../Models/registeration');
 const Wallet = require('../Models/walletSchema');
 const jwt = require('jsonwebtoken');
+const {Transaction, TransactionLimit} = require('../Models/transactionSchema');
 
 
 //get all schools
@@ -114,6 +115,7 @@ exports.getallStudentsInSchool = async (req, res) => {
     }
     const data = await regUser.findById(userId);
     const users = await regUser.find({ schoolId: data.schoolId, role: 'student' });
+    const limits = await TransactionLimit.find({schoolId: data.schoolId, role: 'student' })
     if (users.length === 0) {
       return res.status(404).json({ message: 'No users found in this school' });
     }
@@ -188,7 +190,7 @@ exports.getAllStudents = async (req, res) => {
         select: 'className section description',
       })
       .select('-password -pin -refreshToken'); // Hide sensitive info
-
+      const transactionLimits = await TransactionLimit.find({role: 'student'})
       //get student class details
     if (students.length === 0) {
       return res.status(404).json({ success: false, message: 'No students found' });
@@ -197,7 +199,7 @@ exports.getAllStudents = async (req, res) => {
     res.status(200).json({
       success: true,
       total: students.length,
-      data: students.map(student => {
+      student: students.map(student => {
         return {
           student_id: student._id,
           class: student.Class ? student.academicDetails.classAdmittedTo : 'N/A',
@@ -207,6 +209,13 @@ exports.getAllStudents = async (req, res) => {
           role: student.role,
           email: student.email,
           phone: student.phone,
+          limits: transactionLimits.map(transactionLimit =>{
+            return{
+              dailyLimit: transactionLimit.dailyLimit,
+              weeklyLimit: transactionLimit.weeklyLimit,
+              perTransaction: transactionLimit.perTransactionLimit,
+            }
+          })
         };
       })
     });

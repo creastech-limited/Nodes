@@ -281,6 +281,16 @@ async function createUserFromPayload(payload, decodedToken = {}, req) {
       phone: newUser.phone,
       accountNumber: newUser.accountNumber
     });
+     // ✅ Create default Transaction Limit automatically for students only
+if (roleLower === 'student') {
+  try {
+    await TransactionLimit.create({
+      studentId: newUser._id,   // link to the student
+    });
+  } catch (limitError) {
+    console.error('Error creating default transaction limit:', limitError);
+  }
+}
 
     // generate QR code
     const qrData = JSON.stringify({ email: newUser.email, name: newUser.name });

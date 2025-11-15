@@ -1856,10 +1856,10 @@ exports.getLimitById = async (req, res) => {
     //   return res.status(403).json({ message: "Only Parents can access their transaction limits" });
     // }
     const { studentId } = req.params;
-    console.log("Fetching limit for student ID:", studentId);
+    // console.log("Fetching limit for student ID:", studentId);
     const student = await regUser.findById(studentId);
     if (!student) return res.status(404).json({ message: "Student not found" });
-    console.log("Fetching limit for student ID:", student.name);
+    // console.log("Fetching limit for student ID:", student.name);
     const limit = await TransactionLimit.findOne({studentId});
     if (!limit) return res.status(404).json({ message: "Transaction limit not found" });
     res.json(limit);
@@ -1872,7 +1872,10 @@ exports.getLimitById = async (req, res) => {
 exports.getAllLimits = async (req, res) => {
   try {
     const limits = await TransactionLimit.find();
-    res.json(limits);
+    res.status(200).json({
+      message: limits.length,
+      limits
+    });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch transaction limits" });
   }
