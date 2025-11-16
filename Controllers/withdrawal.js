@@ -435,7 +435,7 @@ exports.withdrawal = async (req, res) => {
       return res.status(404).json({ message: 'Wallet not found' });
     }
 
-    if (!account_number || !bank_code || !amount || !description) {
+    if (!account_number || !bank_code || !amount ) {
        failTransaction('Missing required fields', null, amount, '01', currentUser._id);
       await sendNotification(user, '❌ Withdrawal failed: Missing required fields', 'error');
       return res.status(400).json({ message: 'Missing required fields' });
