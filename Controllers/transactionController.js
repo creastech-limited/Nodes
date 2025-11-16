@@ -1317,6 +1317,9 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
   const receiverId = req.user?.id;
   const { senderEmail, amount, pin, description = "No description provided" } = req.body;
   const numericAmount = Number(amount);
+  const receiver = await regUser.findById(receiverId);
+    if (!receiver) return res.status(404).json({ error: "Receiver not found" });
+    const receiverEmail = receiver.email;
 
   const failTransaction = async (reason, extra = {}) => {
     try {
@@ -1356,9 +1359,7 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
       
     }
 
-    const receiver = await regUser.findById(receiverId);
-    if (!receiver) return res.status(404).json({ error: "Receiver not found" });
-    const receiverEmail = receiver.email;
+    
 
     const senderWallet = await Wallet.findOne({ userId: sender._id });
     const receiverWallet = await Wallet.findOne({ userId: receiver._id });

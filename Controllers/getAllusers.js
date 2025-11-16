@@ -371,6 +371,8 @@ exports.getuser = async (req, res) => {
       }
       
       const data = await regUser.findById(userId);
+      const storeData = await regUser.findOne({ store_id: data.store_id, role: 'store' });
+      
       //get school info for store, agent and students
       const schoolInfo = await regUser.findOne({ schoolId: data.schoolId, role: 'school' });
       const studentCanTransfer = schoolInfo ? schoolInfo.schoolCanTransfer : false;
@@ -467,6 +469,11 @@ switch (role.toLowerCase()) {
         delete safeUser.schoolType;
         delete safeUser.ownership;
         delete safeUser.studentCanPayBill;
+        //add storeName, storeType, store email, store phone to safeUser
+        safeUser.storeName = storeData.storeName;
+        safeUser.storeType = storeData.storeType;
+        safeUser.storeEmail = storeData.email;
+        safeUser.storePhone = storeData.phone;
       }
 
       
