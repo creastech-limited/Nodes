@@ -118,8 +118,28 @@ const transactionLimitSchema = new mongoose.Schema({
   },
 });
 
+const paystack = new mongoose.Schema({
+  dedicatedAccountId: {
+    type: String,
+    required: true,
+  },
+  accountNumber: {
+    type: String,
+    required: true,
+  },
+  bankName: {
+    type: String,
+    required: true,
+  },
+  accountName: {
+    type: String,
+    required: true,
+  },
+});
+
+const PaystackDedicatedAccount = mongoose.model("PaystackDedicatedAccount", paystack);
 const TransactionLimit = mongoose.model("TransactionLimit", transactionLimitSchema);
 const Transaction = mongoose.model('Transaction', transactionSchema);
 
 
-module.exports = { Transaction, TransactionLimit };
+module.exports = { Transaction, TransactionLimit, PaystackDedicatedAccount };

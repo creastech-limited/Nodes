@@ -55,7 +55,7 @@ router.post('/forgotpassword', forgotPassword);
 router.post('/reset-password/:token', resetWithToken);
 router.post('/updatePassword', verifyToken, updatePassword);
 router.delete('/delete/:id',verifyToken, deleteUser);
-router.delete('/delete',verifyToken, deleteAllUsers);
+router.delete('/delete/all',verifyToken, deleteAllUsers);
 router.delete('/verify-user', verifySenderAndReceiver);
 router.get('/getschoolbyid/:id', getSchoolById);
 router.get('/getallSchools', getallSchools);

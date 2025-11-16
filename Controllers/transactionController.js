@@ -1,9 +1,10 @@
 const cron = require("node-cron");
 // import cron from "node-cron";
+const https = require("https");
 const axios = require('axios');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
-const {Transaction, TransactionLimit} = require('../Models/transactionSchema'); // Import Transaction model
+const {Transaction, TransactionLimit, PaystackDedicatedAccount} = require('../Models/transactionSchema'); // Import Transaction model
 const {regUser} = require('../Models/registeration'); // Import User model
 const Wallet = require('../Models/walletSchema'); // Import Wallet model
 const Charge = require('../Models/charges'); // Import Charges model
@@ -1357,6 +1358,7 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
 
     const receiver = await regUser.findById(receiverId);
     if (!receiver) return res.status(404).json({ error: "Receiver not found" });
+    const receiverEmail = receiver.email;
 
     const senderWallet = await Wallet.findOne({ userId: sender._id });
     const receiverWallet = await Wallet.findOne({ userId: receiver._id });
@@ -1958,3 +1960,142 @@ cron.schedule("0 0 * * 0", async () => {
     console.error("Error resetting weekly limits:", error);
   }
 });
+
+// POST /api/paystack/create-dedicated-account
+
+exports.createPaystackDedicatedAccount = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: "Unauthorized: User ID missing" });
+
+    const customer = await regUser.findById(userId);
+    if (!customer) return res.status(404).json({ error: "User not found" });
+
+    const existingAccount = await PaystackDedicatedAccount.findOne({ userId });
+    console.log(existingAccount)
+    if (existingAccount) return res.status(400).json({ error: "Dedicated account already exists for this user" });
+
+    const customerEmail = customer.email;
+    const firstName = customer.firstName || "FirstName";
+    const lastName = customer.lastName || "LastName";
+    const { preferredBank } = req.body;
+    const bank = preferredBank || process.env.PREFERRED_BANK || "test-bank";
+
+    const params = JSON.stringify({
+      customer: customerEmail,
+      first_name: firstName,
+      last_name: lastName,
+      preferred_bank: bank,
+      metadata: { userId, firstName, lastName },
+    });
+
+    const options = {
+      hostname: "api.paystack.co",
+      port: 443,
+      path: "/dedicated_account",
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        "Content-Type": "application/json",
+      },
+    };
+
+    const request = https.request(options, (response) => {
+      let data = "";
+
+      response.on("data", (chunk) => { data += chunk; });
+
+      response.on("end", async () => {
+        try {
+          const parsed = JSON.parse(data);
+
+          if (parsed.status && parsed.data) {
+            const accountData = parsed.data;
+            const newAccountInfo = {
+               dedicatedAccountId: accountData.id,
+              accountNumber: accountData.account_number,
+              bankName: accountData.bank?.name || "Test Bank",
+              bankCode: accountData.bank?.code || "000",
+              accountName: accountData.account_name || `${firstName} ${lastName}`,
+              currency: accountData.currency || "NGN",
+            }
+            console.log("New Dedicated Account Info:", newAccountInfo);
+            
+            const newAccount = new PaystackDedicatedAccount({
+                userId,
+                dedicatedAccountId: newAccountInfo.dedicatedAccountId,
+                accountNumber: newAccountInfo.accountNumber,
+                bankName: newAccountInfo.bankName,
+                bankCode: newAccountInfo.bankCode || "000", // fallback
+                accountName: newAccountInfo.accountName,
+              });
+
+              await newAccount.save();
+            return res.status(response.statusCode).json(parsed);
+          }
+
+          res.status(400).json({ error: "Failed to create dedicated account", details: parsed });
+        } catch (err) {
+          console.error("JSON parse / save error:", err);
+          res.status(500).json({ error: "Failed to parse or save Paystack response", details: err.message });
+        }
+      });
+    });
+
+    request.on("error", (err) => {
+      console.error("HTTPS request error:", err);
+      res.status(500).json({ error: "Paystack request failed", details: err.message });
+    });
+
+    request.write(params);
+    request.end();
+
+  } catch (error) {
+    console.error("Unexpected error:", error);
+    res.status(500).json({ error: "Something went wrong", details: error.message });
+  }
+};
+
+//list all paystack dedicated accounts
+exports.listPaystackDedicatedAccounts = async (req, res) => {
+  try {
+    const options = {
+      hostname: 'api.paystack.co',
+      port: 443,
+      path: '/dedicated_account', // endpoint to list all dedicated accounts
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        'Content-Type': 'application/json',
+      },
+    };
+
+    const request = https.request(options, (response) => {
+      let data = '';
+
+      response.on('data', (chunk) => {
+        data += chunk;
+      });
+
+      response.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          res.status(response.statusCode).json(parsed);
+        } catch (err) {
+          console.error('JSON parse error:', err);
+          res.status(500).json({ error: 'Failed to parse Paystack response' });
+        }
+      });
+    });
+
+    request.on('error', (err) => {
+      console.error('HTTPS request error:', err);
+      res.status(500).json({ error: 'Paystack request failed' });
+    });
+
+    request.end();
+  } catch (error) {
+    console.error('Unexpected error:', error);
+    res.status(500).json({ error: 'Something went wrong' });
+  }
+};
