@@ -429,7 +429,7 @@ exports.initiateTransaction = async (req, res) => {
 
       if (!charge) {
         charge = await Charge.findOne({
-          name: 'Topup Charges',
+          name: 'TopUp Charges',
         });
       }
       if (!charge) {
@@ -2098,5 +2098,232 @@ exports.listPaystackDedicatedAccounts = async (req, res) => {
   } catch (error) {
     console.error('Unexpected error:', error);
     res.status(500).json({ error: 'Something went wrong' });
+  }
+};
+
+//nomba initiate transfer
+// exports.initiateNombaPayment = async (req, res) => {
+//   try {
+//     const userId = req.user?.id;
+//     if (!userId)
+//       return res.status(401).json({ status: false, message: "Unauthorized: User ID missing" });
+    
+//     const { amount, email } = req.body;
+
+//     if (!amount || !email)
+//       return res.status(400).json({ status: false, message: "Amount and email required" });
+
+//     const reference = "XPAY_" + Date.now();
+
+//     const payload = {
+//       order: {
+//         amount: amount * 100,    // amount in kobo
+//         currency: "NGN",
+//         description: "Wallet Top-up"
+//       },
+//       reference: reference,
+//       redirectUrl: "https://xpay.ng/payment/callback",
+//       customer: {
+//         email: email
+//       },
+//       metadata: {
+//         userId,
+//         topupAmount: amount,
+//         initiatedBy: "wallet_topup"
+//       }
+//     };
+
+//     const response = await axios.post(
+//       "https://sandbox.nomba.com/v1/checkout/session",
+//       payload,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${process.env.NOMBA_SECRET_KEY}`,
+//           "Content-Type": "application/json"
+//         }
+//       }
+//     );
+//     console.log("Nomba Init Response:", response);
+//     return res.status(200).json({
+//       status: true,
+//       message: "Payment initialized",
+//       checkoutUrl: response.data?.data?.checkoutUrl,
+//       reference
+//     });
+
+//   } catch (error) {
+//     console.error("Nomba Init Error:", error.response?.data || error.message);
+//     return res.status(500).json({
+//       status: false,
+//       message: "Error initializing payment",
+//       error: error.response?.data || error.message
+//     });
+//   }
+// };
+
+// exports.initiateNombaPayment = async (req, res) => {
+//   try {
+//     const userId = req.user?.id;
+//     if (!userId) return res.status(401).json({ status: false, message: "Unauthorized: User ID missing" });
+    
+//     const { amount, email } = req.body;
+//     if (!amount || !email) return res.status(400).json({ status: false, message: "Amount and email required" });
+
+//     const reference = "XPAY_" + Date.now();
+
+//     const payload = {
+//       order: {
+//         amount: amount * 100,  // amount in kobo
+//         currency: "NGN",
+//         description: "Wallet Top-up"
+//       },
+//       reference,
+//       redirectUrl: "https://xpay.ng/payment/callback",
+//       customer: { email },
+//       metadata: { userId, topupAmount: amount, initiatedBy: "wallet_topup" }
+//     };
+
+//     const response = await axios.post(
+//       "https://sandbox.nomba.com/v1/checkout/order",
+//       payload,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${process.env.NOMBA_SECRET_KEY}`,
+//           "Content-Type": "application/json"
+//         }
+//       }
+//     );
+
+//     return res.status(200).json({
+//       status: true,
+//       message: "Payment initialized",
+//       checkoutUrl: response.data?.data?.checkoutUrl,
+//       reference
+//     });
+
+//   } catch (error) {
+//     console.error("Nomba Init Error:", error.response?.data || error.message);
+//     return res.status(500).json({
+//       status: false,
+//       message: "Error initializing payment",
+//       error: error.response?.data || error.message
+//     });
+//   }
+// };
+
+exports.initiateNombaPayment = async (req, res) => {
+  try {
+    const { amount } = req.body;
+    const userId = req.user?.id;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ message: "Valid amount is required" });
+    }
+
+    const user = await regUser.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const userWallet = await Wallet.findOne({ userId });
+    if (!userWallet) return res.status(404).json({ message: "Wallet not found" });
+
+    const systemWallet = await Wallet.findById(process.env.SYSTEM_WALLET_ID);
+    if (!systemWallet) return res.status(404).json({ message: "System wallet not found" });
+
+    const balanceBefore = userWallet.balance || 0;
+
+    // -----------------------
+    // 1. CALCULATE CHARGES
+    // -----------------------
+    let charge = await Charge.findOne({ 
+      name: `${user.schoolName} Funding Charge`, 
+      schoolId: user.schoolId 
+    });
+
+    if (!charge) charge = await Charge.findOne({ name: 'Topup Charges' });
+
+    if (!charge) {
+      return res.status(404).json({ message: 'Topup Charge not found' });
+    }
+
+    let chargeAmount = 0;
+
+    if (charge.chargeType === "Flat") {
+      chargeAmount = charge.amount;
+    } else if (charge.chargeType === "Percentage") {
+      let computedPercent;
+
+      if (amount <= 50000) {
+        computedPercent = (amount * (charge.amount || 0)) / 100;
+      } else if (amount <= 150000) {
+        computedPercent = (amount * (charge.amount2 || 0)) / 100;
+      } else {
+        computedPercent = (amount * (charge.amount3 || 0)) / 100;
+      }
+
+      chargeAmount = Math.min(computedPercent, 2500);
+    }
+
+    // -----------------------
+    // 2. CALL NOMBA INIT API
+    // -----------------------
+    const nombaResponse = await axios.post(
+      "https://sandbox.nomba.com/v1/checkout/order",
+      {
+        order: {
+          orderReference: crypto.randomUUID(),
+          customerId: user._id.toString(),
+          customerEmail: user.email,
+          amount: amount.toFixed(2),
+          currency: "NGN",
+          callbackUrl: `${process.env.FRONTEND_URL_PROD}/nomba/callback`,
+          accountId: process.env.NOMBA_ACCOUNT_ID
+        },
+        tokenizeCard: "true"
+      },
+      {
+        headers: {
+          accountId: process.env.NOMBA_ACCOUNT_ID,
+          Authorization: `Bearer ${process.env.NOMBA_SECRET_KEY}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    const { checkoutLink, orderReference } = nombaResponse.data.data;
+
+    // -----------------------
+    // 3. SAVE TRANSACTION AS PENDING
+    // -----------------------
+    await Transaction.create({
+      senderWalletId: systemWallet._id,
+      receiverWalletId: userWallet._id,
+      transactionType: "wallet_topup",
+      category: "credit",
+      amount,
+      charges: chargeAmount,
+      balanceBefore,
+      balanceAfter: balanceBefore,
+      reference: orderReference,
+      description: "Wallet top-up via Nomba",
+      status: "pending",
+      metadata: {
+        initiatedBy: userId,
+        platform: "web"
+      }
+    });
+
+    res.status(200).json({
+      message: "Nomba payment initiated",
+      checkoutLink,
+      orderReference
+    });
+
+  } catch (error) {
+    console.error("Nomba Init Error:", error.response?.data || error.message);
+
+    res.status(500).json({
+      message: "Failed to initiate Nomba payment",
+      error: error.response?.data || error.message
+    });
   }
 };
