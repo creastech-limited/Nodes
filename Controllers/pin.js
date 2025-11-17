@@ -53,13 +53,15 @@ exports.adminSetPinForStudent = async (req, res) => {
     }
     //check if the parent is a guardian of the student
     if (user.role === 'parent') {
-      const student = await regUser.findOne({email: studentEmail}); 
-      if (!student) return res.status(404).json({ error: 'Student not found' });
-      const isGuardian = student.beneficiary.some(ben => ben.email === user.email);
-      if (!isGuardian) {
+    const student = await regUser.findOne({ email: studentEmail });
+    if (!student) return res.status(404).json({ error: 'Student not found' });
+
+    const isGuardian = student.guardian && student.guardian.email === user.email;
+
+    if (!isGuardian) {
         return res.status(403).json({ error: 'You are not a guardian of this student' });
-      }
     }
+}
     
     const student = await regUser.findOne({email: studentEmail});
     // console.log("found student:", student);
@@ -144,12 +146,16 @@ exports.adminUpdatePinForStudent = async (req, res) => {
       return res.status(400).json({ error: 'New PIN cannot be the same as the current PIN' });
     }
     //check if the parent is a guardian of the student
-    if (user.role === 'parent') {
-      const isGuardian = student.beneficiary.some(ben => ben.email === user.email);
-      if (!isGuardian) {
+   if (user.role === 'parent') {
+    const student = await regUser.findOne({ email: studentEmail });
+    if (!student) return res.status(404).json({ error: 'Student not found' });
+
+    const isGuardian = student.guardian && student.guardian.email === user.email;
+
+    if (!isGuardian) {
         return res.status(403).json({ error: 'You are not a guardian of this student' });
-      }
     }
+}
     //check if the student is a student of the school
     if (user.role === 'school' && student.schoolId !== user.schoolId) {
       return res.status(403).json({ error: 'This student is not registered under your school' });
@@ -163,7 +169,7 @@ exports.adminUpdatePinForStudent = async (req, res) => {
     await student.save();
     res.json({ message: 'PIN updated successfully for student' });
   } catch (error) {
-    res.status(500).json({ error: error });
+    res.status(500).json({ error: error.message });
   }
 };
 
