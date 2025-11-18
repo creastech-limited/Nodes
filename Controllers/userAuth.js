@@ -1429,6 +1429,12 @@ if (roleLower === 'student') {
       accountNumber: newUser.accountNumber
     });
 
+    //set agent status to active
+    if (roleLower === 'agent') {
+      newUser.status = 'Active';
+      await newUser.save();
+    }
+
     // Generate QR code data
     const qrData = JSON.stringify({
       email: newUser.email,

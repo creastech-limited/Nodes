@@ -458,7 +458,7 @@ exports.withdrawal = async (req, res) => {
       return res.status(400).json({ message: 'PIN is required' });
     }
 
-    const validPin =await bcrypt.compare(pin, currentUser.pin);
+    const validPin = await bcrypt.compare(pin, currentUser.pin);
     if (!validPin) {
       await failTransaction('Invalid PIN', null, senderWallet, amount, '02', currentUser._id);
       await sendNotification(user, '❌ Withdrawal failed: Invalid PIN', 'error');

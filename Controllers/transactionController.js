@@ -2262,33 +2262,31 @@ exports.initiateNombaPayment = async (req, res) => {
 
       chargeAmount = Math.min(computedPercent, 2500);
     }
-
+console.log("Secret Key:", process.env.PROD_NOMBA_SECRET_KEY);
     // -----------------------
     // 2. CALL NOMBA INIT API
     // -----------------------
     const nombaResponse = await axios.post(
-      "https://sandbox.nomba.com/v1/checkout/order",
-      {
-        order: {
-          orderReference: crypto.randomUUID(),
-          customerId: user._id.toString(),
-          customerEmail: user.email,
-          amount: amount.toFixed(2),
-          currency: "NGN",
-          callbackUrl: `${process.env.FRONTEND_URL_PROD}/nomba/callback`,
-          accountId: process.env.NOMBA_ACCOUNT_ID
-        },
-        tokenizeCard: "true"
-      },
-      {
-        headers: {
-          accountId: process.env.NOMBA_ACCOUNT_ID,
-          Authorization: `Bearer ${process.env.NOMBA_SECRET_KEY}`,
-          "Content-Type": "application/json"
-        }
-      }
-    );
-
+          "https://sandbox.nomba.com/v1/checkout/order",
+          {
+            order: {
+              orderReference: crypto.randomUUID(),
+              customerId: user._id.toString(),
+              customerEmail: user.email,
+              amount: amount.toFixed(2),
+              currency: "NGN",
+              callbackUrl: `${process.env.FRONTEND_URL_PROD}/nomba/callback`,
+              accountId: process.env.NOMBA_ACCOUNT_ID
+            },
+            tokenizeCard: true
+          },
+          {
+            headers: {
+              Authorization: `Bearer 1Y3uaiUCU0IobO3pzi93XjAV1o29mOQYrnz8cBLIyfs0fAlOdj7HuDz+tJ2hTEKbk0QJod+gl8DZQP7GdmdEww==`,
+              "Content-Type": "application/json"
+            }
+          }
+        );
     const { checkoutLink, orderReference } = nombaResponse.data.data;
 
     // -----------------------
