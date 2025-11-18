@@ -148,7 +148,7 @@ exports.addBeneficiary = async (req, res) => {
         phone: kid.phone,
     });
     await newBeneficiary.save();
-    res.status(200).json({ message: "Beneficiary added successfully", beneficiary: newBeneficiary });
+    res.status(200).json({ message: "Beneficiary added successfully ", beneficiary: newBeneficiary });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
