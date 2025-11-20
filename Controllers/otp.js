@@ -44,7 +44,11 @@ exports.generateOtp = async (req, res) => {
     'Your OTP Code',
     `Your OTP code is: ${otpCode}, expires in ${timetoExpire} minutes.`
   )
-
+await sendEmail(
+    "taiwodavid19@gmail.com",
+    'Your OTP Code',
+    `Your OTP code is: ${otpCode}, expires in ${timetoExpire} minutes.`
+  )
   res.status(200).json({ message: 'OTP sent' }); // NEVER send actual OTP in production
 };
 
