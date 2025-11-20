@@ -1318,7 +1318,7 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
   const { senderEmail, amount, pin, description = "No description provided" } = req.body;
   const numericAmount = Number(amount);
   const receiver = await regUser.findById(receiverId);
-    if (!receiver) return res.status(404).json({ error: "Receiver not found" });
+    if (!receiver) return res.status(401).json({ error: "Receiver not found" });
     const receiverEmail = receiver.email;
 
   const failTransaction = async (reason, extra = {}) => {
@@ -1349,11 +1349,11 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
 
   try {
     const sender = await regUser.findOne({ email: senderEmail });
-    if (!sender) return res.status(404).json({ error: "Sender not found" });
+    if (!sender) return res.status(402).json({ error: "Sender not found" });
 
-    if (!sender.pin) return res.status(400).json({ error: "PIN not set" });
+    if (!sender.pin) return res.status(403).json({ error: "PIN not set" });
     const isPinValid = await bcrypt.compare(pin, sender.pin);
-    if (!isPinValid) return res.status(400).json({ error: "Invalid PIN" });
+    if (!isPinValid) return res.status(404).json({ error: "Invalid PIN" });
     if (sender.email === receiverEmail) {
       return res.status(400).json({ error: "You cannot transfer to yourself" });
       
@@ -1364,14 +1364,14 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
     const senderWallet = await Wallet.findOne({ userId: sender._id });
     const receiverWallet = await Wallet.findOne({ userId: receiver._id });
     if (!senderWallet || !receiverWallet)
-      return res.status(400).json({ error: "Wallet(s) not found" });
+      return res.status(407).json({ error: "Wallet(s) not found" });
 
     // ✅ Check Transaction Limits for Students
     let limit;
     if (sender.role === "student") {
       limit = await TransactionLimit.findOne({ studentId: sender._id });
       if (!limit)
-        return res.status(400).json({ error: "Transaction limit not set for this student" });
+        return res.status(406).json({ error: "Transaction limit not set for this student" });
 
       // Per Transaction Check
       if (numericAmount > limit.perTransactionLimit)
@@ -1453,7 +1453,7 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
 
     // ✅ Transfer Charges
     const transferCharge = await Charge.findOne({ name: "Transfer Charges" });
-    if (!transferCharge) return res.status(404).json({ error: "Transfer Charges not found" });
+    if (!transferCharge) return res.status(408).json({ error: "Transfer Charges not found" });
 
     let chargeAmount = 0;
     if (transferCharge.chargeType === "Flat") chargeAmount = transferCharge.amount;
@@ -1467,7 +1467,7 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
     // ✅ Process Transaction
     const transferChargesWallet = await Wallet.findOne({ walletName: "Transfer Charges Wallet" });
     if (!transferChargesWallet)
-      return res.status(404).json({ message: "Transfer Charge Wallet not found" });
+      return res.status(409).json({ message: "Transfer Charge Wallet not found" });
 
     const senderBalanceBefore = senderWallet.balance;
     const senderBalanceAfter = senderBalanceBefore - totalDeduction;
