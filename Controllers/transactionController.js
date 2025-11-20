@@ -1355,7 +1355,7 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
     const isPinValid = await bcrypt.compare(pin, sender.pin);
     if (!isPinValid) return res.status(404).json({ error: "Invalid PIN" });
     if (sender.email === receiverEmail) {
-      return res.status(400).json({ error: "You cannot transfer to yourself" });
+      return res.status(411).json({ error: "You cannot transfer to yourself" });
       
     }
 
@@ -1447,7 +1447,7 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
 
       if (totalSentWeek + numericAmount > limit.weeklyLimit)
         return res
-          .status(400)
+          .status(413)
           .json({ error: `Weekly limit exceeded. Limit: ${limit.weeklyLimit}, Sent: ${totalSentWeek}` });
     }
 
@@ -1462,7 +1462,7 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
 
     const totalDeduction = numericAmount + chargeAmount;
     if (senderWallet.balance < totalDeduction)
-      return res.status(400).json({ error: "Insufficient balance" });
+      return res.status(414).json({ error: "Insufficient balance" });
 
     // ✅ Process Transaction
     const transferChargesWallet = await Wallet.findOne({ walletName: "Transfer Charges Wallet" });
