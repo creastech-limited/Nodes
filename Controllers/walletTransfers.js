@@ -1,6 +1,6 @@
 const {regUser} = require('../Models/registeration'); // Import User model
 const Wallet = require('../Models/walletSchema'); // Import Wallet model
-const Transaction = require('../Models/transactionSchema'); // Import Transaction model
+const {Transaction} = require('../Models/transactionSchema'); // Import Transaction model
 
 
 const mongoose = require('mongoose');

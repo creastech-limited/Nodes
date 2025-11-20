@@ -1,5 +1,5 @@
 const QRCode = require('qrcode');
-const {TransactionLimit} = require('../Models/transactionSchema');
+const {TransactionLimit, Transaction} = require('../Models/transactionSchema');
 const {regUser, ClassUser, Beneficiary} = require('../Models/registeration');
 const Charge = require('../Models/charges');
 const bcrypt = require('bcryptjs');

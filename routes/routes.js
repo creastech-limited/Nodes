@@ -37,7 +37,7 @@ router.get('/activate/:id', async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        user.status = 'Inactive'; // Set status to 'Active'
+        user.status = 'Active'; // Set status to 'Active'
         await user.save();
         res.status(200).json({ message: 'User activated successfully', });
     } catch (error) {
@@ -69,6 +69,7 @@ router.get('/activated/:id', async (req, res) => {
     // res.status(200).send('User activated successfully. You can now log in.');
    
   } catch (err) {
+    console.error('Error during activation:', err.message);
     res.status(500).send('Server error during activation.');
   }
 });

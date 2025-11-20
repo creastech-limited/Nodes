@@ -4,7 +4,7 @@ require('dotenv').config();
 const Charge = require('../Models/charges');
 const https = require('https');
 const Wallet = require('../Models/walletSchema');
-const Transaction = require('../Models/transactionSchema');
+const {Transaction} = require('../Models/transactionSchema');
 const sendEmail = require('../utils/email');
 const { sendNotification } = require('../utils/notification');
 const { generateReference } = require('../utils/generatereference');
@@ -645,3 +645,5 @@ exports.reverseWithdrawal = async (req, res) => {
 
   }
 };
+
+//log uncaptured Transaction
