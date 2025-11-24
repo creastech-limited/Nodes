@@ -11,6 +11,7 @@ const Charge = require('../Models/charges'); // Import Charges model
 const { generateReference} = require('../utils/generatereference');
 const {sendNotification}  = require('../utils/notification');
 const sendEmail = require('../utils/email');
+const {generateNombaToken} = require('../utils/generatenombatoken');
 // const verifyToken = require('../routes/verifyToken'); // Import verifyToken middleware
 
 
@@ -764,15 +765,15 @@ exports.verifyTransaction = async (req, res) => {
       existingTxn.receiverWalletId = userWallet._id;
       await existingTxn.save();
 
-      //log credit transaction for wallet
+      //log credit transaction for topup wallet
       await Transaction.create({
         senderWalletId: userWallet._id,
         receiverWalletId: topupChargesWallet._id,
         transactionType: 'wallet_topup',
         category: 'credit',
-        amount: topupAmount,
+        amount: chargeAmount,
         balanceBefore: topupChargesWallet.balance,
-        balanceAfter: topupChargesWallet.balance + topupAmount,
+        balanceAfter: topupChargesWallet.balance + chargeAmount,
         reference: generateReference('TPCH'),
         description: 'Wallet top-up via Paystack',
         status: 'success',
@@ -947,6 +948,8 @@ exports.verifyPinAndTransfer = async (req, res) => {
     const receiverBalanceBefore = receiverWallet.balance;
     const receiverBalanceAfter = receiverWallet.balance + amount;
     //update transfer charges wallet
+    const chargesBalanceBefore = transferChargesWallet.balance
+    const chargesBalanceAfter = transferChargesWallet.balance+chargeAmount
     transferChargesWallet.balance += chargeAmount;
     transferChargesWallet.lastTransaction = new Date();
     transferChargesWallet.lastTransactionAmount = chargeAmount;
@@ -1523,7 +1526,44 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
       metadata: { senderEmail: sender.email, receiverEmail: receiver.email },
     });
 
-    await Promise.all([senderTransaction.save(), receiverTransaction.save()]);
+    //log transfer charge transaction
+    const chargeTransaction = new Transaction({
+      senderWalletId: senderWallet._id,
+      receiverWalletId: transferChargesWallet._id,
+      transactionType: 'transfer_charge',
+      category: 'debit',
+      amount: chargeAmount,
+      balanceBefore: senderBalanceAfter,
+      balanceAfter: senderBalanceAfter,
+      reference: `TRX-${uuidv4()}`,
+      description: `Transfer charge for sending ${amount} to ${receiver.email}`,
+      status: 'success',
+      metadata: {
+        senderEmail: sender.email,
+        receiverEmail: receiver.email,
+        chargeAmount
+      }
+    });
+    //log charge transaction for transfer charges wallet
+    const chargeTransactionForChargeWallet = new Transaction({
+      senderWalletId: senderWallet._id,
+      receiverWalletId: transferChargesWallet._id,
+      transactionType: 'transfer_charge',
+      category: 'credit',
+      amount: chargeAmount,
+      balanceBefore: transferChargesWallet.balance - chargeAmount,
+      balanceAfter: transferChargesWallet.balance,
+      reference: `TRX-${uuidv4()}`,
+      description: `Transfer charge received from ${sender.email} for sending ${amount} to ${receiver.email}`,
+      status: 'success',
+      metadata: {
+        senderEmail: sender.email,
+        receiverEmail: receiver.email,
+        chargeAmount
+      }
+    });
+
+    await Promise.all([senderTransaction.save(), receiverTransaction.save(),chargeTransactionForChargeWallet.save(),chargeTransaction.save()]);
 
     // ✅ Send Notifications
     await sendNotification(sender._id, `You sent ₦${numericAmount} to ${receiver.email}. New balance: ₦${senderBalanceAfter}`);
@@ -2262,10 +2302,15 @@ exports.initiateNombaPayment = async (req, res) => {
 
       chargeAmount = Math.min(computedPercent, 2500);
     }
-console.log("Secret Key:", process.env.PROD_NOMBA_SECRET_KEY);
+// console.log("Secret Key:", process.env.PROD_NOMBA_SECRET_KEY);
     // -----------------------
     // 2. CALL NOMBA INIT API
     // -----------------------
+
+    const token = await generateNombaToken();
+    const totalAmount = amount +chargeAmount
+    console.log(charge.amount)
+    // console.log(token)
     const nombaResponse = await axios.post(
           "https://sandbox.nomba.com/v1/checkout/order",
           {
@@ -2273,7 +2318,7 @@ console.log("Secret Key:", process.env.PROD_NOMBA_SECRET_KEY);
               orderReference: crypto.randomUUID(),
               customerId: user._id.toString(),
               customerEmail: user.email,
-              amount: amount.toFixed(2),
+              amount: totalAmount.toFixed(2),
               currency: "NGN",
               callbackUrl: `${process.env.FRONTEND_URL_PROD}/nomba/callback`,
               accountId: process.env.NOMBA_ACCOUNT_ID
@@ -2282,7 +2327,8 @@ console.log("Secret Key:", process.env.PROD_NOMBA_SECRET_KEY);
           },
           {
             headers: {
-              Authorization: `Bearer 1Y3uaiUCU0IobO3pzi93XjAV1o29mOQYrnz8cBLIyfs0fAlOdj7HuDz+tJ2hTEKbk0QJod+gl8DZQP7GdmdEww==`,
+              accountId: process.env.NOMBA_ACCOUNT_ID,
+              Authorization: `Bearer ${token}`,
               "Content-Type": "application/json"
             }
           }
@@ -2309,7 +2355,7 @@ console.log("Secret Key:", process.env.PROD_NOMBA_SECRET_KEY);
         platform: "web"
       }
     });
-
+    console.log("checkoutLink:", checkoutLink )
     res.status(200).json({
       message: "Nomba payment initiated",
       checkoutLink,
@@ -2325,3 +2371,181 @@ console.log("Secret Key:", process.env.PROD_NOMBA_SECRET_KEY);
     });
   }
 };
+
+
+exports.verifyNombaTransaction = async(req, res) => {
+  try {
+    const { reference } = req.params;
+    const userId = req.user?.id
+    const user = await regUser.findById(userId)
+    if(!user){
+      return res.status(400).json({
+         status: false,
+        message: "user not found"
+      })
+    }
+
+    if (!reference) {
+      return res.status(400).json({
+        status: false,
+        message: "Order reference is required"
+      });
+    }
+
+    // 1. Get transaction from DB
+    const transaction = await Transaction.findOne({ reference });
+
+    if (!transaction) {
+      return res.status(404).json({
+        status: false,
+        message: "Transaction not found"
+      });
+    }
+
+    // Prevent double processing
+    if (transaction.status === "success") {
+      return res.status(200).json({
+        status: true,
+        message: "Transaction already processed",
+        transaction
+      });
+    }
+
+    if (transaction.status === "expired") {
+      return res.status(200).json({
+        status: true,
+        message: "Transaction expired",
+        transaction
+      });
+    }
+
+    if (transaction.status === "failed") {
+      return res.status(400).json({
+        status: false,
+        message: "Transaction already marked as failed",
+        transaction
+      });
+    }
+     const topupChargesWallet = await Wallet.findOne({ walletName: 'Topup Charge Wallet' });
+      if (!topupChargesWallet) {
+        return res.status(404).json({ message: 'Topup Charge Wallet not found' });
+      }
+
+    // 2. Generate Nomba token
+    const token = await generateNombaToken();
+
+    // 3. Verify on Nomba
+    const url = `https://sandbox.nomba.com/v1/checkout/transaction?idType=ORDER_REFERENCE&id=${reference}`;
+
+    const verifyResponse = await fetch(url, {
+      method: "GET",
+      headers: {
+        accountId: process.env.NOMBA_ACCOUNT_ID,
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await verifyResponse.json();
+    console.log("NOMBA VERIFY RESPONSE:", data);
+
+    if (data.code !== "00") {
+      // Mark as failed
+      transaction.status = "failed";
+      await transaction.save();
+
+      return res.status(400).json({
+        status: false,
+        message: "Nomba verification failed",
+        data,
+      });
+    }
+
+    // PAYMENT STATUS IN NOMBA
+    const isPaid = data?.data?.success;
+    console.log(isPaid)
+
+    if (!isPaid) {
+      // Mark as failed
+      transaction.status = "failed";
+      await transaction.save();
+
+      return res.status(400).json({
+        status: false,
+        message: "Payment not completed",
+        nombaStatus: isPaid,
+      });
+    }
+
+    // 4. Payment successful → CREDIT WALLET
+
+    const userWallet = await Wallet.findById(transaction.receiverWalletId);
+    if (!userWallet) {
+      return res.status(404).json({
+        status: false,
+        message: "Receiver wallet not found"
+      });
+    }
+
+    const balanceBefore = userWallet.balance || 0;
+    const amountToCredit = transaction.amount; // already saved at initialization
+    const chargeAmount = transaction.charges
+
+    const newBalance = balanceBefore + amountToCredit;
+
+    // Update wallet
+    userWallet.balance = newBalance;
+    await userWallet.save();
+
+    //update charges wallet
+      topupChargesWallet.balance += chargeAmount;
+      topupChargesWallet.lastTransaction = new Date();
+      topupChargesWallet.lastTransactionAmount = chargeAmount;
+      topupChargesWallet.lastTransactionType = 'credit';
+      await topupChargesWallet.save();
+    // 5. Update transaction record
+    
+    transaction.status = "success";
+    transaction.balanceAfter = newBalance;
+    transaction.gatewayResponse = data;
+    transaction.updatedAt = new Date();
+    await transaction.save();
+
+
+    await Transaction.create({
+        senderWalletId: userWallet._id,
+        receiverWalletId: topupChargesWallet._id,
+        transactionType: 'wallet_topup',
+        category: 'credit',
+        amount: chargeAmount,
+        balanceBefore: topupChargesWallet.balance,
+        balanceAfter: topupChargesWallet.balance + chargeAmount,
+        reference: generateReference('TPCH'),
+        description: 'Wallet top-up via Paystack',
+        status: 'success',
+        metadata: {
+          initiatedBy: user._id,
+          email: user.email,
+          platform: 'web',
+          chargeAmount: chargeAmount * 100, // Store charge in kobo
+          topupAmount: amountToCredit * 100, // Store topup amount in kobo
+        }
+
+      })
+
+    return res.status(200).json({
+      status: true,
+      message: "Transaction verified and wallet credited",
+      transaction,
+      nomba: data
+    });
+
+  } catch (error) {
+    console.error("Nomba Verify Error:", error.message);
+
+    return res.status(500).json({
+      status: false,
+      message: "Internal server error verifying Nomba payment",
+      error: error.message,
+    });
+  }
+}
