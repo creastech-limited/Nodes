@@ -2253,13 +2253,21 @@ exports.listPaystackDedicatedAccounts = async (req, res) => {
 
 exports.initiateNombaPayment = async (req, res) => {
   try {
-    const { amount } = req.body;
+    const {
+      email, 
+      amount,
+      callBackUrl
+     } = req.body;
     const userId = req.user?.id;
 
     if (!amount || amount <= 0) {
       return res.status(400).json({ message: "Valid amount is required" });
     }
+    if(!callBackUrl){
+        return res.status(400).json({ message: "Valid call back URL is required" });
 
+    }
+    
     const user = await regUser.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -2317,10 +2325,11 @@ exports.initiateNombaPayment = async (req, res) => {
             order: {
               orderReference: crypto.randomUUID(),
               customerId: user._id.toString(),
-              customerEmail: user.email,
+              customerEmail: user.email || email,
               amount: totalAmount.toFixed(2),
               currency: "NGN",
-              callbackUrl: `${process.env.FRONTEND_URL_PROD}/nomba/callback`,
+              // callbackUrl: `${process.env.FRONTEND_URL_PROD}/nomba/callback`,
+              callbackUrl: callBackUrl,
               accountId: process.env.NOMBA_ACCOUNT_ID
             },
             tokenizeCard: true
@@ -2520,7 +2529,7 @@ exports.verifyNombaTransaction = async(req, res) => {
         balanceBefore: topupChargesWallet.balance,
         balanceAfter: topupChargesWallet.balance + chargeAmount,
         reference: generateReference('TPCH'),
-        description: 'Wallet top-up via Paystack',
+        description: 'Wallet top-up via Nomba',
         status: 'success',
         metadata: {
           initiatedBy: user._id,
