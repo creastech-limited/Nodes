@@ -483,7 +483,7 @@ if (charge.chargeType === 'Flat') {
       {
         amount: (amount + chargeAmount) * 100, // Paystack expects amount in kobo
         email: userEmail,
-        callback_url: `${FRONTEND_URL_PROD}/payment/callback`, // Change to real callback
+        callback_url: callBackUrl, // Change to real callback
            metadata: {
             chargeAmount: chargeAmount*100, // Store charge in kobo
             topupAmount: amount*100, // Store topup amount in kobo
@@ -2442,9 +2442,11 @@ exports.verifyNombaTransaction = async(req, res) => {
 
     // 2. Generate Nomba token
     const token = await generateNombaToken();
+      console.log(token)
 
     // 3. Verify on Nomba
-    const url = `https://sandbox.nomba.com/v1/checkout/transaction?idType=ORDER_REFERENCE&id=${reference}`;
+    const envUrl = process.env.URL
+    const url = `${envUrl}/v1/checkout/transaction?idType=ORDER_REFERENCE&id=${reference}`;
 
     const verifyResponse = await fetch(url, {
       method: "GET",
@@ -2540,6 +2542,219 @@ exports.verifyNombaTransaction = async(req, res) => {
         }
 
       })
+
+    return res.status(200).json({
+      status: true,
+      message: "Transaction verified and wallet credited",
+      transaction,
+      nomba: data
+    });
+
+  } catch (error) {
+    console.error("Nomba Verify Error:", error.message);
+
+    return res.status(500).json({
+      status: false,
+      message: "Internal server error verifying Nomba payment",
+      error: error.message,
+    });
+  }
+}
+exports.logNombaTransaction = async(req, res) => {
+  try {
+    const { reference } = req.params;
+    const userId = req.user?.id
+    const orderReference = reference
+    const user = await regUser.findById(userId)
+    if(!user){
+      return res.status(400).json({
+         status: false,
+        message: "user not found"
+      })
+    }
+    const {amount, chargeAmount } = req.body
+
+     const transaction = await Transaction.findOne({ reference });
+
+    if (transaction && transaction.status === 'success') {
+      return res.status(404).json({
+        status: false,
+        message: "Transaction already processed"
+      });
+    }
+
+     const topupChargesWallet = await Wallet.findOne({ walletName: 'Topup Charge Wallet' });
+      if (!topupChargesWallet) {
+        return res.status(404).json({ message: 'Topup Charge Wallet not found' });
+      }
+
+    // 2. Generate Nomba token
+    const token = await generateNombaToken();
+      // console.log(token)
+
+
+
+    // 3. Verify on Nomba
+    const envUrl = process.env.URL
+    const url = `${envUrl}/v1/checkout/transaction?idType=ORDER_REFERENCE&id=${reference}`;
+
+    const systemWallet = await Wallet.findById(process.env.SYSTEM_WALLET_ID);
+    if (!systemWallet) return res.status(404).json({ message: "System wallet not found" });
+
+    const verifyResponse = await fetch(url, {
+      method: "GET",
+      headers: {
+        accountId: process.env.NOMBA_ACCOUNT_ID,
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await verifyResponse.json();
+    // console.log("NOMBA VERIFY RESPONSE:", data);
+
+    if (data.code !== "00") {
+      // Mark as failed
+     return res.status(400).json({
+        status: false,
+        message: "Nomba verification failed",
+        data,
+      });
+    }
+
+    // PAYMENT STATUS IN NOMBA
+    const isPaid = data?.data?.success;
+    console.log(isPaid)
+
+    if (!isPaid) {
+      // Mark as failed
+      return res.status(400).json({
+        status: false,
+        message: "Payment not completed",
+        nombaStatus: isPaid,
+      });
+    }
+    const paidAmount = Number(data.data.order.amount);
+    const originalAmount = Number(amount);
+
+// Validate numbers first
+if ([paidAmount, originalAmount, chargeAmount].some(isNaN)) {
+  return res.status(400).json({
+    status: false,
+    message: "Invalid transaction amount values"
+  });
+}
+
+const expectedTotal = originalAmount + chargeAmount;
+console.log("expected",expectedTotal)
+console.log("paid",paidAmount)
+
+// Compare with 2 decimal precision (important for currency)
+    if (paidAmount !== Number(expectedTotal.toFixed(2))) {
+      return res.status(400).json({
+        status: false,
+        message: "Amount mismatch. Transaction rejected."
+      });
+}
+
+    // 4. Payment successful → CREDIT WALLET
+
+    const userWallet = await Wallet.findOne({userId});
+    if (!userWallet) {
+      return res.status(404).json({
+        status: false,
+        message: "Receiver wallet not found"
+      });
+    }
+    console.log(userWallet)
+
+    const balanceBefore = Number(userWallet.balance) || 0;
+    const amountToCredit = Number(amount);
+
+    if (isNaN(amountToCredit)) {
+      return res.status(400).json({
+        status: false,
+        message: "Invalid credit amount"
+      });
+    }
+
+      const newBalance = balanceBefore + amountToCredit;
+
+      userWallet.balance = newBalance;
+      await userWallet.save();
+
+
+    //update charges wallet
+      topupChargesWallet.balance += chargeAmount;
+      topupChargesWallet.lastTransaction = new Date();
+      topupChargesWallet.lastTransactionAmount = chargeAmount;
+      topupChargesWallet.lastTransactionType = 'credit';
+      await topupChargesWallet.save();
+    // 5. Update transaction record
+
+    // -----------------------
+    // 3. SAVE TRANSACTION AS PENDING
+    // -----------------------
+    await Transaction.create({
+      senderWalletId: systemWallet._id,
+      receiverWalletId: userWallet._id,
+      transactionType: "wallet_topup",
+      category: "credit",
+      amount,
+      charges: chargeAmount,
+      balanceBefore,
+      balanceAfter: balanceBefore,
+      reference: orderReference,
+      description: "Wallet top-up via Nomba",
+      status: "success",
+      metadata: {
+        initiatedBy: userId,
+        platform: "web"
+      }
+    });
+    
+    await Transaction.create({
+        senderWalletId: userWallet._id,
+        receiverWalletId: topupChargesWallet._id,
+        transactionType: 'wallet_topup',
+        category: 'credit',
+        amount: chargeAmount,
+        balanceBefore: topupChargesWallet.balance,
+        balanceAfter: topupChargesWallet.balance + chargeAmount,
+        reference: generateReference('TPCH'),
+        description: 'Wallet top-up via Nomba',
+        status: 'success',
+        metadata: {
+          initiatedBy: user._id,
+          email: user.email,
+          platform: 'web',
+          chargeAmount: chargeAmount * 100, // Store charge in kobo
+          topupAmount: amountToCredit * 100, // Store topup amount in kobo
+        }
+
+      })
+    // await transaction.save();
+
+
+    // await Transaction.create({
+    //     senderWalletId: userWallet._id,
+    //     receiverWalletId: topupChargesWallet._id,
+    //     transactionType: 'wallet_topup',
+    //     category: 'credit',
+    //     amount: chargeAmount,
+    //     balanceBefore: topupChargesWallet.balance,
+    //     balanceAfter: topupChargesWallet.balance + chargeAmount,
+    //     reference: generateReference('TPCH'),
+    //     description: 'Wallet top-up via Nomba',
+    //     status: 'success',
+    //     metadata: {
+    //       initiatedBy: user._id,
+    //       email: user.email,
+    //       platform: 'web',
+    //       chargeAmount: chargeAmount * 100, // Store charge in kobo
+    //       topupAmount: amountToCredit * 100, // Store topup amount in kobo
+    //     }
+
+    //   })
 
     return res.status(200).json({
       status: true,
