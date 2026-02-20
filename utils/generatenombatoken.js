@@ -6,8 +6,8 @@ export async function generateNombaToken() {
 
   const payload = {
     grant_type: "client_credentials",
-    client_id: process.env.TEST_NOMBA_CLIENT_ID,
-    client_secret: process.env.TEST_NOMBA_SECRET_KEY,
+    client_id: process.env.NOMBA_CLIENT_ID,
+    client_secret: process.env.NOMBA_SECRET_KEY,
   };
 
   const options = {
