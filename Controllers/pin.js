@@ -1,9 +1,12 @@
 const {regUser} = require('../Models/registeration');
+const Otp = require('../Models/otp');
 const bcrypt = require('bcryptjs');
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+// const generateOTP = require('../Controllers/otp')
+const { Resend } = require('resend');
 const Wallet = require('../Models/walletSchema');
 
 
@@ -169,6 +172,7 @@ exports.adminUpdatePinForStudent = async (req, res) => {
     await student.save();
     res.json({ message: 'PIN updated successfully for student' });
   } catch (error) {
+    console.log(error)
     res.status(500).json({ error: error.message });
   }
 };
@@ -182,12 +186,118 @@ exports.verifyPin = async (req, res) => {
   try {
     const user = await regUser.findById(currentUserId);
     if (!user || !user.pin) return res.status(404).json({ error: 'PIN not set or user not found' });
-
+    
     const isMatch = await bcrypt.compare(pin, user.pin);
     if (!isMatch) return res.status(401).json({ error: 'Invalid PIN' });
 
     res.json({ message: 'PIN verified successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+//forgot PIN
+exports.requestPinReset = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(400).json({ error: "User ID is required" });
+
+    const {newPin} = req.body
+    if(!newPin){
+      return res.status(404).json({ error: "PIN field required" })
+    }
+
+    const user = await regUser.findById(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    await Otp.deleteMany({ userId });
+
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+    await Otp.create({
+      userId,
+      otp: otpCode,
+      expiresAt,
+      attempts: 0
+    });
+
+    // send email here
+    const resend = new Resend(process.env.RESEND_API_KEY); 
+    await resend.emails.send({ 
+      from: "taiwo.david@xpay.ng", 
+      to: user.email, subject: "Login Notification", 
+      html: `<p>Your OTP is <strong>${otpCode}</strong>.</p> <p>This code expires in 5 minutes.</p>` , });
+
+    return res.status(200).json({
+      otp:otpCode,
+      message: "OTP sent to your email"
+    });
+
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+// Verify PIN
+exports.verifyOtpAndUpdatePin = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) return res.status(400).json({ message: 'userId is required' });
+
+    const user = await regUser.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const { otp, newPin } = req.body;
+
+    if (!otp || !newPin) {
+      return res.status(400).json({ message: 'OTP or PIN fields Missing' });
+    }
+
+    const otpRecord = await Otp.findOne({ userId });
+
+    if (!otpRecord)
+      return res.status(400).json({ message: 'No OTP found for this user' });
+
+    if (otpRecord.expiresAt < new Date()) {
+      await Otp.deleteOne({ _id: otpRecord._id });
+      return res.status(400).json({ message: 'OTP expired' });
+    }
+
+    if (otpRecord.attempts >= 3) {
+      await Otp.deleteOne({ _id: otpRecord._id });
+      return res.status(400).json({ message: 'Maximum OTP attempts exceeded' });
+    }
+
+    if (otpRecord.otp !== otp) {
+      otpRecord.attempts += 1;
+      await otpRecord.save();
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    // ✅ Hash the PIN before saving (VERY IMPORTANT)
+    const bcrypt = require('bcryptjs');
+    const hashedPin = await bcrypt.hash(newPin, 10);
+
+    await regUser.findByIdAndUpdate(userId, {
+      pin: hashedPin,
+    });
+
+    await Otp.deleteOne({ _id: otpRecord._id });
+
+    //send email
+    const resend = new Resend(process.env.RESEND_API_KEY); 
+    await resend.emails.send({ 
+      from: "taiwo.david@xpay.ng", 
+      to: user.email, subject: "Login Notification", 
+      html: `<p>Your PIN hasnow been reset.</p>`
+       , 
+      });
+
+    return res.status(200).json({ message: 'PIN verified successfully' });
+
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
 };

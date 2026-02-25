@@ -59,7 +59,7 @@ const compressAndSaveProfilePicture = async (req, res, next) => {
       fs.mkdirSync(uploadsDir);
     }
 
-    const fileName = `user_${user.name}.jpg`;
+    const fileName = `user_${user.firstName}.jpg`;
     const filePath = path.join(uploadsDir, fileName);
 
     if (fs.existsSync(filePath)) {

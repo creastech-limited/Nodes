@@ -1,6 +1,7 @@
 const Otp = require('../Models/otp');
 const {regUser} = require('../Models/registeration');
 const sendEmail  = require('../utils/email'); // Assuming you have a utility function to send emails
+const { Resend } = require('resend');
 
 // Generate OTP & Save
 exports.generateOtp = async (req, res) => {
@@ -38,17 +39,28 @@ exports.generateOtp = async (req, res) => {
   timetoExpire = Math.floor((expiresAt - Date.now()) / 1000 / 60); // in minutes
   // console.log("Saved OTP from DB:", otpCode, "Expires in:", timetoExpire, "minutes", "Expires At:", expiresAt);
 
-  // Send email
-  await sendEmail(
-    user.email,
-    'Your OTP Code',
-    `Your OTP code is: ${otpCode}, expires in ${timetoExpire} minutes.`
-  )
-await sendEmail(
-    "taiwodavid19@gmail.com",
-    'Your OTP Code',
-    `Your OTP code is: ${otpCode}, expires in ${timetoExpire} minutes.`
-  )
+//   // Send email
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+    await resend.emails.send({
+      from: "david.taiwo@sovereignfinanceltd.com",
+      to: newRecord.email,
+      subject: "Login Notification",
+      html: `
+        <p>Your OTP is <strong>${otpCode}</strong>.</p>
+        <p>This code expires in 5 minutes.</p>
+      `,
+    });
+//   await sendEmail(
+//     user.email,
+//     'Your OTP Code',
+//     `Your OTP code is: ${otpCode}, expires in ${timetoExpire} minutes.`
+//   )
+// await sendEmail(
+//     "taiwodavid19@gmail.com",
+//     'Your OTP Code',
+//     `Your OTP code is: ${otpCode}, expires in ${timetoExpire} minutes.`
+//   )
   res.status(200).json({ message: 'OTP sent' }); // NEVER send actual OTP in production
 };
 
