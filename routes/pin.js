@@ -7,7 +7,7 @@ router.post('/set',verifyToken, setPin);
 router.post('/setforstudent', verifyToken, adminSetPinForStudent);
 router.put('/updateforstudent', verifyToken, adminUpdatePinForStudent);
 router.post('/update', verifyToken,updatePin);
-router.post('/request-reset', verifyToken, verifyOtpAndUpdatePin);
-router.post('/verifyotp', verifyToken, requestPinReset);
+router.post('/verifyotp', verifyToken, verifyOtpAndUpdatePin);
+router.post('/request-reset', verifyToken, requestPinReset);
 
 module.exports = router;
