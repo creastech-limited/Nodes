@@ -27,6 +27,7 @@ async function sendEmail(to, subject, htmlContent) {
 
 
 
+
 // const transporter = nodemailer.createTransport({
 //   host: 'smtp.gmail.com', // or your SMTP host
 //   port: 465, // or 587 for TLS

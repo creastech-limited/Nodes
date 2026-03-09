@@ -1,6 +1,7 @@
 const QRCode = require('qrcode');
 const {TransactionLimit, Transaction} = require('../Models/transactionSchema');
 const {regUser, ClassUser, Beneficiary} = require('../Models/registeration');
+const {Resend} = require('resend')
 const Charge = require('../Models/charges');
 const bcrypt = require('bcryptjs');
 const sendEmail = require('../utils/email');
@@ -873,14 +874,17 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
       await user.save();
   
       const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
-      await sendEmail(
-      email,
-      'Password Reset Request',
-      `<p>Hello ${user.firstName || ''},</p>
+      const resend = new Resend(process.env.RESEND_API_KEY); 
+    await resend.emails.send({ 
+      from:"taiwo.david@xpay.ng",
+      to:email,
+     subject: 'Password Reset Request',
+     html: `<p>Hello ${user.firstName || ''},</p>
              <p>You requested a password reset. Click the link below to reset it:</p>
              <a href="${resetLink}">Reset Password</a>
               <p>This link will expire in 1 hour.</p>`
-    );
+    
+      }); 
   
       
       res.status(200).json({

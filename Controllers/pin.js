@@ -227,7 +227,7 @@ exports.requestPinReset = async (req, res) => {
     await resend.emails.send({ 
       from: "taiwo.david@xpay.ng", 
       to: user.email, subject: "Login Notification", 
-      html: `<p>Your OTP is <strong>${otpCode}</strong>.</p> <p>This code expires in 5 minutes.</p>` , });
+      html: `<p>Your OTP is <strong>${otpCode}</strong>, <strong>${user.email}</strong>.</p> <p>This code expires in 5 minutes.</p>` , });
 
     return res.status(200).json({
       otp:otpCode,
@@ -290,7 +290,8 @@ exports.verifyOtpAndUpdatePin = async (req, res) => {
     const resend = new Resend(process.env.RESEND_API_KEY); 
     await resend.emails.send({ 
       from: "taiwo.david@xpay.ng", 
-      to: user.email, subject: "Login Notification", 
+      to: user.email, 
+      subject: "Login Notification", 
       html: `<p>Your PIN hasnow been reset.</p>`
        , 
       });
