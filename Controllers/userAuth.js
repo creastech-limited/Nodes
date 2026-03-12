@@ -1438,6 +1438,11 @@ if (roleLower === 'student') {
       newUser.status = 'Active';
       await newUser.save();
     }
+    //set school status to active
+    if (roleLower === 'school') {
+      newUser.status = 'Active';
+      await newUser.save();
+    }
 
     // Generate QR code data
     const qrData = JSON.stringify({
@@ -1498,7 +1503,11 @@ if (roleLower === 'student') {
   //       }
   //     ]
   // );
-    await sendEmail(
+
+    if (roleLower !== 'school') {
+      const resend = new Resend(process.env.RESEND_API_KEY);
+
+    await resend.emails.send(
     newUser.email,
   'Confirm Notification',
 `
@@ -1562,6 +1571,9 @@ if (roleLower === 'student') {
 
   );
 
+    }
+
+   
     // await sgMail.send(emailDetails);
 
     res.status(201).json({

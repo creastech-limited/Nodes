@@ -88,6 +88,7 @@ const userSchema = new mongoose.Schema({
   storeCanWithdraw: { type: Boolean, default: false },
   agentCanTransfer: { type: Boolean, default: false },
   agentCanWithdraw: { type: Boolean, default: false },
+  loggedIn: {type: Boolean, default: false},
   referalCode: { type: String, },
   beneficiary: [
     { 

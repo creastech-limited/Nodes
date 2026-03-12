@@ -231,7 +231,7 @@ exports.requestPinReset = async (req, res) => {
 
     return res.status(200).json({
       otp:otpCode,
-      message: "OTP sent to your email"
+      message: `OTP sent to your email ${user.email}`
     });
 
   } catch (error) {
