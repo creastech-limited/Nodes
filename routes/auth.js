@@ -59,6 +59,9 @@ router.delete('/delete/all',verifyToken, deleteAllUsers);
 router.delete('/verify-user', verifySenderAndReceiver);
 router.get('/getschoolbyid/:id', getSchoolById);
 router.get('/getallSchools', getallSchools);
+// router.get('/getallstudents', getallSchools);
+// router.get('/getallagent', getallSchools);
+// router.get('/getallparents', getallSchools);
 router.post('/upload-profile',verifyToken,uploadProfileImage, compressAndSaveProfilePicture, updateUserProfilePicture,
 );
 

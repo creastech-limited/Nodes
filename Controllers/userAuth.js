@@ -342,6 +342,26 @@ exports.login = async (req, res) => {
 } catch (error) {
   console.error("Failed to send login email:", error.message);
 }
+  const templatePath = path.join(__dirname, "../Re_envrionment files/signup.html");
+  const htmlTemplate = fs.readFileSync(templatePath, "utf8");
+
+    const resend = new Resend(process.env.RESEND_API_KEY); 
+    const { data, error } = await resend.emails.send({
+        from: "taiwo.david@xpay.ng",
+        to: user.email,
+        subject: "Login Notification",
+        html: htmlTemplate.replace("{{firstName}}", user.name)
+      });
+
+      if (error) {
+        console.error("Email sending failed:", error);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to send email"
+        });
+      }
+
+      console.log("Email sent:", data);
     //    const emailDetails = {
     //   to: process.env.EMAIL_TO,
     //   from: {

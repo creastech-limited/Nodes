@@ -46,13 +46,16 @@ const compressAndSaveProfilePicture = async (req, res, next) => {
   try {
     const userId = req.user?.id;
 
-    if (!userId || !req.file) {
-      return res.status(400).json({ message: 'userId and file are required' });
+    if (!userId) {
+      return res.status(400).json({ message: 'userId is required' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ message: 'file are required' });
     }
     //get user from database
     const user = await regUser.findById(userId);
     const userName = user.name.replace(/\s+/g, '_'); // Replace spaces with underscores for file name
-    console.log('User Name:', userName);
+    // console.log('User Name:', userName);
 
     const uploadsDir = path.join(__dirname, '../uploads');
     if (!fs.existsSync(uploadsDir)) {
