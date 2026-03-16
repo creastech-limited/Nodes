@@ -113,6 +113,7 @@ exports.getallStudentsInSchool = async (req, res) => {
     if (!userId) {
       return res.status(400).json({ message: 'User ID is required' });
     }
+
     const data = await regUser.findById(userId);
     const users = await regUser.find({ schoolId: data.schoolId, role: 'student' });
     const limits = await TransactionLimit.find({schoolId: data.schoolId, role: 'student' })

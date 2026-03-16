@@ -11,6 +11,8 @@ const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const fs = require("fs");
 const path = require("path");
+const multer = require("multer");
+const unzipper = require("unzipper");
 
 const imagePath = path.join(__dirname, "..", "Images", "xpay.png");
 
@@ -21,10 +23,167 @@ const xpayImage = fs.readFileSync(imagePath).toString("base64");
 
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
-const multer = require('multer');
 const XLSX = require('xlsx');
 const Wallet = require('../Models/walletSchema'); // Import Wallet model
 const { createUserFromPayload } = require('./registerHelpers');
+
+
+
+exports.uploadZip = async (req, res) => {
+
+  const zipPath = req.file.path;
+  const extractPath = "./uploads/extracted";
+  const uploadPath = "./uploads";
+
+  if (!fs.existsSync(extractPath)) {
+    fs.mkdirSync(extractPath, { recursive: true });
+  }
+
+  try {
+
+    // Extract ZIP
+    await fs.createReadStream(zipPath)
+      .pipe(unzipper.Extract({ path: extractPath }))
+      .promise();
+
+    // Get files recursively
+    const getFiles = (dir) => {
+      let results = [];
+      const list = fs.readdirSync(dir);
+
+      list.forEach((file) => {
+        const filePath = path.join(dir, file);
+        const stat = fs.statSync(filePath);
+
+        if (stat && stat.isDirectory()) {
+          results = results.concat(getFiles(filePath));
+        } else {
+          results.push(filePath);
+        }
+      });
+
+      return results;
+    };
+
+    const files = getFiles(extractPath);
+
+    let updated = [];
+    let notFound = [];
+
+    for (const filePath of files) {
+
+      const ext = path.extname(filePath);
+      const email = path.basename(filePath, ext).toLowerCase();
+
+      console.log("Processing:", email);
+
+      const user = await regUser.findOne({ email });
+
+      if (!user) {
+        notFound.push(email);
+        continue;
+      }
+
+      // Clean fullname for filename safety
+      const cleanName = user.name
+        .replace(/[<>:"/\\|?*]+/g, "")
+        .trim();
+
+      const newFileName = `user_${cleanName}${ext}`;
+      const newPath = path.join(uploadPath, newFileName);
+
+      // Move and rename image
+      fs.renameSync(filePath, newPath);
+
+      // Save new path in DB
+      user.profileImage = newPath;
+      await user.save();
+
+      updated.push(email);
+    }
+
+    // Delete extracted folder
+    fs.rmSync(extractPath, { recursive: true, force: true });
+
+    // Delete uploaded zip
+    fs.unlinkSync(zipPath);
+
+    res.json({
+      message: "Upload complete",
+      updatedUsers: updated,
+      usersNotFound: notFound
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    // Cleanup if error
+    if (fs.existsSync(extractPath)) {
+      fs.rmSync(extractPath, { recursive: true, force: true });
+    }
+
+    res.status(500).json({ error: "Processing failed" });
+  }
+
+};
+
+// exports.uploadZip = async (req, res) => {
+//   const zipPath = req.file.path;
+//   const extractPath = "./uploads";
+
+//   if (!fs.existsSync(extractPath)) {
+//     fs.mkdirSync(extractPath, { recursive: true });
+//   }
+
+//   try {
+
+//     // Extract ZIP
+//     await fs
+//       .createReadStream(zipPath)
+//       .pipe(unzipper.Extract({ path: extractPath }))
+//       .promise();
+
+//     const files = fs.readdirSync(extractPath);
+
+//     let updated = [];
+//     let notFound = [];
+
+//     for (const file of files) {
+
+//       const ext = path.extname(file);
+//       console.log(ext)
+//       const email = path.basename(file, ext);
+//       console.log(email)
+
+//       const user = await regUser.findOne({ email });
+//       console.log(user)
+
+//       if (!user) {
+//         notFound.push(email);
+//         continue;
+//       }
+
+//       const filePath = path.join(extractPath, file);
+
+//       user.profileImage = filePath;
+
+//       await user.save();
+
+//       updated.push(email);
+//     }
+
+//     res.json({
+//       message: "Upload complete",
+//       updatedUsers: updated,
+//       usersNotFound: notFound
+//     });
+
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: "Processing failed" });
+//   }
+// };
 
 
 //function to proper case
@@ -361,7 +520,7 @@ exports.login = async (req, res) => {
         });
       }
 
-      console.log("Email sent:", data);
+      console.log("Email sent:", data.message);
     //    const emailDetails = {
     //   to: process.env.EMAIL_TO,
     //   from: {
@@ -2309,6 +2468,11 @@ exports.activateUSer = async (req, res) => {
         
     }
 };
+//upload zip
+
+
+
+
 exports.deactiveUser = async (req, res) => {
     try{
         const id = req.params.id;

@@ -5,6 +5,9 @@ const Model = require('../Models/models'); // Corrected import statement
 // const RegisterModel = require('../Models/registeration'); // Corrected import statement
 // const LoginModel = require('../Models/login'); // Corrected import statement
 const router = express.Router();
+const fs = require("fs");
+const path = require("path");
+const multer = require("multer");
 const bcrypt = require('bcrypt');
 const regUser = require('../Models/registeration');
 const disputeData = require('../Models/dispute');
@@ -13,10 +16,12 @@ const {getAllClassesWithCounts,getStudentCountByClass,login,getSchoolClasses, re
 // const { initiateTransaction, verifyTransaction} = require('../Controllers/transactionController');
 const verifyToken = require('./verifyToken');
 const {uploadProfileImage,compressAndSaveProfilePicture} = require('../Middleware/upload');
-const { updateUserProfilePicture } = require('../Controllers/userAuth');
+const { updateUserProfilePicture, uploadZip } = require('../Controllers/userAuth');
 
 
 // Register route
+const upload = multer({ dest: "uploads/" });
+router.post("/upload-zip", upload.single("zipfile"), uploadZip);
 router.post('/bulkregister',verifyToken, uploadFileMiddleware, bulkRegister)
 router.post('/resetlink', sendResetLink);
 router.get('/getparents', verifyToken, getParent);
