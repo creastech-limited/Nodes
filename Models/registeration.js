@@ -56,6 +56,7 @@ const userSchema = new mongoose.Schema({
   storeName: { type: String },
   storeType: { type: String },
   location:{ type: String },
+  closedAccount:{type: Boolean, default: false},
   description: { type: String },
   schoolId: { type: String },
   agentName: { type: String },

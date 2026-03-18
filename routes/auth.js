@@ -11,7 +11,7 @@ const multer = require("multer");
 const bcrypt = require('bcrypt');
 const regUser = require('../Models/registeration');
 const disputeData = require('../Models/dispute');
-const {getallUsers, getAllStudentsInSchool, getUserByFilter, getAllStoreInSchool, getAllAgentsInSchool, getAllStudentsCountInSchool, getAllStoreInSchoolCount, getAllAgentsInSchoolCount, getuserbyid,getuser,getAllStudents, getallSchools, getMyChild,getallUsersInSchool, getallStudentsInSchool,getallAgentsInSchool, getallStoreInSchool} = require('../Controllers/getAllusers');
+const {getallUsers, getAllStudentsInSchool, getUserByFilter, getAllStoreInSchool, getAllAgentsInSchool, getAllStudentsCountInSchool, getAllStoreInSchoolCount, getAllAgentsInSchoolCount, getuserbyid,getuser,getAllStudents, getallSchools, getMyChild,getallUsersInSchool, getallStudentsInSchool,getallAgentsInSchool, getallStoreInSchool, getallParents, getallStudentsInSchoolByAdmin, getallStoresInSchoolByAdmin, getallAgentsInStoreByAdmin, getallagents} = require('../Controllers/getAllusers');
 const {getAllClassesWithCounts,getStudentCountByClass,login,getSchoolClasses, register,register2,logout,updateUser, forgotPassword,resetWithToken, deleteUser,deleteAllUsers, updatePassword, verifySenderAndReceiver, getSchoolById, deactiveUser,activateUSer, addBeneficiary, getBeneficiaries, removeBeneficiary, updateGuardian, getParent,getStudentsByBeneficiaryEmail, sendResetLink,uploadFileMiddleware, bulkRegister } = require('../Controllers/userAuth');
 // const { initiateTransaction, verifyTransaction} = require('../Controllers/transactionController');
 const verifyToken = require('./verifyToken');
@@ -46,11 +46,15 @@ router.get('/getallschoolstudent', verifyToken, getallStudentsInSchool)
 router.get('/getallschoolagent', verifyToken, getallAgentsInSchool)
 router.get('/getallschoolstore', verifyToken, getallStoreInSchool)
 router.get('/getallUsers', getallUsers);
+router.get('/getallagent',verifyToken, getallagents);
 router.get('/getclasscount',verifyToken, getStudentCountByClass);
 router.get('/getuser/:id',verifyToken, getuserbyid);
 router.get('/getuserone',verifyToken, getuser);
 router.get('/getstudentbyid',verifyToken, getAllStudentsInSchool);
 router.get('/getstudentbyidcount',verifyToken, getAllStudentsCountInSchool);
+router.get('/getstudentinschoolbyadmin/:schoolId',verifyToken, getallStudentsInSchoolByAdmin);
+router.get('/getstoreinschoolbyadmin/:schoolId',verifyToken, getallStoresInSchoolByAdmin);
+router.get('/getagentinstorebyadmin/:storeId',verifyToken, getallAgentsInStoreByAdmin);
 router.get('/getstorebyid',verifyToken, getAllStoreInSchool);
 router.get('/getstorebyidcount',verifyToken, getAllStoreInSchoolCount);
 router.get('/getagentbyid',verifyToken, getAllAgentsInSchool);
@@ -63,10 +67,10 @@ router.delete('/delete/:id',verifyToken, deleteUser);
 router.delete('/delete/all',verifyToken, deleteAllUsers);
 router.delete('/verify-user', verifySenderAndReceiver);
 router.get('/getschoolbyid/:id', getSchoolById);
-router.get('/getallSchools', getallSchools);
+router.get('/getallSchools',verifyToken, getallSchools);
 // router.get('/getallstudents', getallSchools);
 // router.get('/getallagent', getallSchools);
-// router.get('/getallparents', getallSchools);
+router.get('/getallparents',verifyToken, getallParents);
 router.post('/upload-profile',verifyToken,uploadProfileImage, compressAndSaveProfilePicture, updateUserProfilePicture,
 );
 

@@ -1,4 +1,4 @@
-const {regUser,Class} = require('../Models/registeration');
+const {regUser,Class, ClassUser} = require('../Models/registeration');
 const Wallet = require('../Models/walletSchema');
 const jwt = require('jsonwebtoken');
 const {Transaction, TransactionLimit} = require('../Models/transactionSchema');
@@ -7,6 +7,18 @@ const {Transaction, TransactionLimit} = require('../Models/transactionSchema');
 //get all schools
 exports.getallSchools = async (req, res) => {
   try {
+     const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+    const user = await regUser.findById(userId);
+    if(!user || user.status !== 'Active'){
+      return res.status(400).json({ message: 'User does not ecist or User is not active' });
+    }
+    if(user.role !== 'admin'){
+      return res.status(400).json({ message: 'Unauthorised User' });
+    }
+
     const data = await regUser.find({ role: 'school' });
     res.status(200).json({
       message: `${data.length} school(s) found`,
@@ -20,6 +32,75 @@ exports.getallSchools = async (req, res) => {
           schoolPhone: school.phone,
           schoolId: school.schoolId,
           schoolStatus: school.status,
+        };
+      })
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+//get all Agents
+exports.getallagents = async (req, res) => {
+  try {
+     const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+    const user = await regUser.findById(userId);
+    if(!user || user.status !== 'Active'){
+      return res.status(400).json({ message: 'User does not ecist or User is not active' });
+    }
+    if(user.role !== 'admin'){
+      return res.status(400).json({ message: 'Unauthorised User' });
+    }
+
+    const data = await regUser.find({ role: 'agent' });
+    res.status(200).json({
+      message: `${data.length} agent(s) found`,
+      data: data.map(school => {
+        return {
+          school_id: school._id,
+          schoolName: school.schoolName,
+          schoolAddress: school.schoolAddress,
+          schoolType: school.schoolType,
+          schoolEmail: school.email,
+          schoolPhone: school.phone,
+          schoolRole: school.role,
+          storeId: school.store_id,
+          schoolId: school.schoolId,
+          schoolStatus: school.status,
+        };
+      })
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+exports.getallParents = async (req, res) => {
+  try {
+     const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+    const user = await regUser.findById(userId);
+    if(!user || user.status !== 'Active'){
+      return res.status(400).json({ message: 'User does not ecist or User is not active' });
+    }
+    if(user.role !== 'admin'){
+      return res.status(400).json({ message: 'Unauthorised User' });
+    }
+
+    const data = await regUser.find({ role: 'parent' });
+    res.status(200).json({
+      message: `${data.length} parent(s) found`,
+      data: data.map(parent => {
+        return {
+          parent_id: parent._id,
+          parentName: parent.name,
+          parentAddress: `${parent.address.street} `,
+          parentEmail: parent.email,
+          parentPhone: parent.phone,
+          parentStatus: parent.status,
         };
       })
     });
@@ -126,8 +207,164 @@ exports.getallStudentsInSchool = async (req, res) => {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        fullName: user.name,
         role: user.role,
+        schoolId:user.schoolId,
+        QRcode :user.qrcode,
+        profilePics :user.profilePicture
       })),
+});
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+//get all student within a school by Admin
+exports.getallStudentsInSchoolByAdmin = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+    
+    const data = await regUser.findById(userId);
+
+    if(!data || data.status !== 'Active'){
+      return res.status(400).json({ message: 'User must be active' });
+    }
+    if( data.role !== 'admin'){
+      return res.status(400).json({ message: 'User must be an admin' });
+    }
+    const schoolId = req.params.schoolId;
+    console.log(schoolId)
+
+    const schools = await regUser.findOne({ schoolId: schoolId });
+    // console.log(schools)
+    const users = await regUser.find({ schoolId: schoolId, role: 'student' });
+    // console.log(users)
+    // const studentClass = await ClassUser.find({students:users.id})
+    // console.log(studentClass.className)
+    // console.log(users)
+    const limits = await TransactionLimit.find({schoolId: data.schoolId, role: 'student' })
+    if (users.length === 0) {
+      return res.status(404).json({ message: 'No users found in this school' });
+    }
+    res.status(200).json({
+      message: `Found ${users.length} user(s) in school ${schools.schoolName}`,
+        data: users.map(user => ({
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        fullName: user.name,
+        role: user.role,
+        Class: user.academicDetails.classAdmittedTo,
+        schoolId:user.schoolId,
+        QRcode :user.qrcode,
+        profilePics :user.profilePicture
+      })),
+});
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+//get all store within a school by Admin
+exports.getallStoresInSchoolByAdmin = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+    
+    const data = await regUser.findById(userId);
+
+    if(!data || data.status !== 'Active'){
+      return res.status(400).json({ message: 'User must be active' });
+    }
+    if( data.role !== 'admin'){
+      return res.status(400).json({ message: 'User must be an admin' });
+    }
+    const schoolId = req.params.schoolId;
+    console.log(schoolId)
+
+    const schools = await regUser.findOne({ schoolId: schoolId });
+    // console.log(schools)
+    const users = await regUser.find({ schoolId: schoolId, role: 'store' });
+    // console.log(users)
+    // const studentClass = await ClassUser.find({students:users.id})
+    // console.log(studentClass.className)
+    // console.log(users)
+    // const limits = await TransactionLimit.find({schoolId: data.schoolId, role: 'student' })
+    if (users.length === 0) {
+      return res.status(404).json({ message: 'No users found in this school' });
+    }
+    res.status(200).json({
+      message: `Found ${users.length} store(s) in school ${schools.schoolName}`,
+        data: users.map(user => ({
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        fullName: user.name,
+        role: user.role,
+        storeName: user.storeName,
+        storeType: user.storeType,
+        storeId: user.id,
+        schoolId:user.schoolId,
+        profilePics :user.profilePicture
+      })),
+});
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+//get all store within a school by Admin
+exports.getallAgentsInStoreByAdmin = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+    
+    const data = await regUser.findById(userId);
+
+    if(!data || data.status !== 'Active'){
+      return res.status(400).json({ message: 'User must be active' });
+    }
+    if( data.role !== 'admin'){
+      return res.status(400).json({ message: 'User must be an admin' });
+    }
+    const storeId = req.params.storeId;
+    console.log(storeId)
+  
+    const stores = await regUser.findById( storeId );
+    
+    // console.log(stores)
+    const users = await regUser.find({ store_id: stores.store_id, role: 'agent' });
+    // console.log(users)
+    // const studentClass = await ClassUser.find({students:users.id})
+    // console.log(studentClass.className)
+    // console.log(users)
+    // const limits = await TransactionLimit.find({schoolId: data.schoolId, role: 'student' })
+    if (users.length === 0) {
+      return res.status(404).json({ message: `No users found in this ${stores.storeName}`});
+    }
+    res.status(200).json({
+      message: `Found ${users.length} store(s) in school ${stores.storeName}`,
+        data: users.map(user => ({
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        fullName: user.name,
+        role: user.role,
+        agentName: user.agentName,
+        storeName: user.storeName,
+        storeType: user.storeType,
+        schoolId:user.schoolId,
+        profilePics :user.profilePicture
+      })),
+      store:{
+        storeName: stores.storeName,
+        storeType:stores.storeType,
+        storeId: stores.id
+      }
 });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -146,7 +383,7 @@ exports.getallAgentsInSchool = async (req, res) => {
       return res.status(404).json({ message: 'No users found in this school' });
     }
     res.status(200).json({
-      message: `Found ${users.length} user(s) in school ${data.schoolName}`,
+      message: `Found ${users.length} agent(s) in school ${data.schoolName}`,
       data: users.map(user => ({
     email: user.email,
     firstName: user.firstName,
@@ -176,7 +413,11 @@ exports.getallStoreInSchool = async (req, res) => {
     email: user.email,
     firstName: user.firstName,
     lastName: user.lastName,
+    fullName: user.name,
     role: user.role,
+    storeName: user.storeName,
+    storeType: user.storeType,
+    schoolId:user.schoolId
   })),
 });
   } catch (error) {

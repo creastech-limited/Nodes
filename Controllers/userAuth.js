@@ -504,12 +504,20 @@ exports.login = async (req, res) => {
   const templatePath = path.join(__dirname, "../Re_envrionment files/signup.html");
   const htmlTemplate = fs.readFileSync(templatePath, "utf8");
 
+  const banner = `${process.env.BACKENDURL}/images/xpay1024X500.png`
+    const logo = `${process.env.BACKENDURL}/images/xpaylogo.png`
+    console.log(banner)
+    console.log(logo)
+
     const resend = new Resend(process.env.RESEND_API_KEY); 
     const { data, error } = await resend.emails.send({
         from: "taiwo.david@xpay.ng",
         to: user.email,
         subject: "Login Notification",
-        html: htmlTemplate.replace("{{firstName}}", user.name)
+        html: htmlTemplate
+            .replace("{{firstName}}", user.name)
+            .replace("{{banner}}", banner)
+            .replace("{{logo}}", logo)
       });
 
       if (error) {
@@ -520,7 +528,7 @@ exports.login = async (req, res) => {
         });
       }
 
-      console.log("Email sent:", data.message);
+      // console.log("Email sent:", data.message);
     //    const emailDetails = {
     //   to: process.env.EMAIL_TO,
     //   from: {
@@ -547,7 +555,7 @@ exports.login = async (req, res) => {
     //   id: user._id,});
     // Send response
    return res.status(200).json({
-      message: 'Registeration successful',
+      message: 'Login successful',
       accessToken,
       user: {
         id: user._id,
@@ -1233,6 +1241,29 @@ exports.updatePassword = async (req, res) => {
           res.status(500).json({ message: error.message });
       }
   }
+  exports.requestDeleteUser = async (req, res) => {
+      try {
+        const userId = req.user?.id; // User making the request
+        const currentUser = await regUser.findById(userId); // Fetch current user details
+        if (!currentUser) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+        
+        //check if the current user is a school or admin or store
+        if (currentUser.role.toLowerCase() !== 'school' && currentUser.role.toLowerCase() !== 'admin' && currentUser.role.toLowerCase() !== 'store') {
+            return res.status(403).json({ message: "Forbidden: You are not authorized to delete this user" });
+        }
+          const id = req.params.id;
+          const result = await regUser.findByIdAndDelete(req.params.id);
+          if (!result) {
+              return res.status(404).json({ message: `${result.name} not found` });
+          }
+          res.status(200).json({ message: `${result.firstName} has deleted successfully` });
+      }
+      catch (error) {
+          res.status(500).json({ message: error.message });
+      }
+  }
 
   exports.deleteAllUsers = async (req, res) => {
     try {
@@ -1684,72 +1715,32 @@ if (roleLower === 'student') {
   // );
 
     if (roleLower !== 'school') {
-      const resend = new Resend(process.env.RESEND_API_KEY);
+      const templatePath = path.join(__dirname, "../Re_envrionment files/signup.html");
+  const htmlTemplate = fs.readFileSync(templatePath, "utf8");
 
-    await resend.emails.send(
-    newUser.email,
-  'Confirm Notification',
-`
-<table width="100%" cellpadding="0" cellspacing="0" style="font-family: Arial, sans-serif;">
-  <tr>
-    <td style="padding: 20px;">
+  const banner = `${process.env.BACKENDURL}/images/xpay1024X500.png`
+    const logo = `${process.env.BACKENDURL}/images/xpaylogo.png`
+    console.log(banner)
+    console.log(logo)
 
-      <!-- Logo -->
-      <div style="text-align: center; margin-bottom: 20px;">
-        <img src="cid:xpay_logo" alt="XPay Logo" style="width:150px;" />
-      </div>
+    const resend = new Resend(process.env.RESEND_API_KEY); 
+    const { data, error } = await resend.emails.send({
+        from: "taiwo.david@xpay.ng",
+        to: newUser.email,
+        subject: "Login Notification",
+        html: htmlTemplate
+            .replace("{{firstName}}", newUser.name)
+            .replace("{{banner}}", banner)
+            .replace("{{logo}}", logo)
+      });
 
-      <!-- Main Message -->
-      <p>Hello ${newUser.firstName},</p>
-
-      <p>
-        You have successfully registered with the <strong>School Wallet Solution</strong>.<br/>
-        Click the link below to activate your account:
-      </p>
-
-      <p>
-        <a href="${process.env.NGROK_URL}/api/activated/${newUser._id}"
-           style="color: #0066cc; text-decoration: none; font-weight: bold;">
-           Activate Account
-        </a>
-      </p>
-
-      <p>Best regards,<br/>Xpay</p>
-
-      <!-- Footer -->
-      <hr style="margin: 30px 0;" />
-
-      <p style="font-size: 14px; color: #555;">
-        <strong>Mobile & WhatsApp:</strong> 07084755837, 09019832344<br/>
-        <strong>Instagram:</strong> Creastechlimited | shekoni.abiodun@creastech.com<br/>
-        <strong>Website:</strong> www.creastech.com<br/>
-        <strong>Office Address:</strong> 16A Oguntona Crescent, Gbagada Phase 1, Lagos
-      </p>
-
-      <!-- Inline Image (after address) -->
-      <div style="text-align:center; margin-top:20px;">
-        <img 
-          src="data:image/png;base64,${xpayImage}" 
-          alt="XPay Footer Image" 
-          style="width:180px; margin-top:10px;"
-        />
-      </div>
-
-    </td>
-  </tr>
-</table>
-`,
-[
-  {
-    content: base64Image,
-    filename: 'qrcode.png',
-    type: 'image/png',
-    disposition: 'attachment'
-  }
-]
-
-  );
-
+      if (error) {
+        console.error("Email sending failed:", error);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to send email"
+        });
+      }
     }
 
    
@@ -2441,6 +2432,8 @@ exports.updateUserProfilePicture = async (req, res) => {
     res.status(500).json({ message: 'Failed to update profile picture', error: err.message });
   }
 };
+
+
 exports.activateUSer = async (req, res) => {
     try{
         const id = req.params.id;
