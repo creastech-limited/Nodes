@@ -96,7 +96,7 @@ exports.uploadZip = async (req, res) => {
       fs.renameSync(filePath, newPath);
 
       // Save new path in DB
-      user.profileImage = newPath;
+      user.profilePicture = newPath;
       await user.save();
 
       updated.push(email);
@@ -1248,12 +1248,15 @@ exports.updatePassword = async (req, res) => {
         if (!currentUser) {
             return res.status(401).json({ message: "Unauthorized" });
         }
-        
-        //check if the current user is a school or admin or store
-        if (currentUser.role.toLowerCase() !== 'school' && currentUser.role.toLowerCase() !== 'admin' && currentUser.role.toLowerCase() !== 'store') {
-            return res.status(403).json({ message: "Forbidden: You are not authorized to delete this user" });
+        const id = req.params.id;
+        if (userId !== id) {
+            return res.status(401).json({ message: "Forbidden: You are not authorized to delete this user" });
         }
-          const id = req.params.id;
+        //check if the current user is a school or admin or store
+        // if (currentUser.role.toLowerCase() !== 'school' && currentUser.role.toLowerCase() !== 'admin' && currentUser.role.toLowerCase() !== 'store') {
+        //     return res.status(403).json({ message: "Forbidden: You are not authorized to delete this user" });
+        // }
+          
           const result = await regUser.findByIdAndDelete(req.params.id);
           if (!result) {
               return res.status(404).json({ message: `${result.name} not found` });
