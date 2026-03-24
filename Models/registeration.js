@@ -102,6 +102,19 @@ const userSchema = new mongoose.Schema({
     ],
   qrcode: { type: String },
   lastLogin: Date,
+  isDeleted: {type:Boolean, default: false},
+  deletedt: Date,
+  location: {
+  type: {
+    type: String,
+    enum: ["Point"],
+    default: "Point"
+  },
+  coordinates: {
+    type: [Number], // [lng, lat]
+    default: [0, 0]
+  }
+},
   status: { 
     type: String, 
     default: "Inactive", 
@@ -110,9 +123,13 @@ const userSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+  userSchema.index({ location: "2dsphere" });
+
+
 // Password hashing without confirmPassword
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
+
 
   // const salt = await bcrypt.genSalt(10);
   // this.password = await bcrypt.hash(this.password, salt);
@@ -185,5 +202,45 @@ agentSchema.pre('save', async function (next) {
 });
 const Agent = mongoose.model('Agent', agentSchema);
 
+const ApprovalSchema = new mongoose.Schema({
+  type: {
+    type: String,
+    enum: ["TRANSFER", "KYC_UPGRADE", "WALLET_LIMIT", "REFUND", "CONFIG", "DELETE_ACCOUNT"],
+    required: true
+  },
 
-module.exports = {regUser, ClassUser, Beneficiary, Agent};
+  requestData: {
+    type: Object, // payload to execute later
+    required: true
+  },
+
+  status: {
+    type: String,
+    enum: ["PENDING", "APPROVED", "REJECTED"],
+    default: "PENDING"
+  },
+
+  requestedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  },
+
+  approvedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Admin"
+  },
+
+  rejectionReason: String,
+
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+
+  approvedAt: Date
+});
+
+const Approval = mongoose.model('Approval', ApprovalSchema);
+
+
+module.exports = {regUser, ClassUser, Beneficiary, Agent, Approval};

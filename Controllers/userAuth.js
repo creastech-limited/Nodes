@@ -85,8 +85,9 @@ exports.uploadZip = async (req, res) => {
       }
 
       // Clean fullname for filename safety
-      const cleanName = user.name
-        .replace(/[<>:"/\\|?*]+/g, "")
+     const cleanName = user.name
+        .replace(/[<>:"/\\|?*]+/g, "") // remove invalid chars
+        .replace(/\s+/g, "_")          // replace spaces with underscore
         .trim();
 
       const newFileName = `user_${cleanName}${ext}`;
@@ -419,6 +420,7 @@ exports.getStudentsByBeneficiaryEmail = async (req, res) => {
     if (!currentUser) {
         return res.status(401).json({ message: "Unauthorized" });
     }
+    
     if (currentUser.role.toLowerCase() !== 'parent') {
         return res.status(403).json({ message: "Forbidden: You are not authorized to view students" });
     }
@@ -450,7 +452,7 @@ exports.login = async (req, res) => {
     // Check if user exists
     const user = await regUser.findOne({ email });
     if (!user) return res.status(404).json({ message: 'User not found' });
-
+    
     // Check if user has a password
     if (!user.password) {
       return res.status(500).json({ message: 'User has no password set' });
@@ -465,7 +467,9 @@ exports.login = async (req, res) => {
     if (user.status !== 'Active') {
       return res.status(403).json({ message: 'User is not active' });
     }
-
+    if(user.loggedIn == true){
+      return res.status(403).json({ message: "You are logged in on another device" });
+    }
     // Create Token
     // const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY);
 

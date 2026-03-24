@@ -62,7 +62,10 @@ const compressAndSaveProfilePicture = async (req, res, next) => {
       fs.mkdirSync(uploadsDir);
     }
 
-    const fileName = `user_${user.firstName}.jpg`;
+    const fileName = `user_${user.name}.jpg`
+        .replace(/[<>:"/\\|?*]+/g, "") // remove invalid chars
+        .replace(/\s+/g, "_")          // replace spaces with underscore
+        .trim();
     const filePath = path.join(uploadsDir, fileName);
 
     if (fs.existsSync(filePath)) {
