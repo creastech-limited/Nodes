@@ -3,6 +3,7 @@ const {TransactionLimit, Transaction} = require('../Models/transactionSchema');
 const {regUser, ClassUser, Beneficiary} = require('../Models/registeration');
 const {Resend} = require('resend')
 const Charge = require('../Models/charges');
+const { Parser } = require('json2csv');
 const bcrypt = require('bcryptjs');
 const sendEmail = require('../utils/email');
 const FeeStatus = require('../Models/fees');
@@ -27,6 +28,114 @@ const XLSX = require('xlsx');
 const Wallet = require('../Models/walletSchema'); // Import Wallet model
 const { createUserFromPayload } = require('./registerHelpers');
 
+
+
+
+exports.batchUpdateAdmission = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    let data = [];
+
+    // ✅ Detect file type
+    if (req.file.originalname.endsWith('.csv')) {
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+    } else {
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+    }
+
+    const seenEmails = new Set();
+    const errors = [];
+    const operations = [];
+
+    for (const row of data) {
+      const email = row.Email?.trim().toLowerCase();
+      const admissionNumber = row.AdmissionNumber?.toString().trim();
+
+      // ❌ Missing fields
+      if (!email || !admissionNumber) {
+        errors.push({
+          Email: email || '',
+          AdmissionNumber: admissionNumber || '',
+          Error: 'Missing email or admission number'
+        });
+        continue;
+      }
+
+      // ❌ Duplicate in file
+      if (seenEmails.has(email)) {
+        errors.push({
+          Email: email,
+          AdmissionNumber: admissionNumber,
+          Error: 'Duplicate email in file'
+        });
+        continue;
+      }
+
+      seenEmails.add(email);
+
+      operations.push({
+        updateOne: {
+          filter: { email },
+          update: { $set: { admissionNumber } }
+        }
+      });
+    }
+
+    // ✅ Run bulk update
+    const result = await regUser.bulkWrite(operations);
+
+    // ✅ Check for users not found
+    const matchedEmails = operations.map(op => op.updateOne.filter.email);
+
+    const foundUsers = await regUser.find({ email: { $in: matchedEmails } }).select('email');
+
+    const foundSet = new Set(foundUsers.map(u => u.email));
+
+    for (const email of matchedEmails) {
+      if (!foundSet.has(email)) {
+        errors.push({
+          Email: email,
+          AdmissionNumber: '',
+          Error: 'User not found in DB'
+        });
+      }
+    }
+
+    // ✅ Generate error CSV if needed
+    let errorFile = null;
+
+    if (errors.length > 0) {
+      const json2csv = new Parser();
+      const csv = json2csv.parse(errors);
+
+      errorFile = csv;
+    }
+
+    // ✅ Response
+    if (errorFile) {
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=error_report.csv');
+      return res.status(200).send(errorFile);
+    }
+
+    res.json({
+      message: "Batch update successful",
+      modifiedCount: result.modifiedCount,
+      errors: 0
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Processing failed" });
+  }
+};
 
 
 exports.uploadZip = async (req, res) => {

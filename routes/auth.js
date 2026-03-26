@@ -12,18 +12,29 @@ const bcrypt = require('bcrypt');
 const regUser = require('../Models/registeration');
 const disputeData = require('../Models/dispute');
 const {getallUsers, getAllStudentsInSchool, getUserByFilter, getAllStoreInSchool, getAllAgentsInSchool, getAllStudentsCountInSchool, getAllStoreInSchoolCount, getAllAgentsInSchoolCount, getuserbyid,getuser,getAllStudents, getallSchools, getMyChild,getallUsersInSchool, getallStudentsInSchool,getallAgentsInSchool, getallStoreInSchool, getallParents, getallStudentsInSchoolByAdmin, getallStoresInSchoolByAdmin, getallAgentsInStoreByAdmin, getallagents} = require('../Controllers/getAllusers');
-const {getAllClassesWithCounts,getStudentCountByClass,login,getSchoolClasses, register,register2,logout,updateUser, forgotPassword,resetWithToken, deleteUser,deleteAllUsers, updatePassword, verifySenderAndReceiver, getSchoolById, deactiveUser,activateUSer, addBeneficiary, getBeneficiaries, removeBeneficiary, updateGuardian, getParent,getStudentsByBeneficiaryEmail, sendResetLink,uploadFileMiddleware, bulkRegister } = require('../Controllers/userAuth');
-// const { initiateTransaction, verifyTransaction} = require('../Controllers/transactionController');
+const {getAllClassesWithCounts,getStudentCountByClass,login,getSchoolClasses, register,register2,logout,updateUser, forgotPassword,resetWithToken, deleteUser,deleteAllUsers, updatePassword, verifySenderAndReceiver, getSchoolById, deactiveUser,activateUSer, addBeneficiary, getBeneficiaries, removeBeneficiary, updateGuardian, getParent,getStudentsByBeneficiaryEmail, sendResetLink,uploadFileMiddleware, bulkRegister,batchUpdateAdmission } = require('../Controllers/userAuth');
+const {requestAccountDeletion} = require('../Controllers/approval');
 const verifyToken = require('./verifyToken');
 const {uploadProfileImage,compressAndSaveProfilePicture} = require('../Middleware/upload');
 const { updateUserProfilePicture, uploadZip } = require('../Controllers/userAuth');
 
 
 // Register route
+const storage = multer.memoryStorage();
+
+const uploads = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+});
+
+// ✅ Main upload route
+// router.post('/upload-admissions',uploads.single('file'),batchUpdateAdmission);
 const upload = multer({ dest: "uploads/" });
+router.post("/upload-admission-number", verifyToken, uploads.single("file"), batchUpdateAdmission);
 router.post("/upload-zip", upload.single("zipfile"), uploadZip);
 router.post('/bulkregister',verifyToken, uploadFileMiddleware, bulkRegister)
 router.post('/resetlink', sendResetLink);
+router.post('/requestdelete/:id',verifyToken, requestAccountDeletion);
 router.get('/getparents', verifyToken, getParent);
 router.get('/getmychild', verifyToken, getStudentsByBeneficiaryEmail);
 router.get('/getmychildren', verifyToken, getMyChild);

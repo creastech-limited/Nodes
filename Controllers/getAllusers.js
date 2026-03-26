@@ -259,7 +259,8 @@ exports.getallStudentsInSchoolByAdmin = async (req, res) => {
         Class: user.academicDetails.classAdmittedTo,
         schoolId:user.schoolId,
         QRcode :user.qrcode,
-        profilePics :user.profilePicture
+        profilePics :user.profilePicture,
+        admissionNumber: user.admissionNumber
       })),
 });
   } catch (error) {

@@ -115,6 +115,7 @@ const userSchema = new mongoose.Schema({
     default: [0, 0]
   }
 },
+admissionNumber:{type: String},
   status: { 
     type: String, 
     default: "Inactive", 
