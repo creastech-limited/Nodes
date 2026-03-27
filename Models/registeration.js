@@ -104,17 +104,17 @@ const userSchema = new mongoose.Schema({
   lastLogin: Date,
   isDeleted: {type:Boolean, default: false},
   deletedt: Date,
-  location: {
-  type: {
-    type: String,
-    enum: ["Point"],
-    default: "Point"
-  },
-  coordinates: {
-    type: [Number], // [lng, lat]
-    default: [0, 0]
-  }
-},
+//   location: {
+//   type: {
+//     type: String,
+//     enum: ["Point"],
+//     default: "Point"
+//   },
+//   coordinates: {
+//     type: [Number], // [lng, lat]
+//     default: [0, 0]
+//   }
+// },
 admissionNumber:{type: String},
   status: { 
     type: String, 
@@ -124,7 +124,7 @@ admissionNumber:{type: String},
   }
 }, { timestamps: true });
 
-  userSchema.index({ location: "2dsphere" });
+  // userSchema.index({ location: "2dsphere" });
 
 
 // Password hashing without confirmPassword
