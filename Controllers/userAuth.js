@@ -14,12 +14,13 @@ const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
 const unzipper = require("unzipper");
-
+const streamifier = require("streamifier");
 const imagePath = path.join(__dirname, "..", "Images", "xpay.png");
 
 console.log("Looking for:", imagePath);  // DEBUG
 
 const xpayImage = fs.readFileSync(imagePath).toString("base64");
+const cloudinary = require("./cloudinaryConfig");
 
 
 const crypto = require('crypto');
@@ -142,7 +143,6 @@ exports.uploadZip = async (req, res) => {
 
   const zipPath = req.file.path;
   const extractPath = "./uploads/extracted";
-  const uploadPath = "./uploads";
 
   if (!fs.existsSync(extractPath)) {
     fs.mkdirSync(extractPath, { recursive: true });
@@ -194,28 +194,37 @@ exports.uploadZip = async (req, res) => {
       }
 
       // Clean fullname for filename safety
-     const cleanName = user.name
+      const cleanName = user.name
         .replace(/[<>:"/\\|?*]+/g, "") // remove invalid chars
         .replace(/\s+/g, "_")          // replace spaces with underscore
         .trim();
 
-      const newFileName = `user_${cleanName}${ext}`;
-      const newPath = path.join(uploadPath, newFileName);
+      // Upload to Cloudinary
+      const result = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          { folder: "profile_pics", public_id: `user_${cleanName}`, resource_type: "image" },
+          (error, result) => {
+            if (error) return reject(error);
+            resolve(result);
+          }
+        );
 
-      // Move and rename image
-      fs.renameSync(filePath, newPath);
+        // Pipe file buffer to Cloudinary
+        const fileBuffer = fs.readFileSync(filePath);
+        streamifier.createReadStream(fileBuffer).pipe(uploadStream);
+      });
 
-      // Save new path in DB
-      user.profilePicture = newPath;
+      // Save Cloudinary URL to user
+      user.profilePicture = result.secure_url;
       await user.save();
 
       updated.push(email);
     }
 
-    // Delete extracted folder
+    // Cleanup extracted folder
     fs.rmSync(extractPath, { recursive: true, force: true });
 
-    // Delete uploaded zip
+    // Delete uploaded ZIP
     fs.unlinkSync(zipPath);
 
     res.json({
@@ -233,11 +242,10 @@ exports.uploadZip = async (req, res) => {
       fs.rmSync(extractPath, { recursive: true, force: true });
     }
 
-    res.status(500).json({ error: "Processing failed" });
+    res.status(500).json({ error: "Processing failed", details: err.message });
   }
 
 };
-
 // exports.uploadZip = async (req, res) => {
 //   const zipPath = req.file.path;
 //   const extractPath = "./uploads";
