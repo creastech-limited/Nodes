@@ -627,27 +627,27 @@ exports.login = async (req, res) => {
 
   const banner = `${process.env.BACKENDURL}/images/xpay1024X500.png`
     const logo = `${process.env.BACKENDURL}/images/xpaylogo.png`
-    console.log(banner)
-    console.log(logo)
+    // console.log(banner)
+    // console.log(logo)
 
-    const resend = new Resend(process.env.RESEND_API_KEY); 
-    const { data, error } = await resend.emails.send({
-        from: "taiwo.david@xpay.ng",
-        to: user.email,
-        subject: "Login Notification",
-        html: htmlTemplate
-            .replace("{{firstName}}", user.name)
-            .replace("{{banner}}", banner)
-            .replace("{{logo}}", logo)
-      });
+    // const resend = new Resend(process.env.RESEND_API_KEY); 
+    // const { data, error } = await resend.emails.send({
+    //     from: "taiwo.david@xpay.ng",
+    //     to: user.email,
+    //     subject: "Login Notification",
+    //     html: htmlTemplate
+    //         .replace("{{firstName}}", user.name)
+    //         .replace("{{banner}}", banner)
+    //         .replace("{{logo}}", logo)
+    //   });
 
-      if (error) {
-        console.error("Email sending failed:", error);
-        return res.status(500).json({
-          success: false,
-          message: "Failed to send email"
-        });
-      }
+    //   if (error) {
+    //     console.error("Email sending failed:", error);
+    //     return res.status(500).json({
+    //       success: false,
+    //       message: "Failed to send email"
+    //     });
+    //   }
 
       // console.log("Email sent:", data.message);
     //    const emailDetails = {
