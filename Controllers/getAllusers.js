@@ -26,6 +26,8 @@ exports.cleanStudentFields = async (req, res) => {
 
     // Fetch all students in the school
     const students = await regUser.find({ school: schoolId, role: "student" });
+    const studentsCount = students.length
+    console.log(studentsCount)
 
     let updatedCount = 0;
 
