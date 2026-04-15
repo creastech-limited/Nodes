@@ -4,6 +4,75 @@ const jwt = require('jsonwebtoken');
 const {Transaction, TransactionLimit} = require('../Models/transactionSchema');
 
 
+
+
+
+//update users email
+exports.cleanStudentFields = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+    const user = await regUser.findById(userId);
+    if(!user || user.status !== 'Active'){
+      return res.status(400).json({ message: 'User does not ecist or User is not active' });
+    }
+    if(user.role !== 'admin'){
+      return res.status(400).json({ message: 'Unauthorised User' });
+    }
+
+    const { schoolId } = req.params;
+
+    // Fetch all students in the school
+    const students = await regUser.find({ school: schoolId, role: "student" });
+
+    let updatedCount = 0;
+
+    for (let student of students) {
+      let updated = false;
+
+      // Clean email
+      if (student.email) {
+        const cleanEmail = student.email.replace(/\s+/g, "");
+        if (cleanEmail !== student.email) {
+          student.email = cleanEmail;
+          updated = true;
+        }
+      }
+
+      // OPTIONAL: Clean name too
+      if (student.name) {
+        const cleanName = student.name.replace(/\s+/g, " ").trim();
+        if (cleanName !== student.name) {
+          student.name = cleanName;
+          updated = true;
+        }
+      }
+
+      if (updated) {
+        await student.save();
+        updatedCount++;
+      }
+    }
+
+    return res.status(200).json({
+      message: "Students cleaned successfully",
+      totalStudents: students.length,
+      updated: updatedCount,
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Error cleaning students",
+      error: error.message,
+    });
+  }
+};
+
+
+
 //get all schools
 exports.getallSchools = async (req, res) => {
   try {
@@ -251,6 +320,7 @@ exports.getallStudentsInSchoolByAdmin = async (req, res) => {
     res.status(200).json({
       message: `Found ${users.length} user(s) in school ${schools.schoolName}`,
         data: users.map(user => ({
+          studentId:user.id,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
