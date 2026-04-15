@@ -73,6 +73,7 @@ const transactionRoute = require('./routes/transactions')// ✅ Correct route fi
 const notificationRoute = require('./routes/notification'); // ✅ Correct route file
 const otpRoute = require('./routes/otp'); // ✅ Correct route file
 const imageRoute = require('express').static('./Re_envrionment files');
+const attendanceRoute = require('./routes/attendance');
 
 
 
@@ -97,6 +98,7 @@ app.use('/api/charge', chargeRoute); // e.g., /api/charge will work
 app.use('/api/wallet', walletRoute); // e.g., /api/wallet will work
 app.use('/api/otp', otpRoute); // e.g., /api/otp will work
 app.use('/images', imageRoute);
+app.use('/api/attendance', attendanceRoute);
 // const registerRoute = require('./routes/register'); // ✅ Correct route file
 // app.use('/api', registerRoute); // e.g., /api/register will work
 const feedbackRoute = require('./routes/feedback'); // ✅ Correct route file

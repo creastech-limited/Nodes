@@ -68,7 +68,7 @@ const userSchema = new mongoose.Schema({
   role: { 
     type: String, 
     required: true, 
-    enum: ['student', 'school', 'parent', 'admin','store', 'agent'], // Add your roles here
+    enum: ['student', 'school', 'parent', 'admin','store', 'agent', 'security'], // Add your roles here
   },
   password: { type: String, required: true },
   student_id: { type: String},
@@ -91,6 +91,11 @@ const userSchema = new mongoose.Schema({
   agentCanWithdraw: { type: Boolean, default: false },
   loggedIn: {type: Boolean, default: false},
   referalCode: { type: String, },
+  attendanceStatus: {
+    type: String,
+    enum: ["IN", "OUT"],
+    default: "OUT",
+  },
   beneficiary: [
     { 
       firstName: String,
@@ -244,4 +249,37 @@ const ApprovalSchema = new mongoose.Schema({
 const Approval = mongoose.model('Approval', ApprovalSchema);
 
 
-module.exports = {regUser, ClassUser, Beneficiary, Agent, Approval};
+const attendanceLogSchema = new mongoose.Schema(
+  {
+    student: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User", // XPAY user model
+      required: true,
+    },
+
+    type: {
+      type: String,
+      enum: ["IN", "OUT"],
+      required: true,
+    },
+
+    timestamp: {
+      type: Date,
+      default: Date.now,
+    },
+
+    location: {
+      type: String, // e.g. "Main Gate"
+      default: "Main Gate",
+    },
+
+    deviceId: {
+      type: String, // scanner device ID
+    },
+  },
+  { timestamps: true }
+);
+const AttendanceLog = mongoose.model('AttendanceLog', attendanceLogSchema)
+
+
+module.exports = {regUser, ClassUser, Beneficiary, Agent, Approval, AttendanceLog};
