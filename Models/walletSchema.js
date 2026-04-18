@@ -18,4 +18,5 @@ const walletSchema = new mongoose.Schema({
   phone: { type: String },
 });
 
+
 module.exports = mongoose.model('Wallet', walletSchema);
