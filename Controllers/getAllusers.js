@@ -11,50 +11,95 @@ const {Transaction, TransactionLimit} = require('../Models/transactionSchema');
 exports.cleanStudentFields = async (req, res) => {
   try {
     const userId = req.user?.id;
+
     if (!userId) {
-      return res.status(400).json({ message: 'User ID is required' });
+      return res.status(400).json({ message: "User ID is required" });
     }
+
     const user = await regUser.findById(userId);
-    if(!user || user.status !== 'Active'){
-      return res.status(400).json({ message: 'User does not ecist or User is not active' });
+
+    if (!user || user.status !== "Active") {
+      return res.status(400).json({
+        message: "User does not exist or User is not active",
+      });
     }
-    if(user.role !== 'admin'){
-      return res.status(400).json({ message: 'Unauthorised User' });
+
+    if (user.role !== "admin") {
+      return res.status(403).json({ message: "Unauthorized User" });
     }
 
     const { schoolId } = req.params;
 
-    // Fetch all students in the school
-    const students = await regUser.find({ school: schoolId, role: "student" });
-    const studentsCount = students.length
-    console.log(studentsCount)
+    const students = await regUser.find({
+      schoolId,
+      role: "student",
+    });
 
     let updatedCount = 0;
+    let skippedDuplicates = 0;
 
-    for (let student of students) {
-      let updated = false;
+    for (const student of students) {
+      let updatePayload = {};
+      let hasChanges = false;
 
-      // Clean email
+      // CLEAN EMAIL
       if (student.email) {
-        const cleanEmail = student.email.replace(/\s+/g, "");
+        const cleanEmail = student.email
+          .toLowerCase()
+          .replace(/\s+/g, "")
+          .trim();
+
         if (cleanEmail !== student.email) {
-          student.email = cleanEmail;
-          updated = true;
+          // 🚨 CHECK FOR DUPLICATE BEFORE UPDATE
+          const exists = await regUser.findOne({
+            email: cleanEmail,
+            _id: { $ne: student._id },
+          });
+
+          if (exists) {
+            console.log(
+              `Skipping duplicate email cleanup: ${cleanEmail}`
+            );
+            skippedDuplicates++;
+          } else {
+            updatePayload.email = cleanEmail;
+            hasChanges = true;
+          }
         }
       }
 
-      // OPTIONAL: Clean name too
+      // CLEAN NAME
       if (student.name) {
-        const cleanName = student.name.replace(/\s+/g, " ").trim();
+        const cleanName = student.name
+          .replace(/\s+/g, " ")
+          .trim();
+
         if (cleanName !== student.name) {
-          student.name = cleanName;
-          updated = true;
+          updatePayload.name = cleanName;
+          hasChanges = true;
         }
       }
 
-      if (updated) {
-        await student.save();
-        updatedCount++;
+      // APPLY UPDATE SAFELY
+      if (hasChanges) {
+        try {
+          await regUser.updateOne(
+            { _id: student._id },
+            { $set: updatePayload }
+          );
+
+          updatedCount++;
+        } catch (err) {
+          // Prevent full crash from duplicate index error
+          if (err.code === 11000) {
+            console.log(
+              `Duplicate skipped during update: ${student.email}`
+            );
+            skippedDuplicates++;
+          } else {
+            throw err;
+          }
+        }
       }
     }
 
@@ -62,17 +107,17 @@ exports.cleanStudentFields = async (req, res) => {
       message: "Students cleaned successfully",
       totalStudents: students.length,
       updated: updatedCount,
+      skippedDuplicates,
     });
-
   } catch (error) {
     console.error(error);
+
     return res.status(500).json({
       message: "Error cleaning students",
       error: error.message,
     });
   }
 };
-
 
 
 //get all schools
