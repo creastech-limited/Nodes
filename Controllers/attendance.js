@@ -5,8 +5,19 @@ const {regUser, AttendanceLog} = require("../Models/registeration");
 
 exports.scanQr = async (req, res) => {
   try {
-    const { studentEmail, deviceId, location, schoolId} = req.body;
+    const userId = req.user?.id
 
+    if(!userId){
+      return res.status(404).json({ message: "Unauthorised" })
+    }
+
+    const user = await regUser.findById(userId)
+     if(!user || user.status !== "active"){
+      return res.status(404).json({ message: "User not present or User not active" })
+    }
+    
+    const { studentEmail, deviceId, location,} = req.body;
+    const schoolId = user.schoolId
     // if (!token) {
     //   return res.status(400).json({ message: "QR token is required" });
     // }
