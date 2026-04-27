@@ -5,7 +5,7 @@ const {regUser, AttendanceLog} = require("../Models/registeration");
 
 exports.scanQr = async (req, res) => {
   try {
-    const { studentEmail, deviceId, location } = req.body;
+    const { studentEmail, deviceId, location, schoolId} = req.body;
 
     // if (!token) {
     //   return res.status(400).json({ message: "QR token is required" });
@@ -19,8 +19,10 @@ exports.scanQr = async (req, res) => {
     // }
 
     // const student = qr.student;
-    const student = await regUser.findOne({email: studentEmail});
-
+    const student = await regUser.findOne({email: studentEmail, schoolId: schoolId});
+    if(!student){
+      return res.status(404).json({ message: "Sttudent not available in this school" })
+    }
     // 2. Get last attendance record
     const lastLog = await AttendanceLog.findOne({ student: student.email })
       .sort({ timestamp: -1 });
