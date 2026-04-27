@@ -11,7 +11,7 @@ const multer = require("multer");
 const bcrypt = require('bcrypt');
 const regUser = require('../Models/registeration');
 const disputeData = require('../Models/dispute');
-const {getallUsers, getAllStudentsInSchool, getUserByFilter, getAllStoreInSchool, getAllAgentsInSchool, getAllStudentsCountInSchool, getAllStoreInSchoolCount, getAllAgentsInSchoolCount, getuserbyid,getuser,getAllStudents, getallSchools, getMyChild,getallUsersInSchool, getallStudentsInSchool,getallAgentsInSchool, getallStoreInSchool, getallParents, getallStudentsInSchoolByAdmin, getallStoresInSchoolByAdmin, getallAgentsInStoreByAdmin, getallagents, cleanStudentFields} = require('../Controllers/getAllusers');
+const {getallUsers, getAllStudentsInSchool, getUserByFilter, getAllStoreInSchool, getAllAgentsInSchool, getAllStudentsCountInSchool, getAllStoreInSchoolCount, getAllAgentsInSchoolCount, getuserbyid,getuser,getAllStudents, getallSchools, getMyChild,getallUsersInSchool, getallStudentsInSchool,getallAgentsInSchool, getallStoreInSchool, getallParents, getallStudentsInSchoolByAdmin, getallStoresInSchoolByAdmin, getallAgentsInStoreByAdmin, getallagents, cleanStudentFields, getallSecurityInSchool} = require('../Controllers/getAllusers');
 const {getAllClassesWithCounts,getStudentCountByClass,login,getSchoolClasses, register,register2,logout,updateUser, forgotPassword,resetWithToken, deleteUser,deleteAllUsers, updatePassword, verifySenderAndReceiver, getSchoolById, deactiveUser,activateUSer, addBeneficiary, getBeneficiaries, removeBeneficiary, updateGuardian, getParent,getStudentsByBeneficiaryEmail, sendResetLink,uploadFileMiddleware, bulkRegister,batchUpdateAdmission } = require('../Controllers/userAuth');
 const {requestAccountDeletion} = require('../Controllers/approval');
 const verifyToken = require('./verifyToken');
@@ -56,7 +56,8 @@ router.get('/getallsudent', verifyToken, getAllStudents)
 router.get('/getallschooluser', verifyToken, getallUsersInSchool)
 router.get('/getallschoolstudent', verifyToken, getallStudentsInSchool)
 router.get('/getallschoolagent', verifyToken, getallAgentsInSchool)
-router.get('/getallschoolstore', verifyToken, getallStoreInSchool)
+router.get('/getallschoolstore', verifyToken, getallStoreInSchool);
+router.get('/getschoolsecurity', verifyToken, getallSecurityInSchool);
 router.get('/getallUsers', getallUsers);
 router.get('/getallagent',verifyToken, getallagents);
 router.get('/getclasscount',verifyToken, getStudentCountByClass);

@@ -334,6 +334,37 @@ exports.getallStudentsInSchool = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+//get all security within a school
+exports.getallSecurityInSchool = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    const data = await regUser.findById(userId);
+    const users = await regUser.find({ schoolId: data.schoolId, role: 'security' });
+    // const limits = await TransactionLimit.find({schoolId: data.schoolId, role: 'student' })
+    if (users.length === 0) {
+      return res.status(404).json({ message: 'No users found in this school' });
+    }
+    res.status(200).json({
+      message: `Found ${users.length} user(s) in school ${data.schoolName}`,
+        data: users.map(user => ({
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        fullName: user.name,
+        role: user.role,
+        schoolId:user.schoolId,
+        // QRcode :user.qrcode,
+        profilePics :user.profilePicture
+      })),
+});
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 //get all student within a school by Admin
 exports.getallStudentsInSchoolByAdmin = async (req, res) => {
   try {
