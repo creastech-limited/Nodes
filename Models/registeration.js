@@ -63,7 +63,7 @@ const userSchema = new mongoose.Schema({
   pin: { type: String },
   email: { type: String, required: true, unique: true },
   phone: { type: String},
-  accountNumber: { type: String, required: true },
+  accountNumber: { type: String, required: false },
   Class: { type: String },
   role: { 
     type: String, 
@@ -74,6 +74,7 @@ const userSchema = new mongoose.Schema({
   student_id: { type: String},
   agent_id: { type: String},
   store_id: { type: String},
+  security_id: { type: String},
   schoolRegistrationLink: { type: String},
   isFirstLogin: { type: Boolean, default: true },
   isPinSet: { type: Boolean, default: false },

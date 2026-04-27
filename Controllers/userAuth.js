@@ -1513,7 +1513,7 @@ exports.register = async (req, res) => {
     let fundingCharge = null;
     let transferToAgent = null;
     // Check if schoolId is provided for student or store roles
-    if ((roleLower === 'student' || roleLower === 'store') && schoolId) {
+    if ((roleLower === 'student' || roleLower === 'store' || roleLower === 'security') && schoolId) {
       const schoolUser = await regUser.findOne({ schoolId, role: 'school' });
       if (!schoolUser) {
         return res.status(404).json({ message: 'School with provided ID not found' });
@@ -1686,6 +1686,9 @@ exports.register = async (req, res) => {
         roleSpecificId = { store_id: `${generatedSchoolId}/${newUser._id}` };
         dynamicSchoolLink = `/?store_id=${encodeURIComponent(store_id)}&storeName=${encodeURIComponent(storeName)}&storeType=${encodeURIComponent(storeType)}`;
         break;
+      case 'security':
+        roleSpecificId = { security_id: `${generatedSchoolId}/${newUser._id}` };
+        break;
       case 'school':
         roleSpecificId = { schoolId: generatedSchoolId };
         dynamicSchoolLink = `/?schoolId=${encodeURIComponent(generatedSchoolId)}&schoolName=${encodeURIComponent(schoolName)}&schoolAddress=${encodeURIComponent(schoolAddress)}&schoolType=${encodeURIComponent(schoolType)}&ownership=${encodeURIComponent(ownership)}`;
@@ -1741,7 +1744,7 @@ if (roleLower === 'student') {
     console.error('Error creating default transaction limit:', limitError);
   }
 }
-//
+
     // Create classes for school if role is 'school'
     if (roleLower === 'school') {
       const defaultClasses = getDefaultClasses(schoolType);
@@ -1754,7 +1757,8 @@ if (roleLower === 'student') {
     }
 
 
-    // Create wallet
+    // Create wallet if user is school, Students, agent, store parent
+    if(roleLower === 'student' || roleLower === 'school' || roleLower === 'agent' || roleLower === 'store' || roleLower === 'parent'){
     await Wallet.create({
       userId: newUser._id,
       currency: 'NGN',
@@ -1766,15 +1770,16 @@ if (roleLower === 'student') {
       phone: newUser.phone,
       accountNumber: newUser.accountNumber
     });
+    }
 
     //set agent status to active
-    if (roleLower === 'agent') {
+    if (roleLower === 'agent' || roleLower === 'school' || roleLower === 'security') {
       newUser.status = 'Active';
       await newUser.save();
     }
     //set school status to active
-    if (roleLower === 'school') {
-      newUser.status = 'Active';
+    if (roleLower === 'security') {
+      newUser.accountNumber = null;
       await newUser.save();
     }
 
