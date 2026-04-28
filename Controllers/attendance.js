@@ -1,17 +1,21 @@
 // controllers/attendanceController.js
 // const AttendanceLog = require("../Models/registeration");
 // const QrToken = require("../models/QrToken");
+const mongoose = require('mongoose');
 const {regUser, AttendanceLog} = require("../Models/registeration");
+
+
 
 exports.scanQr = async (req, res) => {
   try {
     const userId = req.user?.id
-
-    if(!userId){
+    console.log(userId)
+    if (!userId) {
       return res.status(404).json({ message: "Unauthorised" })
     }
 
     const user = await regUser.findById(userId)
+    // console.log("user:", user)
      if(!user || user.status !== "active"){
       return res.status(404).json({ message: "User not present or User not active" })
     }
