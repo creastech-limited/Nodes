@@ -78,7 +78,10 @@ exports.scanQr = async (req, res) => {
         student: {
           id: student._id,
           name: student.name,
-          pics: student.profilePicture
+          pics: student.profilePicture,
+          admNo: student.admissionNumber,
+          email: student.email
+          
         },
         type: newType,
         time: newLog.timestamp,
