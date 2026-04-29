@@ -277,6 +277,11 @@ const attendanceLogSchema = new mongoose.Schema(
     deviceId: {
       type: String, // scanner device ID
     },
+    security:{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User", // XPAY user model
+      required: false,
+    }
   },
   { timestamps: true }
 );

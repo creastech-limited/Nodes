@@ -100,10 +100,33 @@ exports.getStudentAttendance = async (req, res) => {
   try {
     const { studentId } = req.params;
 
+    const student = await regUser.findById(studentId).select("name email");
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
     const logs = await AttendanceLog.find({ student: studentId })
+      .populate("student", "name email")
+      .populate("security", "name email")
       .sort({ timestamp: -1 });
 
-    res.json(logs);
+    const formattedLogs = logs.map(log => ({
+      studentName: log.student?.name,
+      studentEmail: log.student?.email,
+      attendanceType: log.type,
+      time: log.timestamp,
+      location: log.location,
+      deviceId: log.deviceId,
+      securityName: log.security?.name || null,
+      securityEmail: log.security?.email || null
+    }));
+
+    res.json({
+      message: `${logs.length} logs`,
+      data: formattedLogs
+    });
+
   } catch (err) {
     res.status(500).json({ message: "Error fetching attendance" });
   }
