@@ -358,7 +358,8 @@ exports.getallSecurityInSchool = async (req, res) => {
         role: user.role,
         schoolId:user.schoolId,
         // QRcode :user.qrcode,
-        profilePics :user.profilePicture
+        profilePics :user.profilePicture,
+        status: user.status
       })),
 });
   } catch (error) {
