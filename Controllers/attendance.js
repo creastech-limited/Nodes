@@ -16,7 +16,7 @@ exports.scanQr = async (req, res) => {
 
     const user = await regUser.findById(userId)
     // console.log("user:", user)
-     if(!user || user.status !== "active"){
+     if(!user && user.status !== "Active"){
       return res.status(404).json({ message: "User not present or User not active" })
     }
     
@@ -36,10 +36,10 @@ exports.scanQr = async (req, res) => {
     // const student = qr.student;
     const student = await regUser.findOne({email: studentEmail, schoolId: schoolId});
     if(!student){
-      return res.status(404).json({ message: "Sttudent not available in this school" })
+      return res.status(404).json({ message: "Student not available in this school" })
     }
     // 2. Get last attendance record
-    const lastLog = await AttendanceLog.findOne({ student: student.email })
+    const lastLog = await AttendanceLog.findOne({ student: student.id })
       .sort({ timestamp: -1 });
 
     let newType = "IN";
