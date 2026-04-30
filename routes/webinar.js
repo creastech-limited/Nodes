@@ -6,7 +6,7 @@ const router = express.Router();
 
 const WEBINAR_DETAILS = {
   title: 'Transforming Customer Experience with AI-Powered Contact Center Solutions',
-  date: 'Thursday, April 30th, 2026',
+  date: 'Thursday, May 7th, 2026',
   time: '11:00 AM - 12:30 PM (WAT)',
   zoomLink: 'https://us06web.zoom.us/j/82986785755',
 };
