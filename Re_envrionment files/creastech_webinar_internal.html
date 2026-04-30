@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>New Webinar Registration</title>
+</head>
+<body style="margin:0;padding:0;background:#ffffff;font-family:'Segoe UI',Arial,sans-serif;color:#000000;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0"
+          style="max-width:600px;width:100%;background:#ffffff;border:1px solid #e5e7eb;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:#0a1628;padding:24px 40px;">
+              <img src="https://creastech.com/logo.png" alt="Creastech" width="120"
+                style="display:block;max-width:120px;margin-bottom:12px;" />
+              <h1 style="margin:0;color:#ffffff;font-size:18px;font-weight:700;">New Webinar Registration</h1>
+              <p style="margin:6px 0 0;color:#cccccc;font-size:13px;">
+                Someone just registered for the {{date}} webinar
+              </p>
+            </td>
+          </tr>
+
+          <!-- Details -->
+          <tr>
+            <td style="padding:32px 40px;background:#ffffff;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;">
+                <tr>
+                  <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;width:40%;background:#f9fafb;">
+                    <span style="color:#555555;font-size:13px;font-weight:600;">Full Name</span>
+                  </td>
+                  <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;">
+                    <span style="color:#000000;font-size:14px;font-weight:600;">{{fullName}}</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;background:#f9fafb;">
+                    <span style="color:#555555;font-size:13px;font-weight:600;">Email</span>
+                  </td>
+                  <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;">
+                    <span style="color:#000000;font-size:14px;font-weight:600;">{{email}}</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;background:#f9fafb;">
+                    <span style="color:#555555;font-size:13px;font-weight:600;">Phone</span>
+                  </td>
+                  <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;">
+                    <span style="color:#000000;font-size:14px;font-weight:600;">{{phone}}</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;background:#f9fafb;">
+                    <span style="color:#555555;font-size:13px;font-weight:600;">Company</span>
+                  </td>
+                  <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;">
+                    <span style="color:#000000;font-size:14px;font-weight:600;">{{company}}</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;background:#f9fafb;">
+                    <span style="color:#555555;font-size:13px;font-weight:600;">Job Title</span>
+                  </td>
+                  <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;">
+                    <span style="color:#000000;font-size:14px;font-weight:600;">{{jobTitle}}</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 16px;background:#f9fafb;">
+                    <span style="color:#555555;font-size:13px;font-weight:600;">How They Heard</span>
+                  </td>
+                  <td style="padding:10px 16px;">
+                    <span style="color:#000000;font-size:14px;font-weight:600;">{{howDidYouHear}}</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Bottom Bar -->
+          <tr>
+            <td style="background:#0a1628;padding:14px 40px;text-align:center;">
+              <p style="margin:0;color:#ffffff;font-size:11px;">
+                Creastech Webinar System | {{timestamp}}
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

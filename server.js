@@ -20,14 +20,18 @@ app.use(cors({
 
   "http://20.47.82.14:3000",
   "http://localhost:3000",
+  "http://localhost:3001",
   "http://127.0.0.1:3000",
   "http://10.0.2.2",      // Android emulator localhost
   "http://10.0.2.2:3000",
   "http://10.0.2.16",     // Your current emulator IP
   "http://10.0.2.16:3000",
   /^http:\/\/10\.0\.2\.\d+$/,  // Allow entire 10.0.2.x range
-  /^http:\/\/10\.0\.2\.\d+:\d+$/ // With any port
+  /^http:\/\/10\.0\.2\.\d+:\d+$/, // With any port
 
+  // Creastech website
+  "https://creastech.com",
+  "https://www.creastech.com",
 
   ], // For dev only; replace with your frontend URL in production
   credentials: true, // Allow credentials (cookies, authorization headers, etc.)
@@ -38,6 +42,9 @@ app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(morgan('dev'));
 app.use(express.json());
+
+// Serve static files (public folder - used for email images)
+app.use(express.static('public'));
 
 // Connect to MongoDB
   mongoose.connect(process.env.MONGO_URI);
@@ -63,18 +70,21 @@ app.use(express.json());
 
 // routes
 const authRoute = require('./routes/auth');
-const chargeRoute = require('./routes/charge'); // ✅ Correct route file
-const feeRoute = require('./routes/fees');// ✅ Correct route file
-const pinRoute = require('./routes/pin'); // ✅ Correct route file
-const disputeRoute = require('./routes/dispute'); // ✅ Correct route file
-const r = require('./routes/routes'); // ✅ Correct route file
-const walletRoute = require('./routes/wallets'); // ✅ Correct route file
-const transactionRoute = require('./routes/transactions')// ✅ Correct route file
-const notificationRoute = require('./routes/notification'); // ✅ Correct route file
-const otpRoute = require('./routes/otp'); // ✅ Correct route file
+const chargeRoute = require('./routes/charge'); // Correct route file
+const feeRoute = require('./routes/fees');// Correct route file
+const pinRoute = require('./routes/pin'); // Correct route file
+const disputeRoute = require('./routes/dispute'); // Correct route file
+const r = require('./routes/routes'); // Correct route file
+const walletRoute = require('./routes/wallets'); // Correct route file
+const transactionRoute = require('./routes/transactions')// Correct route file
+const notificationRoute = require('./routes/notification'); // Correct route file
+const otpRoute = require('./routes/otp'); // Correct route file
 const imageRoute = require('express').static('./Re_envrionment files');
 const attendanceRoute = require('./routes/attendance');
 
+// Creastech website routes
+const contactRoute = require('./routes/contact');
+const webinarRoute = require('./routes/webinar');
 
 
 const uploadDir = path.join(__dirname, 'uploads');
@@ -87,9 +97,9 @@ if (!fs.existsSync(uploadDir)) {
 
 //middlewware
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/api/transaction', transactionRoute) // ✅ Correct route file
-app.use('/api/notification', notificationRoute); // ✅ Correct route file
-app.use('/api/users', authRoute)// ✅ Correct route file
+app.use('/api/transaction', transactionRoute) // Correct route file
+app.use('/api/notification', notificationRoute); // Correct route file
+app.use('/api/users', authRoute)// Correct route file
 app.use('/api/pin', pinRoute); // e.g., /api/pin will work
 app.use('/api/fee', feeRoute); // e.g., /api/fee will work
 app.use('/api', r); // e.g., /api/feedback will work
@@ -99,10 +109,15 @@ app.use('/api/wallet', walletRoute); // e.g., /api/wallet will work
 app.use('/api/otp', otpRoute); // e.g., /api/otp will work
 app.use('/images', imageRoute);
 app.use('/api/attendance', attendanceRoute);
-// const registerRoute = require('./routes/register'); // ✅ Correct route file
+// const registerRoute = require('./routes/register'); // Correct route file
 // app.use('/api', registerRoute); // e.g., /api/register will work
-const feedbackRoute = require('./routes/feedback'); // ✅ Correct route file
+const feedbackRoute = require('./routes/feedback'); // Correct route file
 app.use('/api/feedback', feedbackRoute); // e.g., /api/feedback will work
+
+// Creastech website routes
+app.use('/contact', contactRoute);
+app.use('/webinar', webinarRoute);
+
 app.get('/api/users/getusers/:id', (req, res) => {
   // Your logic for fetching user data
   const user = {
@@ -125,7 +140,7 @@ app.get('/api/users/getusers/:id', (req, res) => {
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'UP',
-    message: '🚀 Loan Core API is healthy and running',
+    message: 'Loan Core API is healthy and running',
     timestamp: new Date().toISOString(),
   });
 });
@@ -146,7 +161,7 @@ app.listen(PORT, () => {
 
 // const app = express();
 
-// // ✅ Middleware
+// // Middleware
 // app.use(cors({
 //   origin: [
 //     "http://localhost:8080",
@@ -166,7 +181,7 @@ app.listen(PORT, () => {
 // app.use(morgan('dev'));
 // app.use(express.json());
 
-// // ✅ MongoDB Connection
+// // MongoDB Connection
 // mongoose.connect(process.env.MONGO_URI, {
 //   useNewUrlParser: true,
 //   useUnifiedTopology: true
@@ -175,7 +190,7 @@ app.listen(PORT, () => {
 // const db = mongoose.connection;
 
 // db.once('open', async () => {
-//   console.log('✅ Connected to MongoDB');
+//   console.log('Connected to MongoDB');
 
 //   try {
 //     await db.collection('wallets').dropIndex('userId_1');
@@ -184,16 +199,16 @@ app.listen(PORT, () => {
 //     if (err.codeName === 'IndexNotFound') {
 //       console.log('Index not found, skipping drop.');
 //     } else {
-//       console.error('❌ Error dropping index:', err);
+//       console.error('Error dropping index:', err);
 //     }
 //   }
 // });
 
 // db.on('error', (error) => {
-//   console.error('❌ MongoDB connection error:', error);
+//   console.error('MongoDB connection error:', error);
 // });
 
-// // ✅ Routes
+// // Routes
 // app.use('/api/transaction', require('./routes/transactions'));
 // app.use('/api/notification', require('./routes/notification'));
 // app.use('/api/users', require('./routes/auth'));
@@ -204,7 +219,7 @@ app.listen(PORT, () => {
 // app.use('/api/wallet', require('./routes/wallets'));
 // app.use('/api/feedback', require('./routes/feedback'));
 
-// // ✅ Sample Test Route
+// // Sample Test Route
 // app.get('/api/users/getusers/:id', (req, res) => {
 //   const user = {
 //     id: 1,
@@ -221,13 +236,13 @@ app.listen(PORT, () => {
 //   });
 // });
 
-// // ✅ Root Health Check (Required by Railway)
+// // Root Health Check (Required by Railway)
 // app.get('/', (req, res) => {
-//   res.send('🚀 XPay backend server is up and running');
+//   res.send('XPay backend server is up and running');
 // });
 
-// // ✅ Start Server
+// // Start Server
 // const PORT = process.env.PORT || 3000;
 // app.listen(PORT, () => {
-//   console.log(`🚀 Server is listening on port ${PORT}`);
+//   console.log(`Server is listening on port ${PORT}`);
 // });

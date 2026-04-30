@@ -1,7 +1,4 @@
-import axios from "axios";
-
-
-export async function generateNombaToken() {
+async function generateNombaToken() {
   const url = "https://api.nomba.com/v1/auth/token/issue";
 
   const payload = {
@@ -35,3 +32,5 @@ export async function generateNombaToken() {
     throw err;
   }
 }
+
+module.exports = { generateNombaToken };
