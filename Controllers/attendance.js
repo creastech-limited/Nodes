@@ -16,7 +16,7 @@ exports.scanQr = async (req, res) => {
 
     const user = await regUser.findById(userId)
     // console.log("user:", user)
-     if(!user || user.status !== "active"){
+     if(!user && user.status !== "Active"){
       return res.status(404).json({ message: "User not present or User not active" })
     }
     
@@ -36,10 +36,10 @@ exports.scanQr = async (req, res) => {
     // const student = qr.student;
     const student = await regUser.findOne({email: studentEmail, schoolId: schoolId});
     if(!student){
-      return res.status(404).json({ message: "Sttudent not available in this school" })
+      return res.status(404).json({ message: "Student not available in this school" })
     }
     // 2. Get last attendance record
-    const lastLog = await AttendanceLog.findOne({ student: student.email })
+    const lastLog = await AttendanceLog.findOne({ student: student.id })
       .sort({ timestamp: -1 });
 
     let newType = "IN";
@@ -78,7 +78,10 @@ exports.scanQr = async (req, res) => {
         student: {
           id: student._id,
           name: student.name,
-          pics: student.profilePicture
+          pics: student.profilePicture,
+          admNo: student.admissionNumber,
+          email: student.email,
+          security_id: userId
         },
         type: newType,
         time: newLog.timestamp,
@@ -97,10 +100,33 @@ exports.getStudentAttendance = async (req, res) => {
   try {
     const { studentId } = req.params;
 
+    const student = await regUser.findById(studentId).select("name email");
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
     const logs = await AttendanceLog.find({ student: studentId })
+      .populate("student", "name email")
+      .populate("security", "name email")
       .sort({ timestamp: -1 });
 
-    res.json(logs);
+    const formattedLogs = logs.map(log => ({
+      studentName: log.student?.name,
+      studentEmail: log.student?.email,
+      attendanceType: log.type,
+      time: log.timestamp,
+      location: log.location,
+      deviceId: log.deviceId,
+      securityName: log.security?.name || null,
+      securityEmail: log.security?.email || null
+    }));
+
+    res.json({
+      message: `${logs.length} logs`,
+      data: formattedLogs
+    });
+
   } catch (err) {
     res.status(500).json({ message: "Error fetching attendance" });
   }
