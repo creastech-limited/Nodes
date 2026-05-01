@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Thank You for Contacting Creastech</title>
+  <title>Webinar Registration Confirmed</title>
 </head>
 <body style="margin:0;padding:0;background:#ffffff;font-family:'Segoe UI',Arial,sans-serif;color:#000000;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;padding:32px 0;">
@@ -12,13 +12,12 @@
         <table width="600" cellpadding="0" cellspacing="0"
           style="max-width:600px;width:100%;background:#ffffff;border:1px solid #e5e7eb;">
 
-        
 
           <!-- Success Banner -->
           <tr>
             <td style="background:#00b4d8;padding:14px 40px;text-align:center;">
               <p style="margin:0;color:#ffffff;font-size:15px;font-weight:600;">
-                Your message has been received!
+                You are Registered! Your spot is confirmed.
               </p>
             </td>
           </tr>
@@ -28,35 +27,77 @@
             <td style="padding:32px 40px 24px;background:#ffffff;">
               <p style="margin:0 0 8px;color:#000000;font-size:18px;font-weight:700;">Dear {{fullName}},</p>
               <p style="margin:0 0 24px;color:#333333;font-size:15px;line-height:1.7;">
-                Thank you for reaching out to Creastech Limited. We have received your message
-                and one of our representatives will get back to you within 24-48 business hours.
+                Thank you for registering! We are excited to have you join us for our upcoming webinar.
+                Below are your confirmed event details. Please save them.
               </p>
 
-              <!-- Message Summary -->
+              <!-- Webinar Details Card -->
               <table width="100%" cellpadding="0" cellspacing="0"
                 style="border:1px solid #cccccc;margin-bottom:24px;">
                 <tr>
                   <td style="padding:20px 24px;">
-                    <p style="margin:0 0 12px;color:#0077a8;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;">Your Message Summary</p>
-                    <p style="margin:0 0 6px;color:#000000;font-size:14px;font-weight:700;">Service of Interest:</p>
-                    <p style="margin:0 0 14px;color:#333333;font-size:14px;">{{service}}</p>
-                    <p style="margin:0 0 6px;color:#000000;font-size:14px;font-weight:700;">Message:</p>
-                    <p style="margin:0;color:#333333;font-size:14px;line-height:1.6;">{{messagePreview}}</p>
+                    <p style="margin:0 0 12px;color:#0077a8;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;">Webinar Details</p>
+                    <p style="margin:0 0 12px;color:#000000;font-size:15px;font-weight:700;line-height:1.4;">{{title}}</p>
+                    <table cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding:4px 0;">
+                          <span style="color:#333333;font-size:14px;font-weight:600;">Date:</span>
+                          <span style="color:#333333;font-size:14px;margin-left:8px;">{{date}}</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:4px 0;">
+                          <span style="color:#333333;font-size:14px;font-weight:600;">Time:</span>
+                          <span style="color:#333333;font-size:14px;margin-left:8px;">{{time}}</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:4px 0;">
+                          <span style="color:#333333;font-size:14px;font-weight:600;">Platform:</span>
+                          <span style="color:#333333;font-size:14px;margin-left:8px;">Zoom (Online)</span>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
               </table>
 
-              <!-- What Happens Next -->
-              <p style="margin:0 0 10px;color:#000000;font-size:15px;font-weight:700;">What Happens Next?</p>
-              <table cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
-                <tr><td style="padding:4px 0;color:#333333;font-size:14px;">- Our team will review your inquiry</td></tr>
-                <tr><td style="padding:4px 0;color:#333333;font-size:14px;">- A specialist will contact you within 24-48 hours</td></tr>
-                <tr><td style="padding:4px 0;color:#333333;font-size:14px;">- We will schedule a consultation at your convenience</td></tr>
+              <!-- Join Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                <tr>
+                  <td align="center">
+                    <a href="{{zoomLink}}"
+                      style="display:inline-block;background:#0077a8;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;padding:12px 36px;">
+                      Join Webinar on Zoom
+                    </a>
+                  </td>
+                </tr>
               </table>
 
-              <p style="margin:0 0 24px;color:#333333;font-size:15px;line-height:1.7;">
-                In the meantime, feel free to explore our website to learn more about our services and solutions.
-                We look forward to connecting with you soon!
+              <!-- Zoom Link Backup -->
+              <table width="100%" cellpadding="0" cellspacing="0"
+                style="border:1px solid #cccccc;margin-bottom:24px;">
+                <tr>
+                  <td style="padding:14px 18px;">
+                    <p style="margin:0 0 4px;color:#555555;font-size:12px;font-weight:600;text-transform:uppercase;">Or copy this link</p>
+                    <p style="margin:0;color:#0077a8;font-size:13px;word-break:break-all;">{{zoomLink}}</p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Agenda -->
+              <p style="margin:0 0 10px;color:#000000;font-size:15px;font-weight:700;">What to Expect:</p>
+              <table cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                <tr><td style="padding:4px 0;color:#333333;font-size:14px;">- Introduction to AI-Powered Contact Centers</td></tr>
+                <tr><td style="padding:4px 0;color:#333333;font-size:14px;">- Live Demo: HoduCC Omni-Channel Platform</td></tr>
+                <tr><td style="padding:4px 0;color:#333333;font-size:14px;">- How to Reduce Call Handling Time by 40%</td></tr>
+                <tr><td style="padding:4px 0;color:#333333;font-size:14px;">- Real Business Cases and ROI Analysis</td></tr>
+                <tr><td style="padding:4px 0;color:#333333;font-size:14px;">- Q&amp;A Session with Creastech Experts</td></tr>
+              </table>
+
+              <p style="margin:0;color:#333333;font-size:14px;line-height:1.7;">
+                If you have any questions before the webinar, feel free to reply to this email.
+                We look forward to seeing you there.
               </p>
             </td>
           </tr>
@@ -72,7 +113,7 @@
           <tr>
             <td style="padding:24px 40px 8px;background:#ffffff;">
               <p style="margin:0 0 2px;color:#333333;font-size:14px;">Best Regard</p>
-              <p style="margin:0 0 2px;color:#000000;font-size:14px;font-weight:700;font-style:italic;">Creastech Team</p>
+              <p style="margin:0 0 2px;color:#000000;font-size:14px;font-weight:700;font-style:italic;">Creastech Webinar Team</p>
               <p style="margin:0 0 2px;color:#333333;font-size:13px;">Mobile &amp; WhatsApp: 07084755837 | 09019832344</p>
               <p style="margin:0 0 2px;color:#333333;font-size:13px;">
                 Instagram: Creastechlimited &nbsp;|&nbsp;
@@ -102,13 +143,7 @@
             </td>
           </tr>
 
-          <!-- Partner Logos Image -->
-          <tr>
-            <td style="padding:0 40px 24px;background:#ffffff;">
-              <img src="https://creastech.com/partners.png" alt="Creastech Partners"
-                width="520" style="width:100%;max-width:520px;display:block;"/>
-            </td>
-          </tr>
+        
 
           <!-- Bottom Bar -->
           <tr>
