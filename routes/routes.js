@@ -54,14 +54,32 @@ router.get('/activated/:id', async (req, res) => {
     if (!user) {
       return res.status(404).send('Activation failed: user not found.');
     }
+    const resend = new Resend(process.env.RESEND_API_KEY); 
+        const { data, error } = await resend.emails.send({
+            from: "taiwo.david@xpay.ng",
+            to: user.email,
+            subject: "Account Activation Successful",
+            html: `<p>Hello ${user.firstName},</p>
+                <p>Your account has been successfully activated. You can now log in to your account.<br/> <a href='${process.env.NGROK_URL}' target='_blank'>Login Now!</a></p>
+                <p>Thank you for using our service!</p>`
+          });
+    
+          if (error) {
+            console.error("Email sending failed:", error);
+            return res.status(500).json({
+              success: false,
+              message: "Failed to send email"
+            });
+          }
+        
      //send a suucess email to the user
-    await sendEmail(
-      user.email,
-      'Account Activation Successful',
-      `<p>Hello ${user.firstName},</p>
-        <p>Your account has been successfully activated. You can now log in to your account.<br/> <a href='${process.env.NGROK_URL}' target='_blank'>Login Now!</a></p>
-        <p>Thank you for using our service!</p>`
-    );
+    // await sendEmail(
+    //   user.email,
+    //   'Account Activation Successful',
+    //   `<p>Hello ${user.firstName},</p>
+    //     <p>Your account has been successfully activated. You can now log in to your account.<br/> <a href='${process.env.NGROK_URL}' target='_blank'>Login Now!</a></p>
+    //     <p>Thank you for using our service!</p>`
+    // );
     
     // Redirect to login page
     res.redirect(process.env.FRONTEND_URL_PROD); // Replace with your actual frontend login URL
