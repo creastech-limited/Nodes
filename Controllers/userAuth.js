@@ -1861,6 +1861,8 @@ if (roleLower === 'student') {
             .replace("{{firstName}}", newUser.name)
             .replace("{{banner}}", banner)
             .replace("{{logo}}", logo)
+            .replace("{{newUser._id}}", newUser._id)
+            .replace("{{backendUrl}}", process.env.NGROK_URL)
       });
 
       if (error) {
