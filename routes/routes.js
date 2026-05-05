@@ -4,6 +4,7 @@ const Model = require('../Models/models'); // Corrected import statement
 // const RegisterModel = require('../Models/registeration'); // Corrected import statement
 // const LoginModel = require('../Models/login'); // Corrected import statement
 const router = express.Router();
+const { Resend } = require("resend");
 const bcrypt = require('bcrypt');
 const {regUser} = require('../Models/registeration');
 const disputeData = require('../Models/dispute');
