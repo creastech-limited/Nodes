@@ -1854,7 +1854,7 @@ if (roleLower === 'student') {
 
     const resend = new Resend(process.env.RESEND_API_KEY); 
     const { data, error } = await resend.emails.send({
-        from: "taiwo.david@xpay.ng",
+        from: '"Customer Support" <ebusiness@xpay.ng>',
         to: newUser.email,
         subject: "Login Notification",
         html: htmlTemplate

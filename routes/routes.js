@@ -57,7 +57,7 @@ router.get('/activated/:id', async (req, res) => {
     }
     const resend = new Resend(process.env.RESEND_API_KEY); 
         const { data, error } = await resend.emails.send({
-            from: "taiwo.david@xpay.ng",
+            from: '"Customer Support" <ebusiness@xpay.ng>',
             to: user.email,
             subject: "Account Activation Successful",
             html: `<p>Hello ${user.firstName},</p>
@@ -83,7 +83,7 @@ router.get('/activated/:id', async (req, res) => {
     // );
     
     // Redirect to login page
-    res.redirect(process.env.FRONTEND_URL_PROD); // Replace with your actual frontend login URL
+    res.redirect(process.env.FRONTEND_URL_PROD + "/success"); // Replace with your actual frontend login URL
     // Optionally, you can send a success message
     // res.status(200).send('User activated successfully. You can now log in.');
    
