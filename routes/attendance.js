@@ -9,6 +9,4 @@ router.get('/today',  getTodayAttendance);
 
 
 
-
-
 module.exports = router

@@ -209,6 +209,15 @@ exports.createDispute = async (req, res) => {
 
 exports.getAllDisputes = async (req, res) => {
   try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized: No user ID found' });
+    }
+    // Check if user is an admin
+    const user = await regUser.findById(userId);  
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: 'Unauthorized: User is not an admin' });
+    }
     const disputes = await disputeData.find({})
       .populate('transactionId')
       .populate('resolvedBy', 'fullName email') 
@@ -249,16 +258,16 @@ exports.getSchoolDisputes = async (req, res) => {
       if (!userId) {
         return res.status(401).json({ message: 'Unauthorized: No user ID found' });
       }
-      console.log('User ID:', userId);
+      // console.log('User ID:', userId);
       // Check if user is a school
       const user = await regUser.findById(userId);
       if (!user || user.role !== 'school') {
         return res.status(403).json({ message: 'Unauthorized: User is not a school' });
       }
-      console.log('User found:', user._id);
+      // console.log('User found:', user._id);
       //convert userId to string
       const userIdString = user._id.toString();
-      console.log('User ID String:', userIdString);
+      // console.log('User ID String:', userIdString);
   
       const disputes = await disputeData.find({ schoolId: userIdString }) // Assuming the school ID is stored in the dispute
         .populate('transactionId')

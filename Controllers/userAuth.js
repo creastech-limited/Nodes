@@ -1066,7 +1066,7 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
     exports.updateUser = async (req, res) => {
       try {
-        const userId = req.params.id; // Target user to update
+        const userId = req.params.userId; // Target user to update
         
         const currentUserId = req.user?.id; // User making the request
     
@@ -1077,13 +1077,13 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
     
         const isSelf = currentUser.id === userId;
         const allowedByRole = ['student', 'store', 'agent', 'parent'].includes(currentUser.role.toLowerCase());
-    
+    console.log("Current user role:", currentUser.role);
         // Role-based access check
         if (allowedByRole && !isSelf) {
           return res.status(403).json({ message: "Forbidden: You can only update your own record "+allowedByRole+' '+isSelf + '' + userId + '' + currentUserId});
         }
     
-        if (currentUser.role.toLowerCase() !== 'school' && !isSelf) {
+        if (currentUser.role.toLowerCase() !== 'school' && !isSelf&& currentUser.role.toLowerCase() !== 'admin') {
           return res.status(403).json({ message: "Forbidden: You are not authorized to update this user" });
         }
     
@@ -1091,7 +1091,7 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
         if (!updates || Object.keys(updates).length === 0) {
           return res.status(400).json({ message: "No fields provided for update" });
         }
-    
+    console.log("Updates received:", updates.Class);
         // Check if all fields are empty or null
         const allFieldsEmpty = Object.values(updates).every(value => {
           if (typeof value === 'object' && value !== null) {
@@ -1112,6 +1112,8 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
     
         // Get the actual user being updated
         const targetUser = await regUser.findById(userId);
+        console.log("User ID to update:", userId);
+        // console.log("Target user for update:", targetUser);
         if (!targetUser) {
           return res.status(404).json({ message: "User not found" });
         }
@@ -1128,17 +1130,23 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
     
           updateData.name = `${firstName} ${lastName}`.trim();
         }
-    
+        const isClassUpdate = updates.Class && updates.Class.trim() !== '';
+        const isAcademicDetailsUpdate = updates.academicDetails && Object.keys(updates.academicDetails).length > 0;
+        console.log("Is class update:", isClassUpdate);
+        console.log("Is academic details update:", isAcademicDetailsUpdate);
         // Handle nested object updates like academicDetails
-        if (updates.academicDetails) {
-          updateData.academicDetails = {
-            classAdmittedTo: updates.academicDetails.classAdmittedTo,
-            section: updates.academicDetails.section,
-            previousSchool: updates.academicDetails.previousSchool,
-            admissionDate: updates.academicDetails.admissionDate,
-            boarding: updates.academicDetails.boarding
-          };
-        }
+        if (isAcademicDetailsUpdate || isClassUpdate) {
+            updateData.academicDetails = {
+              ...(updates.academicDetails || {}),
+              classAdmittedTo:
+                updates.Class ||
+                updates.academicDetails?.classAdmittedTo,
+              section: updates.academicDetails?.section,
+              previousSchool: updates.academicDetails?.previousSchool,
+              admissionDate: updates.academicDetails?.admissionDate,
+              boarding: updates.academicDetails?.boarding
+            };
+          }
     
         const updatedUser = await regUser.findByIdAndUpdate(
           userId,
