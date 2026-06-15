@@ -214,8 +214,9 @@ exports.getAllDisputes = async (req, res) => {
       return res.status(401).json({ message: 'Unauthorized: No user ID found' });
     }
     // Check if user is an admin
-    const user = await regUser.findById(userId);  
-    if (!user || user.role !== 'admin') {
+    const user = await regUser.findById(userId); 
+    console.log('User found:', user?.id, 'Role:', user?.role, 'Status:', user?.status); 
+    if (!user || user.role !== 'admin' || user.status !== 'Active') {
       return res.status(403).json({ message: 'Unauthorized: User is not an admin' });
     }
     const disputes = await disputeData.find({})
@@ -246,7 +247,7 @@ exports.getAllDisputes = async (req, res) => {
       });
   } catch (error) {
     console.error('Error fetching all disputes:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: error.message || 'Server error' });
   }
 };
 
@@ -261,7 +262,7 @@ exports.getSchoolDisputes = async (req, res) => {
       // console.log('User ID:', userId);
       // Check if user is a school
       const user = await regUser.findById(userId);
-      if (!user || user.role !== 'school') {
+      if (!user || user.role !== 'school' || user.status !== 'active') {
         return res.status(403).json({ message: 'Unauthorized: User is not a school' });
       }
       // console.log('User found:', user._id);
@@ -306,11 +307,11 @@ exports.getSchoolDisputes = async (req, res) => {
         disputes: disputesWithUserNames
       
       });
-    } catch (error) {
-      console.error('Error fetching user disputes:', error);
-      res.status(500).json({ message: 'Server error' });
-    }
-  };
+  } catch (error) {
+    console.error('Error fetching user disputes:', error);
+    res.status(500).json({ message: error.message || 'Server error' });
+  }
+};
 
   //get dispute raised by user
 exports.getUserDisputes = async (req, res) => {

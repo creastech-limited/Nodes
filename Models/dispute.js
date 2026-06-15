@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const disputeSchema = new mongoose.Schema({
   userId: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: 'regUser', 
+    ref: 'User', 
     required: true 
   },
   schoolId: {
@@ -40,7 +40,7 @@ const disputeSchema = new mongoose.Schema({
   },
   resolvedBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'regUser', // Reference to the admin or user resolving the dispute
+    ref: 'User', // Reference to the admin or user resolving the dispute
   },
   transactionId: {
     type: mongoose.Schema.Types.ObjectId,
