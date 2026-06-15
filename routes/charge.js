@@ -1,11 +1,12 @@
 const express = require('express');
-const {createCharge, getCharges, updateCharge, deleteCharge} = require('../Controllers/charges');
+const {createCharge, getCharges, updateCharge, deleteCharge, createChargeForSchools} = require('../Controllers/charges');
 const {getAllTopupTransactions} = require('../Controllers/transactionController');
 const {sendWhatsappOtp} = require('../Controllers/twillio');
 const verifyToken = require('./verifyToken');
 const router = express.Router();
 
 router.post('/createCharge',verifyToken, createCharge); // Route to create a charge
+router.post('/createChargeForSchools',verifyToken, createChargeForSchools); // Route to create a charge for schools
 router.get('/getAllCharges', getCharges); // Route to get all charges    
 router.get('/getalltopuptrans', getAllTopupTransactions); // Route to get all charges    
 router.put('/updateCharge/:id',verifyToken, updateCharge); // Route to update a charge by ID

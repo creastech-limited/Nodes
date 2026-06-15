@@ -1468,7 +1468,7 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
       return res.status(414).json({ error: "Insufficient balance" });
 
     // ✅ Process Transaction
-    const transferChargesWallet = await Wallet.findOne({ walletName: "Transfer Charges Wallet" });
+    const transferChargesWallet = await Wallet.findOne({ walletName: "Transfer Charges Wallet", schoolId: sender.schoolId });
     if (!transferChargesWallet)
       return res.status(409).json({ message: "Transfer Charge Wallet not found" });
 
