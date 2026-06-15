@@ -461,15 +461,15 @@ exports.updateDispute = async (req, res) => {
 //delete dispute
 exports.deleteDispute = async (req, res) => {
   try {
-    // const userId = req.user?.id; // pulled from JWT
-    // if (!userId) {
-    //   return res.status(401).json({ message: 'Unauthorized: No user ID found' });
-    // }
-    // // Check if user is a school
-    // const user = await regUser.findById(userId);
-    // if (!user || user.role !== 'school') {
-    //   return res.status(403).json({ message: 'Unauthorized: User is not a school' });
-    // }
+    const userId = req.user?.id; // pulled from JWT
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized: No user ID found' });
+    }
+    // Check if user is a school
+    const user = await regUser.findById(userId);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: 'Unauthorized: User is not a school' });
+    }
     const { id } = req.params;
     const dispute = await disputeData.findByIdAndDelete(id);
     if (!dispute) {

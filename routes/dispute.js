@@ -11,7 +11,7 @@ const {createDispute,getSchoolDisputes,getUserDisputes,updateDispute,deleteDispu
 
 
 //get all disputes
-router.get('/getallDispute', getAllDisputes);
+router.get('/getallDispute', verifyToken, getAllDisputes);
 //create dispute
 router.post('/createdispute',verifyToken, createDispute);
 //get all disputes
@@ -21,8 +21,8 @@ router.get('/getuserdispute', verifyToken, getUserDisputes);
 //update dispute
 router.put('/updatedispute/:id', verifyToken, updateDispute);
 //delete dispute
-router.delete('/deletedispute/:id', deleteDispute);
-router.delete('/deletealldispute', deleteAllDisputes);
+router.delete('/deletedispute/:id', verifyToken, deleteDispute);
+router.delete('/deletealldispute',verifyToken, deleteAllDisputes);
 
 
 
