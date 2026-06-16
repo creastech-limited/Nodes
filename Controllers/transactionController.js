@@ -1600,12 +1600,12 @@ console.log("Transfer charge found:", transferCharge);
     await sendNotification(receiver._id, `You received ₦${numericAmount} from ${sender.name}. New balance: ₦${receiverBalanceAfter}`);
     //if the user has guardian email, send Notifications to guardian
     const guardianEmailAddr = sender?.guardian.email;
+    console.log("guardianEmailAddr:", guardianEmailAddr);
     const guardian = regUser.findOne({email: guardianEmailAddr});
-    console.log("Guardian email:", guardianEmailAddr);
     if(sender.guardianEmail){
-      await sendNotificationToGuardian(guardian._id, `Your ward ${sender.name} sent ₦${numericAmount} to ${receiver.email}. New balance: ₦${senderBalanceAfter}`);   
+      await sendNotification(guardian._id, `Your ward ${sender.name} sent ₦${numericAmount} to ${receiver.email}. New balance: ₦${senderBalanceAfter}`);   
     await sendEmail(
-      guardianEmailAddr,
+      sender.guardianEmail,
       "Transfer Successful",
       `${sender.name} have sent ₦${numericAmount} to ${receiver.name}. New balance is ₦${senderBalanceAfter}.`,
     );
