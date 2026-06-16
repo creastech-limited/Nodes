@@ -400,63 +400,111 @@ exports.getDisputeById = async (req, res) => {
 //update dispute
 exports.updateDispute = async (req, res) => {
   try {
-    const userId = req.user?.id; // pulled from JWT
+    const userId = req.user?.id;
+
     if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized: No user ID found' });
+      return res.status(401).json({
+        message: 'Unauthorized: No user ID found'
+      });
     }
-    // Check if user is a school
+
+    // Verify user is a school
     const user = await regUser.findById(userId);
+
     if (!user || user.role !== 'school') {
-      return res.status(403).json({ message: 'Unauthorized: User is not a school' });
+      return res.status(403).json({
+        message: 'Unauthorized: User is not a school'
+      });
     }
+
     const { id } = req.params;
     const { status } = req.body;
-    //resolved date
-    const dispute = await disputeData.findByIdAndUpdate(
-      id,
-      { status, resolvedBy:user._id, resolvedDate:Date.now() }, // Update the status and resolvedBy fields, and set resolvedDate to now
-      { new: true }
-    ).populate('transactionId').populate('resolvedBy', 'name email');
-    if (!dispute) {
-      return res.status(404).json({ message: 'Dispute not found' });
-    }
-    //get the name of the user who raised the dispute
-      if (!dispute || dispute.length === 0) {
-        return res.status(404).json({ message: 'No disputes found for this school' });
-      }
-      const disputesWithUserNames = await Promise.all(
-        dispute.map(async (dispute) => {
-          const raisedByUser = await regUser.findById(dispute.userId);
-          return {
-            ...dispute.toObject(),
-            raisedBy: raisedByUser ? raisedByUser.name : 'Unknown User'
-          };
-        })
-      );
-      if (disputesWithUserNames.length === 0) {
-        return res.status(404).json({ message: 'No disputes found for this school' });
-      }
-      // Optionally: notify user about dispute resolution
-      await sendNotification(dispute.userId, 'Dispute Update', `Your dispute has been updated to status: ${status}`, 'info');
 
-      //send email to user about dispute resolution
-      const raisedByUser = await regUser.findById(dispute.userId);
-      if (raisedByUser) {
+    // Update dispute
+    const dispute = await disputeData
+      .findByIdAndUpdate(
+        id,
+        {
+          status,
+          resolvedBy: user._id,
+          resolvedDate: new Date()
+        },
+        { new: true }
+      )
+      .populate('transactionId')
+      .populate('resolvedBy', 'name email');
+
+    if (!dispute) {
+      return res.status(404).json({
+        message: 'Dispute not found'
+      });
+    }
+
+    // Get the user who raised the dispute
+    const raisedByUser = await regUser.findById(dispute.userId);
+
+    // Add raisedBy name to response
+    const disputeWithUserName = {
+      ...dispute.toObject(),
+      raisedBy: raisedByUser
+        ? raisedByUser.name
+        : 'Unknown User'
+    };
+
+    // Send notification
+    try {
+      await sendNotification(
+        dispute.userId,
+        'Dispute Update',
+        `Your dispute has been updated to status: ${status}`,
+        'info'
+      );
+    } catch (notificationError) {
+      console.error(
+        'Notification error:',
+        notificationError
+      );
+    }
+
+    // Send email
+    try {
+      if (raisedByUser?.email) {
         await sendEmail(
           raisedByUser.email,
           'Dispute Status Updated',
-          `Hello ${raisedByUser.name},\n\nYour dispute with ID: ${dispute._id} has been updated to status: ${status}.\n\nThank you.`
+          `
+            <h2>Dispute Status Updated</h2>
+            <p>Hello ${raisedByUser.name},</p>
+            <p>Your dispute has been updated.</p>
+
+            <p><strong>Dispute ID:</strong> ${dispute._id}</p>
+            <p><strong>New Status:</strong> ${status}</p>
+
+            <p>Thank you.</p>
+          `
         );
       }
-  
-      res.status(200).json({
-        message: 'Disputes fetched successfully',
-        disputes: disputesWithUserNames
-      
-      });
+    } catch (emailError) {
+      console.error(
+        'Email sending error:',
+        emailError
+      );
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Dispute updated successfully',
+      dispute: disputeWithUserName
+    });
+
   } catch (error) {
     console.error('Error updating dispute:', error);
-    res.status(500).json({ message: 'Server error' });
+
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
   }
 };
 //delete dispute
