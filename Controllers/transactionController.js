@@ -1466,6 +1466,7 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
 
     // ✅ Transfer Charges
     const schoolName = await regUser.findOne({ schoolId: sender.schoolId }).select("schoolName");
+    console.log("School name found:", schoolName?.schoolName);
     const transferCharge = await Charge.findOne(
   sender.role === 'parent'
     ? {
@@ -1476,11 +1477,14 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
         schoolId: sender.schoolId
       }
 );
+console.log("Transfer charge found:", transferCharge);
     // const transferCharge = await Charge.findOne({ 
     //   name: `${schoolName} Transfer to Agent Charge`, 
     //   schoolId: sender.schoolId 
     // });
-    if (!transferCharge) return res.status(408).json({ error: "Transfer Charges not found" });
+    if (!transferCharge) return res.status(408).json({ 
+      error: "Transfer Charges not found" 
+    });
 
     let chargeAmount = 0;
     if (transferCharge.chargeType === "Flat") chargeAmount = transferCharge.amount;
