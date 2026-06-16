@@ -911,14 +911,15 @@ exports.verifyPinAndTransfer = async (req, res) => {
     }
     //get transfer charges wallet
     const schoolName = await regUser.findOne({ schoolId: sender.schoolId }).select("schoolName");
-    console.log("School Name:", schoolName?.schoolName);
+    console.log("School name found:", schoolName?.schoolName);
+    console.log("Sender role:", sender.role);
     const transferCharge = await Charge.findOne(
   sender.role === 'parent'
     ? {
         name: 'Transfer Charges'
       }
-      :{
-        name: `${schoolName?.schoolName} Transfer Charge`,
+    : {
+        name: `${schoolName?.schoolName} Transfer to Agent Charge`,
         schoolId: sender.schoolId
       }
 );
