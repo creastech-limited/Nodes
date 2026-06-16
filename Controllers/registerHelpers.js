@@ -31,6 +31,7 @@ async function generateUniqueAccountNumber() {
   return accountNumber;
 }
 
+
 // ✅ Main helper
 async function createUserFromPayload(payload, decodedToken = {}, req) {
   try {

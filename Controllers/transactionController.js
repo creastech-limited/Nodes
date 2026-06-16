@@ -910,7 +910,17 @@ exports.verifyPinAndTransfer = async (req, res) => {
       return res.status(400).json({ error: 'Wallet(s) not found' });
     }
     //get transfer charges wallet
-    const transferCharge = await Charge.findOne({name: "Transfer Charges"});
+    const transferCharge = await Charge.findOne(
+  sender.role === 'parent'
+    ? {
+        name: 'Transfer Charges'
+      }
+      :{
+        name: `${sender.schoolName} Transfer Charge`,
+        schoolId: sender.schoolId
+      }
+);
+
     if(!transferCharge){
       return res.status(404).json({error: "Transfer Charges not found"});
     }
@@ -1455,7 +1465,21 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
     }
 
     // ✅ Transfer Charges
-    const transferCharge = await Charge.findOne({ name: "Transfer Charges" });
+    const schoolName = await regUser.findOne({ schoolId: sender.schoolId }).select("schoolName");
+    const transferCharge = await Charge.findOne(
+  sender.role === 'parent'
+    ? {
+        name: 'Transfer Charges'
+      }
+    : {
+        name: `${sender.schoolName} Transfer to Agent Charge`,
+        schoolId: sender.schoolId
+      }
+);
+    // const transferCharge = await Charge.findOne({ 
+    //   name: `${schoolName} Transfer to Agent Charge`, 
+    //   schoolId: sender.schoolId 
+    // });
     if (!transferCharge) return res.status(408).json({ error: "Transfer Charges not found" });
 
     let chargeAmount = 0;
@@ -1468,7 +1492,7 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
       return res.status(414).json({ error: "Insufficient balance" });
 
     // ✅ Process Transaction
-    const transferChargesWallet = await Wallet.findOne({ walletName: "Transfer Charges Wallet", schoolId: sender.schoolId });
+    const transferChargesWallet = await Wallet.findOne({ walletName: "Transfer Charges Wallet" });
     if (!transferChargesWallet)
       return res.status(409).json({ message: "Transfer Charge Wallet not found" });
 

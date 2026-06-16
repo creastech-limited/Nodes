@@ -20,6 +20,7 @@ app.use(cors({
 
   "http://20.47.82.14:3000",
   "http://localhost:3000",
+  "localhost:5174",
   "http://localhost:3001",
   "http://127.0.0.1:3000",
   "http://10.0.2.2",      // Android emulator localhost
