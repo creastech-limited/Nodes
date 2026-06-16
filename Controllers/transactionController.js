@@ -1605,7 +1605,7 @@ console.log("Transfer charge found:", transferCharge);
     if(sender.guardianEmail){
       await sendNotification(guardian._id, `Your ward ${sender.name} sent ₦${numericAmount} to ${receiver.email}. New balance: ₦${senderBalanceAfter}`);   
     await sendEmail(
-      sender.guardianEmail,
+      sender.guardian?.email,
       "Transfer Successful",
       `${sender.name} have sent ₦${numericAmount} to ${receiver.name}. New balance is ₦${senderBalanceAfter}.`,
     );
