@@ -910,17 +910,19 @@ exports.verifyPinAndTransfer = async (req, res) => {
       return res.status(400).json({ error: 'Wallet(s) not found' });
     }
     //get transfer charges wallet
+    const schoolName = await regUser.findOne({ schoolId: sender.schoolId }).select("schoolName");
+    console.log("School Name:", schoolName?.schoolName);
     const transferCharge = await Charge.findOne(
   sender.role === 'parent'
     ? {
         name: 'Transfer Charges'
       }
       :{
-        name: `${sender.schoolName} Transfer Charge`,
+        name: `${schoolName?.schoolName} Transfer Charge`,
         schoolId: sender.schoolId
       }
 );
-
+console.log("Transfer Charge:", transferCharge);
     if(!transferCharge){
       return res.status(404).json({error: "Transfer Charges not found"});
     }
@@ -1473,7 +1475,7 @@ exports.verifyPinAndTransferToAgent = async (req, res) => {
         name: 'Transfer Charges'
       }
     : {
-        name: `${sender.schoolName} Transfer to Agent Charge`,
+        name: `${schoolName?.schoolName} Transfer to Agent Charge`,
         schoolId: sender.schoolId
       }
 );
