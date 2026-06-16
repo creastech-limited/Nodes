@@ -1,5 +1,7 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
+const { Resend } = require('resend');
+
 
 const SibApiV3Sdk = require('@sendinblue/client');
 const client = new SibApiV3Sdk.TransactionalEmailsApi();
@@ -25,10 +27,32 @@ async function sendEmail(to, subject, htmlContent) {
   }
 }
 
+const resend = new Resend(process.env.RESEND_API_KEY);
 
+async function sendRenderEmail(to, subject, htmlContent) {
+  try {
+    const { data, error } = await resend.emails.send({
+      from: 'XPay <ebusiness@xpay.ng>',
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      html: htmlContent,
+    });
 
+    if (error) {
+      console.error('❌ Error sending email:', error);
+      throw new Error(error.message || 'Failed to send email');
+    }
 
-// const transporter = nodemailer.createTransport({
+    console.log('✅ Email sent:', data);
+    return data;
+  } catch (error) {
+    console.error('❌ Error sending email:', error);
+    throw error;
+  }
+}
+
+module.exports = {  sendEmail, sendRenderEmail };
+
 //   host: 'smtp.gmail.com', // or your SMTP host
 //   port: 465, // or 587 for TLS
 //   secure: true, // true for 465, false for other ports
@@ -72,4 +96,4 @@ async function sendEmail(to, subject, htmlContent) {
 //   }
 // };
 
-module.exports = sendEmail;
+// module.exports = {  sendEmail, sendRenderEmail };

@@ -10,7 +10,7 @@ const Wallet = require('../Models/walletSchema'); // Import Wallet model
 const Charge = require('../Models/charges'); // Import Charges model
 const { generateReference} = require('../utils/generatereference');
 const {sendNotification}  = require('../utils/notification');
-const sendEmail = require('../utils/email');
+const {sendEmail, sendRenderEmail} = require('../utils/email');
 const {generateNombaToken} = require('../utils/generatenombatoken');
 // const verifyToken = require('../routes/verifyToken'); // Import verifyToken middleware
 
@@ -1057,16 +1057,17 @@ console.log("Transfer Charge:", transferCharge);
     await receiverTransaction.save();
 
     //send notification to sender
-    await sendNotification(sender._id, `You have sent ${amount} to ${receiver.email}. New balance is ${senderBalanceAfter}.`);
+    await sendNotification(sender._id, 'Transfer Successful', `You have sent ${amount} to ${receiver.email}. New balance is ${senderBalanceAfter}.`);
     //send notification to receiver
+    await sendNotification(receiver._id, 'Transfer Received', `You have received ${amount} from ${sender.email}. New balance is ${receiverBalanceAfter}.`);
     //send email to sender
-   const emailResponse =await sendEmail(
+   const emailResponse =await sendRenderEmail(
       senderEmail, 
       'Transfer Successful', 
       `You have sent ${amount} to ${receiverEmail}. New balance is ${senderBalanceAfter}.`
   );
     //send email to receiver
-    // await sendEmail({
+    // await sendRenderEmail({
     //   to: receiverEmail, 
     //   subject: 'Transfer Received', 
     //   html: `You have received ${amount} from ${senderEmail}. New balance is ${receiverBalanceAfter}.`});
@@ -1596,26 +1597,28 @@ console.log("Transfer charge found:", transferCharge);
     await Promise.all([senderTransaction.save(), receiverTransaction.save(),chargeTransactionForChargeWallet.save(),chargeTransaction.save()]);
 
     // ✅ Send Notifications
-    await sendNotification(sender._id, `You sent ₦${numericAmount} to ${receiver.email}. New balance: ₦${senderBalanceAfter}`);
-    await sendNotification(receiver._id, `You received ₦${numericAmount} from ${sender.name}. New balance: ₦${receiverBalanceAfter}`);
+    await sendNotification(sender._id,`Transfer to Agent(${receiver.email})`,`You sent ₦${numericAmount} to ${receiver.email}. New balance: ₦${senderBalanceAfter}`);
+
+    await sendNotification(receiver._id,`Transfer to Agent(${receiver.email})`, `You received ₦${numericAmount} from ${sender.name}. New balance: ₦${receiverBalanceAfter}`);
+
     //if the user has guardian email, send Notifications to guardian
     const guardianEmailAddr = sender?.guardian.email;
+    const guardian = await regUser.findOne({email: guardianEmailAddr});
     console.log("guardianEmailAddr:", guardianEmailAddr);
-    const guardian = regUser.findOne({email: guardianEmailAddr});
-    if(sender.guardianEmail){
-      await sendNotification(guardian._id, `Your ward ${sender.name} sent ₦${numericAmount} to ${receiver.email}. New balance: ₦${senderBalanceAfter}`);   
-    await sendEmail(
-      sender.guardian?.email,
+    if(guardianEmailAddr){
+      await sendNotification(guardian._id,`Transfer to Agent(${receiver.email})`, `Your ward ${sender.name} sent ₦${numericAmount} to ${receiver.email}. New balance: ₦${senderBalanceAfter}`);   
+    await sendRenderEmail(
+      guardianEmailAddr,
       "Transfer Successful",
       `${sender.name} have sent ₦${numericAmount} to ${receiver.name}. New balance is ₦${senderBalanceAfter}.`,
     );
     }
-    await sendEmail(
+    await sendRenderEmail(
       sender.email,
       "Transfer Successful",
       `You have sent ₦${numericAmount} to ${receiver.email}. New balance is ₦${senderBalanceAfter}.`,
     );
-    await sendEmail( 
+    await sendRenderEmail( 
       receiver.email,
       "Transfer Received",
       `You have received ₦${numericAmount} from ${sender.name}. New balance is ₦${receiverBalanceAfter}.`,
