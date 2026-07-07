@@ -1,6 +1,7 @@
 const cron = require("node-cron");
 // import cron from "node-cron";
 const https = require("https");
+const {Resend} = require('resend')
 const axios = require('axios');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
@@ -9,6 +10,8 @@ const {regUser} = require('../Models/registeration'); // Import User model
 const Wallet = require('../Models/walletSchema'); // Import Wallet model
 const Charge = require('../Models/charges'); // Import Charges model
 const { generateReference} = require('../utils/generatereference');
+const fs = require("fs");
+const path = require("path");
 const {sendNotification}  = require('../utils/notification');
 const {sendEmail, sendRenderEmail} = require('../utils/email');
 const {generateNombaToken} = require('../utils/generatenombatoken');
@@ -1062,11 +1065,63 @@ console.log("Transfer Charge:", transferCharge);
     //send notification to receiver
     await sendNotification(receiver._id, 'Transfer Received', `You have received ${amount} from ${sender.email}. New balance is ${receiverBalanceAfter}.`);
     //send email to sender
-   const emailResponse =await sendRenderEmail(
-      senderEmail, 
-      'Transfer Successful', 
-      `You have sent ${amount} to ${receiverEmail}. New balance is ${senderBalanceAfter}.`
-  );
+  //  const emailResponse =await sendRenderEmail(
+  //     senderEmail, 
+  //     'Transfer Successful', 
+  //     `You have sent ${amount} to ${receiverEmail}. New balance is ${senderBalanceAfter}.`
+  // );
+    const templatePath = path.join(__dirname, "../Re_envrionment files/02_transfer_sent.html");
+    const htmlTemplate = fs.readFileSync(templatePath, "utf8");
+    const receiverTemplatePath = path.join(__dirname, "../Re_envrionment files/03_transfer_received.html");
+    const receiverHtmlTemplate = fs.readFileSync(receiverTemplatePath, "utf8");
+  
+    const banner = `${process.env.BACKENDURL}/images/xpay1024X500.png`
+      const logo = `${process.env.BACKENDURL}/images/xpaylogo.png`
+      console.log(banner)
+      console.log(logo)
+  
+      const resend = new Resend(process.env.RESEND_API_KEY); 
+      const { data, error } = await resend.emails.send({
+          from: '"Customer Support" <ebusiness@xpay.ng>',
+          to: sender.email,
+          subject: "Debit Notification",
+          html: htmlTemplate
+              .replace("{{senderName}}", sender.name)
+              .replace("{{banner}}", banner)
+              .replace("{{logo}}", logo)
+              .replace("{{amount}}", amount)
+              .replace("{{receiverEmail}}", receiver.email)
+              .replace("{{senderBalanceAfter}}", senderBalanceAfter)
+        });
+  
+        if (error) {
+          console.error("Email sending failed:", error);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to send email"
+          });
+        }
+      const resend2 = new Resend(process.env.RESEND_API_KEY); 
+      const { rdata, rerror } = await resend2.emails.send({
+          from: '"Customer Support" <ebusiness@xpay.ng>',
+          to: receiver.email,
+          subject: "Credit Notification",
+          html: receiverHtmlTemplate
+              .replace("{{receiverName}}", receiver.name)
+              .replace("{{banner}}", banner)
+              .replace("{{logo}}", logo)
+              .replace("{{amount}}", amount)
+              .replace("{{receiverEmail}}", receiver.email)
+              .replace("{{receiverBalanceAfter}}", receiverBalanceAfter)
+        });
+  
+        if (rerror) {
+          console.error("Email sending failed 2:", rerror);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to send email"
+          });
+        }
     //send email to receiver
     // await sendRenderEmail({
     //   to: receiverEmail, 
@@ -1970,11 +2025,71 @@ exports.deleteTransactionLimit = async (req, res) => {
     res.status(500).json({ error: "Failed to delete transaction limit" });
   }
 };
+exports.checkStudentTransactionLimits = async (req, res) => {
+  try {
+    const students = await regUser.find({ role: "student" }).select("_id");
+
+    const studentIds = students.map(student => student._id);
+
+    // All limit records for students
+    const limits = await TransactionLimit.find({
+      studentId: { $in: studentIds }
+    }).select("studentId");
+
+    // Find duplicate limits
+    const duplicates = await TransactionLimit.aggregate([
+      {
+        $match: {
+          studentId: { $in: studentIds }
+        }
+      },
+      {
+        $group: {
+          _id: "$studentId",
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $match: {
+          count: { $gt: 1 }
+        }
+      }
+    ]);
+
+    const studentsWithLimits = new Set(
+      limits.map(limit => limit.studentId.toString())
+    ).size;
+
+    const studentsWithoutLimits = students.length - studentsWithLimits;
+
+    const duplicateRecordsCount = duplicates.reduce(
+      (sum, item) => sum + (item.count - 1),
+      0
+    );
+
+    res.status(200).json({
+      success: true,
+      totalStudents: students.length,
+      totalLimitRecords: limits.length,
+      studentsWithLimits,
+      studentsWithoutLimits,
+      duplicateStudents: duplicates.length,
+      duplicateRecordsCount,
+      duplicates,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 
 //
 exports.setDefaultLimitForAllStudents = async (req, res) => {
   try {
     const students = await regUser.find({ role: "student" });
+    console.log(`Found ${students.length} students. Setting default limits...`);  
 
     let createdCount = 0;
     for (const student of students) {

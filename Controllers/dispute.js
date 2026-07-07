@@ -411,7 +411,7 @@ exports.updateDispute = async (req, res) => {
     // Verify user is a school
     const user = await regUser.findById(userId);
 
-    if (!user || user.role !== 'school') {
+    if (!user || user.role !== 'school'|| user.role !== 'admin' || user.status !== 'Active') {
       return res.status(403).json({
         message: 'Unauthorized: User is not a school'
       });
