@@ -1111,7 +1111,7 @@ console.log("Transfer Charge:", transferCharge);
               .replace("{{banner}}", banner)
               .replace("{{logo}}", logo)
               .replace("{{amount}}", amount)
-              .replace("{{receiverEmail}}", receiver.email)
+              .replace("{{senderEmail}}", sender.email)
               .replace("{{receiverBalanceAfter}}", receiverBalanceAfter)
         });
   
@@ -1669,16 +1669,96 @@ console.log("Transfer charge found:", transferCharge);
       `${sender.name} have sent ₦${numericAmount} to ${receiver.name}. New balance is ₦${senderBalanceAfter}.`,
     );
     }
-    await sendRenderEmail(
-      sender.email,
-      "Transfer Successful",
-      `You have sent ₦${numericAmount} to ${receiver.email}. New balance is ₦${senderBalanceAfter}.`,
-    );
-    await sendRenderEmail( 
-      receiver.email,
-      "Transfer Received",
-      `You have received ₦${numericAmount} from ${sender.name}. New balance is ₦${receiverBalanceAfter}.`,
-    );
+    const templatePath = path.join(__dirname, "../Re_envrionment files/04_agent_transfer_sent.html");
+    const htmlTemplate = fs.readFileSync(templatePath, "utf8");
+    const receiverTemplatePath = path.join(__dirname, "../Re_envrionment files/05_agent_transfer_received.html");
+    const receiverHtmlTemplate = fs.readFileSync(receiverTemplatePath, "utf8");
+    const parentTemplatePath = path.join(__dirname, "../Re_envrionment files/05_agent_transfer_received.html");
+    const parentHtmlTemplate = fs.readFileSync(parentTemplatePath, "utf8");
+  
+      const banner = `${process.env.BACKENDURL}/images/xpay1024X500.png`
+      const logo = `${process.env.BACKENDURL}/images/xpaylogo.png`
+      console.log(banner)
+      console.log(logo)
+  
+      const resend = new Resend(process.env.RESEND_API_KEY); 
+      const { data, error } = await resend.emails.send({
+          from: '"Customer Support" <ebusiness@xpay.ng>',
+          to: sender.email,
+          subject: "Debit Notification",
+          html: htmlTemplate
+              .replace("{{sender}}", sender.name)
+              .replace("{{banner}}", banner)
+              .replace("{{logo}}", logo)
+              .replace("{{numericAmount}}", amount)
+              .replace("{{receiverEmail}}", receiver.email)
+              .replace("{{senderBalanceAfter}}", senderBalanceAfter)
+        });
+  
+        if (error) {
+          console.error("Email sending failed:", error);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to send email"
+          });
+        }
+      const resend2 = new Resend(process.env.RESEND_API_KEY); 
+      const { rdata, rerror } = await resend2.emails.send({
+          from: '"Customer Support" <ebusiness@xpay.ng>',
+          to: receiver.email,
+          subject: "Credit Notification",
+          html: receiverHtmlTemplate
+              .replace("{{receiver}}", receiver.name)
+              .replace("{{banner}}", banner)
+              .replace("{{logo}}", logo)
+              .replace("{{numericAmount}}", amount)
+              .replace("{{senderName}}", sender.name)
+              .replace("{{receiverBalanceAfter}}", receiverBalanceAfter)
+        });
+  
+        if (rerror) {
+          console.error("Email sending failed 2:", rerror);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to send email"
+          });
+        }
+          if(guardianEmailAddr){
+      const resend3 = new Resend(process.env.RESEND_API_KEY); 
+      const { rdata, rerror } = await resend3.emails.send({
+          from: '"Customer Support" <ebusiness@xpay.ng>',
+          to: guardian.email,
+          subject: "Credit Notification",
+          html: parentHtmlTemplate
+              .replace("{{parentName}}", guardian.name)
+              .replace("{{banner}}", banner)
+              .replace("{{logo}}", logo)
+              .replace("{{childName}}", sender.name)
+              .replace("{{transactionType}}", "Credit")
+              .replace("{{amount}}", amount)
+              .replace("{{recipient}}", receiver.name)
+              .replace("{{childBalanceAfter}}", senderBalanceAfter)
+              .replace("{{transactionDate}}", Date.now().toLocaleString())
+        });
+  
+        if (rerror) {
+          console.error("Email sending failed 2:", rerror);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to send email"
+          });
+        }
+}
+    // await sendRenderEmail(
+    //   sender.email,
+    //   "Transfer Successful",
+    //   `You have sent ₦${numericAmount} to ${receiver.email}. New balance is ₦${senderBalanceAfter}.`,
+    // );
+    // await sendRenderEmail( 
+    //   receiver.email,
+    //   "Transfer Received",
+    //   `You have received ₦${numericAmount} from ${sender.name}. New balance is ₦${receiverBalanceAfter}.`,
+    // );
 
     res.json({
       message: "Transfer successful",
