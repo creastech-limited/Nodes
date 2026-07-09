@@ -1182,7 +1182,7 @@ exports.payFee = async (req, res) => {
 
     const feeStatus = await FeePayment.findOne({ studentId, feeId });
     if (!feeStatus) {
-      await sendNotification(userId, 'Fee not assigned to this student', 'error');
+      await sendNotification(userId, 'Fee not assigned to this students', 'error');
       await failTransaction('Fee not assigned to this student', fee, student);
       return res.status(404).json({ message: 'Fee not assigned to this student' });
     }
