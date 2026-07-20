@@ -275,6 +275,129 @@ async function updateWalletsForUsers() {
     res.status(500).json({ message: error.message });
   }
 }
+exports.updatePaystackWalletsForParents = async (req, res) => {
+  try {
+    // Get all parent wallets
+    const wallets = await Wallet.find({ type: "user" })
+    .populate('userId', 'role');
+
+    if (!wallets.length) {
+      return res.status(404).json({
+        message: "No user wallets found.",
+      });
+    }
+    console.log(`Found ${wallets.length} user wallets.`);
+    
+    const parentWallets = wallets.filter(
+      wallet => wallet.userId && wallet.userId.role === "parent"
+    );
+console.log(`Found ${parentWallets.length} parent wallets.`);
+if (!parentWallets.length) {
+  return res.status(404).json({
+    message: "No parent wallets found.",
+  });
+}
+
+
+
+    
+
+    let success = 0;
+    let failed = 0;
+    const errors = [];
+
+    for (const wallet of wallets) {
+      try {
+        // Skip wallets that already have a Paystack account
+        if (wallet.paystackAccountNumber) {
+          continue;
+        }
+
+        const response = await createPaystackAccount({
+          firstName: wallet.firstName,
+          lastName: wallet.lastName,
+          email: wallet.email,
+          phone: wallet.phone,
+        });
+
+        if (!response.status) {
+          failed++;
+          errors.push({
+            walletId: wallet._id,
+            email: wallet.email,
+            error: response.message,
+          });
+          continue;
+        }
+
+        const data = response.data;
+
+        // Customer
+        wallet.paystackCustomerId = data.customer.id;
+        wallet.paystackCustomerCode = data.customer.customer_code;
+
+        // Dedicated Account
+        wallet.paystackDedicatedAccountId = data.id;
+        wallet.paystackAccountNumber = data.account_number;
+        wallet.paystackAccountName = data.account_name;
+
+        // Bank
+        wallet.paystackBankId = data.bank.id;
+        wallet.paystackBankName = data.bank.name;
+        wallet.paystackBankSlug = data.bank.slug;
+
+        // Status
+        wallet.paystackAssigned = data.assigned;
+        wallet.paystackActive = data.active;
+        wallet.paystackCurrency = data.currency;
+        wallet.paystackAccountType = data.assignment.account_type;
+
+        // Assignment
+        wallet.paystackAssignment = {
+          integration: data.assignment.integration,
+          assigneeId: data.assignment.assignee_id,
+          assigneeType: data.assignment.assignee_type,
+          expired: data.assignment.expired,
+          assignedAt: data.assignment.assigned_at,
+        };
+
+        wallet.updatedAt = new Date();
+
+        await wallet.save();
+
+        success++;
+      } catch (err) {
+        failed++;
+
+        errors.push({
+          walletId: wallet._id,
+          email: wallet.email,
+          error: err.message,
+        });
+      }
+    }
+
+    return res.status(200).json({
+      message: "Paystack wallet update completed.",
+      totalWallets: wallets.length,
+      successful: success,
+      failed,
+      skipped: wallets.length - success - failed,
+      errors,
+    });
+
+  } catch (error) {
+    console.error("Error updating Paystack wallets:", error);
+
+    return res.status(500).json({
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+};
+
+
+
 
 
 module.exports = {

@@ -34,6 +34,41 @@ exports.createCharge = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
     }
+exports.createChargeForSchools = async (req, res) => {
+    const userId = req.user?.id
+    if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+    }
+    const user = await regUser.findById(userId);
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+    const {schoolId, chargeType, amount, category } = req.body;
+    if (!schoolId || !chargeType || amount === undefined) {
+        return res.status(400).json({ message: 'All fields are required' });
+    }
+    if (chargeType !== 'Flat' && chargeType !== 'Percentage') {
+        return res.status(400).json({ message: 'Invalid charge type' });
+    }
+    const school = await regUser.findOne({schoolId: schoolId});
+    if (!school || school.role !== 'school' || school.status !== 'Active') {
+        return res.status(404).json({ message: 'School not found or inactive' });
+    }
+    try {
+        const charge = new Charge({
+            name: `${school.schoolName} ${category} Charge`, // You can customize this name as needed
+            chargeType,
+            amount,
+            schoolId: school.schoolId, // Associate the charge with the school
+            createdBy:user._id
+        });
+        await charge.save();
+        res.status(201).json({ message: 'Charge created successfully', charge });
+    } catch (error) {
+        console.error("Error creating charge:", error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+    }
 
     // Function to get all charges
 exports.getCharges = async (req, res) => {

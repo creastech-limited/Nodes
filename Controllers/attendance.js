@@ -66,6 +66,7 @@ exports.scanQr = async (req, res) => {
       type: newType,
       location: location || "Main Gate",
       deviceId,
+      security: userId
     });
 
     // 5. (Optional) Update user status
@@ -101,6 +102,7 @@ exports.getStudentAttendance = async (req, res) => {
     const { studentId } = req.params;
 
     const student = await regUser.findById(studentId).select("name email");
+    // console.log(student)
 
     if (!student) {
       return res.status(404).json({ message: "Student not found" });
@@ -108,9 +110,8 @@ exports.getStudentAttendance = async (req, res) => {
 
     const logs = await AttendanceLog.find({ student: studentId })
       .populate("student", "name email")
-      .populate("security", "name email")
       .sort({ timestamp: -1 });
-
+// console.log(logs)
     const formattedLogs = logs.map(log => ({
       studentName: log.student?.name,
       studentEmail: log.student?.email,
@@ -124,7 +125,7 @@ exports.getStudentAttendance = async (req, res) => {
 
     res.json({
       message: `${logs.length} logs`,
-      data: formattedLogs
+      data: logs
     });
 
   } catch (err) {
