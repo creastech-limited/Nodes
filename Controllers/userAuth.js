@@ -2062,7 +2062,25 @@ exports.bulkRegister = async (req, res) => {
   }
 };
 
-
+//create a dedicated paystack account for every parent
+exports.createPaystackAccountForParent = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized: No user ID found in request' });
+    }
+    const body = { firstName: req.body.firstName, lastName: req.body.lastName, email: req.body.email, phone: req.body.phone };
+    const paystackResponse = await createPaystackAccount(body);
+    if (paystackResponse.status) {
+      return res.status(200).json({ message: 'Paystack account created successfully', data: paystackResponse.data });
+    } else {
+      return res.status(400).json({ message: 'Failed to create Paystack account', error: paystackResponse.message });
+    }
+  } catch (err) {
+    console.error('Error creating Paystack account for parent:', err);
+    return res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
 
 
 exports.register2 = async (req, res) => {
