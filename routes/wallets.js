@@ -5,7 +5,7 @@ const Wallet = require('../Models/walletSchema'); // Corrected import statement
 // const RegisterModel = require('../Models/registeration'); // Corrected import statement
 // const LoginModel = require('../Models/login'); // Corrected import statement
 const router = express.Router();
-const {createSystemWallet, createChargesWallet,deleteWallet, getChargesWallets,updateChargesWallet} = require('../Controllers/initiateWalletController');
+const {createSystemWallet, createChargesWallet,deleteWallet, getChargesWallets,updateChargesWallet,updatePaystackDedicatedAccountForUser} = require('../Controllers/initiateWalletController');
 const {getOneWallet, getWallet, deleteWalletsByFilter, getUserWallet,
     //deleteSystemWallet
 } = require('../Controllers/getWallet');
@@ -15,6 +15,7 @@ const {transferFunds} = require('../Controllers/walletTransfers');
 
 
 router.get('/getWallets', getWallet);
+router.post('/updatePaystackDedicatedAccount',verifyToken, updatePaystackDedicatedAccountForUser);
 //create wallet for sytem Admin users
 router.post('/createSystemWallet',verifyToken, createSystemWallet);
 //create charges wallet for users

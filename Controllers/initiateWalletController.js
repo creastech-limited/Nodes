@@ -1,5 +1,6 @@
 const {regUser} = require('../Models/registeration');  // Import User model
 const Wallet = require('../Models/walletSchema');  // Import Wallet model
+const { createPaystackAccount } = require( '../utils/paystack'); // Import the Paystack service function
 
 
 // Function to delete a system wallet for admin users
@@ -331,6 +332,7 @@ if (!parentWallets.length) {
         }
 
         const data = response.data;
+        console.log(`Paystack account created for wallet ${wallet._id}:`, data);
 
         // Customer
         wallet.paystackCustomerId = data.customer.id;
@@ -396,9 +398,81 @@ if (!parentWallets.length) {
   }
 };
 
+//Update Paystack dedicated accounts for a specific user by userId
+async function updatePaystackDedicatedAccountForUser(req, res) {
+  const userId = req.user?.id || req.body.userId;
 
+  if (!userId) {
+    return res.status(400).json({
+      message: "User ID is required",
+    });
+  }
 
+  try {
+    const user = await regUser.findById(userId);
 
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    const wallet = await Wallet.findOne({
+      userId: user._id,
+      type: "user",
+    });
+
+    if (!wallet) {
+      return res.status(404).json({
+        message: "Wallet not found",
+      });
+    }
+
+    // Already assigned?
+    if (wallet.paystackDedicatedAccountId) {
+      return res.status(409).json({
+        message: "Dedicated account already exists",
+        data: {
+          accountNumber: wallet.paystackAccountNumber,
+          accountName: wallet.paystackAccountName,
+          bankName: wallet.paystackBankName,
+        },
+      });
+    }
+
+    const response = await createPaystackAccount({
+      firstName: wallet.firstName,
+      lastName: wallet.lastName,
+      email: wallet.email,
+      phone: wallet.phone,
+    });
+
+    if (!response.status) {
+      return res.status(400).json({
+        message: response.message,
+      });
+    }
+    console.log("Paystack account created for user:", response.data);
+
+    // Copy every returned field onto the wallet
+    Object.assign(wallet, response.data);
+
+    await wallet.save();
+
+    return res.status(200).json({
+      message: "Paystack dedicated account created successfully",
+      data: wallet,
+    });
+
+  } catch (error) {
+    console.error("Paystack Error:", error);
+
+    return res.status(500).json({
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+}
 
 module.exports = {
   createSystemWallet,
@@ -407,4 +481,5 @@ module.exports = {
   deleteWallet,
   getChargesWallets,
   updateChargesWallet,
+  updatePaystackDedicatedAccountForUser,
 };

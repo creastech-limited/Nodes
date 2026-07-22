@@ -88,11 +88,12 @@ const createPaystackAccount = async ({
         });
 
         const customer = customerResponse.data.data;
+        console.log("Paystack customer created:", customer);
 
         // Step 2 - Create Dedicated Virtual Account
         const accountResponse = await paystack.post("/dedicated_account", {
             customer: customer.customer_code,
-            preferred_bank: "titan-paystack",
+            preferred_bank: "test-bank",
         });
 
         return {

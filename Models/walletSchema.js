@@ -8,69 +8,39 @@ const walletSchema = new mongoose.Schema({
     required: true,
   },
 
-  // Customer Details
-  paystackCustomerId: {
+  // Paystack Customer
+  customer_code: {
+    type: String,
+    default: null,
+  },
+
+  customer_id: {
     type: Number,
+    default: null,
   },
 
-  paystackCustomerCode: {
-    type: String,
-    required: true,
-  },
-
-  // Dedicated Account Details
-  paystackDedicatedAccountId: {
+  // Dedicated Account
+  dedicated_account_id: {
     type: Number,
+    default: null,
   },
 
-  paystackAccountNumber: {
+  account_number: {
     type: String,
+    default: null,
   },
 
-  paystackAccountName: {
+  account_name: {
     type: String,
+    default: null,
   },
 
-  paystackBankName: {
+  bank_name: {
     type: String,
+    default: null,
   },
 
-  paystackBankId: {
-    type: Number,
-  },
-
-  paystackBankSlug: {
-    type: String,
-  },
-
-  paystackAccountType: {
-    type: String,
-  },
-
-  paystackAssigned: {
-    type: Boolean,
-    default: false,
-  },
-
-  paystackActive: {
-    type: Boolean,
-    default: false,
-  },
-
-  paystackCurrency: {
-    type: String,
-    default: "NGN",
-  },
-
-  paystackAssignment: {
-    integration: Number,
-    assigneeId: Number,
-    assigneeType: String,
-    expired: Boolean,
-    assignedAt: Date,
-  },
-
-  // Wallet Details
+  // Wallet
   balance: {
     type: Number,
     default: 0,
@@ -111,7 +81,6 @@ const walletSchema = new mongoose.Schema({
 
   phone: String,
 
-  // Transaction Info
   lastTransaction: Date,
 
   lastTransactionAmount: {
@@ -123,11 +92,8 @@ const walletSchema = new mongoose.Schema({
     type: String,
     enum: ["credit", "debit"],
   },
-},
-{
+}, {
   timestamps: true,
-
 });
-
 
 module.exports = mongoose.model('Wallet', walletSchema);
