@@ -793,11 +793,36 @@ exports.verifyTransaction = async (req, res) => {
       await sendNotification(user._id, `Your wallet has been credited with ${topupAmount}. New balance is ${balanceAfter}.`);
 
       //send email to user
-    //   await sendEmail({
-    //     to: user.email, 
-    //     subject: 'Wallet Top-up Successful', 
-    //     html: `Your wallet has been credited with ${topupAmount}. New balance is ${balanceAfter}.`
-    // });
+    const templatePath = path.join(__dirname, "../Re_envrionment files/signup.html");
+  const htmlTemplate = fs.readFileSync(templatePath, "utf8");
+
+    const banner = `${process.env.BACKENDURL}/images/xpay1024X500.png`
+    const logo = `${process.env.BACKENDURL}/images/xpaylogo.png`
+    console.log(banner)
+    console.log(logo)
+
+    const resend = new Resend(process.env.RESEND_API_KEY); 
+    const { data, error } = await resend.emails.send({
+        from: '"Customer Support" <ebusiness@xpay.ng>',
+        to: newUser.email,
+        subject: "Login Notification",
+        html: htmlTemplate
+            .replace("{{firstName}}", newUser.name)
+            .replace("{{banner}}", banner)
+            .replace("{{logo}}", logo)
+            .replace("{{newUser._id}}", newUser._id)
+            .replace("{{backendUrl}}", process.env.NGROK_URL)
+      });
+
+      if (error) {
+        console.error("Email sending failed:", error);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to send email"
+        });
+      
+    }
+
 
       return res.status(200).json({
         status: true,
