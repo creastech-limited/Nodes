@@ -45,6 +45,10 @@ const walletSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  accountNumber:{
+    type: String,
+    default: null,
+  },
 
   currency: {
     type: String,

@@ -6,6 +6,7 @@ const sendEmail = require('../utils/email');
 // const {} = require('../Utils/notification');
 const Wallet = require('../Models/walletSchema');
 const {Transaction} = require('../Models/transactionSchema');
+const {Resend} = require('resend');
 const { v4: uuidv4 } = require('uuid');
 const { generateReference } = require('../utils/generatereference');
 const { sendNotification } = require('../utils/notification'); // Utility function to send notifications
@@ -155,22 +156,49 @@ exports.updateFeeForClass = async (req, res) => {
           read: false
         });
 
+        // Email
+            const templatePath = path.join(__dirname, "../Re_envrionment files/07_updated_fee_notification.html");
+            const htmlTemplate = fs.readFileSync(templatePath, "utf8");
+            const receiverTemplatePath = path.join(__dirname, "../Re_envrionment files/05_agent_transfer_received.html");
+            const receiverHtmlTemplate = fs.readFileSync(receiverTemplatePath, "utf8");
+            const parentTemplatePath = path.join(__dirname, "../Re_envrionment files/05_agent_transfer_received.html");
+            const parentHtmlTemplate = fs.readFileSync(parentTemplatePath, "utf8");
+          
+            const banner = `${process.env.BACKENDURL}/images/xpay1024X500.png`
+            const logo = `${process.env.BACKENDURL}/images/xpaylogo.png`
+            console.log(banner)
+            console.log(logo)
+        const resend = new Resend(process.env.RESEND_API_KEY);
         emailPromises.push(
-          sendEmail(
-           student.email,
-            'New Fee Notification',
-             `
-              <p>Hello ${student.name},</p>
-              <p>You have an updated fee of <strong>₦${amount || existingFee.amount}</strong> for <strong>${feeType}</strong>.</p>
-              <p>Term: ${term} | Session: ${session} | Due: ${dueDate || existingFee.dueDate}</p>
-              <p>Please log in to your portal to view details.</p>
-            `
-          )
+          (async () => {
+    const { data, error } = await resend.emails.send({
+      from: '"Customer Support" <ebusiness@xpay.ng>',
+      to: student.email,
+      cc: student.guardian?.email || student.email, // Fallback to student's email if guardian's email is not available
+      subject: "New Fee Notification",
+      html: htmlTemplate
+        .replace("{{studentName}}", student.fullName || student.name)
+        .replace("{{banner}}", banner)
+        .replace("{{logo}}", logo)
+        .replace("{{amount}}", Number(amount).toLocaleString())
+        .replace("{{feeType}}", feeType)
+        .replace("{{term}}", term)
+        .replace("{{session}}", session)
+        .replace("{{dueDate}}", dueDate)
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  })()
         );
       } catch (studentErr) {
         console.error(`Error processing student ${student._id}:`, studentErr);
       }
     }
+
     await FeePayment.deleteMany({ feeId: existingFee._id });
 
     await Promise.all([
@@ -581,16 +609,43 @@ exports.raiseFeeForClass = async (req, res) => {
         });
 
         // Email
-        emailPromises.push(sendEmail(
-           student.email,
-           'New Fee Notification',
-           `
-            <p>Hello ${student.name},</p>
-            <p>You have a new fee of <strong>₦${amount}</strong> for <strong>${feeType}</strong>.</p>
-            <p>Term: ${term} | Session: ${session} | Due: ${dueDate}</p>
-            <p>Please log in to your portal to view details.</p>
-          `
-      ));
+            const templatePath = path.join(__dirname, "../Re_envrionment files/06_new_fee_notification.html");
+            const htmlTemplate = fs.readFileSync(templatePath, "utf8");
+            const receiverTemplatePath = path.join(__dirname, "../Re_envrionment files/05_agent_transfer_received.html");
+            const receiverHtmlTemplate = fs.readFileSync(receiverTemplatePath, "utf8");
+            const parentTemplatePath = path.join(__dirname, "../Re_envrionment files/05_agent_transfer_received.html");
+            const parentHtmlTemplate = fs.readFileSync(parentTemplatePath, "utf8");
+          
+            const banner = `${process.env.BACKENDURL}/images/xpay1024X500.png`
+            const logo = `${process.env.BACKENDURL}/images/xpaylogo.png`
+            console.log(banner)
+            console.log(logo)
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        emailPromises.push(
+          (async () => {
+    const { data, error } = await resend.emails.send({
+      from: '"Customer Support" <ebusiness@xpay.ng>',
+      to: student.email,
+      cc: student.guardian?.email || student.email, // Fallback to student's email if guardian's email is not available
+      subject: "New Fee Notification",
+      html: htmlTemplate
+        .replace("{{studentName}}", student.fullName || student.name)
+        .replace("{{banner}}", banner)
+        .replace("{{logo}}", logo)
+        .replace("{{amount}}", Number(amount).toLocaleString())
+        .replace("{{feeType}}", feeType)
+        .replace("{{term}}", term)
+        .replace("{{session}}", session)
+        .replace("{{dueDate}}", dueDate)
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  })()
+        );
       } catch (studentErr) {
         console.error(`Error processing student ${student._id}:`, studentErr);
       }

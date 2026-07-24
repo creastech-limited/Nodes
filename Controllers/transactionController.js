@@ -15,6 +15,8 @@ const path = require("path");
 const {sendNotification}  = require('../utils/notification');
 const {sendEmail, sendRenderEmail} = require('../utils/email');
 const {generateNombaToken} = require('../utils/generatenombatoken');
+const {creditWallet} = require("../Service/wallet");
+
 // const verifyToken = require('../routes/verifyToken'); // Import verifyToken middleware
 
 
@@ -215,7 +217,7 @@ exports.getTransactionById = async (req, res) => {
         message: 'Unauthorized: No user ID in token'
       });
     }
-    const userEmail = regUser.findById(userId).select('email').then(user => user.email);
+    const userEmail = await regUser.findById(userId).select('email').then(user => user.email);
     // Find the user's wallet
     const wallet = await Wallet.findOne({ userId });
     if (!wallet) {
@@ -392,7 +394,102 @@ exports.getTransactionById = async (req, res) => {
 //   }
 // };
 
+exports.paystackWebhook = async (req, res) => {
+  try {
+    const event = req.body;
 
+    // Process only successful payments
+    if (event.event !== "charge.success") {
+      return res.sendStatus(200);
+    }
+
+    const payment = event.data;
+    console.log("Paystack Webhook Payment Data:", payment);
+    // Process only Dedicated Virtual Account payments
+    if (payment.authorization?.channel !== "dedicated_nuban") {
+      return res.sendStatus(200);
+    }
+
+    const customerCode = payment.customer?.customer_code;
+    console.log("Paystack Webhook Customer Code:", customerCode);
+
+    if (!customerCode) {
+      console.error("Customer code not found in webhook payload");
+      return res.status(400).json({
+        status: false,
+        message: "Customer code not found.",
+      });
+    }
+
+    const wallet = await Wallet.findOne({
+      customer_code: customerCode,
+      type: "user",
+    });
+
+    if (!wallet) {
+      console.error("Wallet not found for customer code:", customerCode);
+      return res.status(404).json({
+        status: false,
+        message: "Wallet not found.",
+      });
+    }
+
+    const user = await regUser.findById(wallet.userId);
+
+    if (!user) {
+      console.error("User not found for wallet ID:", wallet._id);
+      return res.status(404).json({
+        status: false,
+        message: "User not found.",
+      });
+    }
+
+    const result = await creditWallet({
+      wallet,
+      amount: payment.amount / 100,
+      reference: payment.reference,
+
+      transactionType: "wallet_topup",
+      category: "credit",
+
+      description: "Wallet funded via Paystack Dedicated Account",
+
+      initiatedBy: user._id,
+
+      metadata: {
+        provider: "Paystack",
+        paymentMethod: "Dedicated Virtual Account",
+        paystackTransactionId: payment.id,
+        customerCode,
+        gatewayResponse: payment.gateway_response,
+        paidAt: payment.paid_at,
+        authorization: payment.authorization,
+      },
+    });
+
+    if (!result.status) {
+      console.error("Failed to credit wallet:", result.message);
+      return res.status(400).json(result);
+    }
+
+    console.log(
+      `Wallet ${wallet._id} credited with ₦${payment.amount / 100}`
+    );
+
+    return res.status(200).json({
+      status: true,
+      message: "Webhook processed successfully.",
+    });
+
+  } catch (error) {
+    console.error("Paystack Webhook Error:", error);
+
+    return res.status(500).json({
+      status: false,
+      message: error.message,
+    });
+  }
+};
 
 
 

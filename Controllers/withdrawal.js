@@ -10,6 +10,7 @@ const { sendNotification } = require('../utils/notification');
 const { generateReference } = require('../utils/generatereference');
 const {isDigitsOnly,getOrCreateRecipient,initiateTransfer} = require('../utils/paystack');
 const {regUser} = require('../Models/registeration');
+const {Resend} = require('resend');
 //verify pin
 const bcrypt = require('bcryptjs');
 const charges = require('../Models/charges');
@@ -568,19 +569,46 @@ exports.withdrawal = async (req, res) => {
     });
 
     // Send email notification
-    await sendEmail(
-      currentUser.email,
-      'Withdrawal Successful',
-      ` <p>Hello ${currentUser.name},</p>
-        <p>Your withdrawal of <strong>₦${amount}</strong> to account <strong>${account_number}</strong> (${bank_name}) was successful.</p>
-        <p>Reference: <strong>${trx.reference}</strong></p>
-        <p>Description: ${description}</p>
-        <p>Thank you!</p>
-      `
-    );
+    const templatePath = path.join(__dirname, "../Re_envrionment files/11_withdrawal.html");
+    const htmlTemplate = fs.readFileSync(templatePath, "utf8");
+    const receiverTemplatePath = path.join(__dirname, "../Re_envrionment files/05_agent_transfer_received.html");
+    const receiverHtmlTemplate = fs.readFileSync(receiverTemplatePath, "utf8");
+    const parentTemplatePath = path.join(__dirname, "../Re_envrionment files/05_agent_transfer_received.html");
+    const parentHtmlTemplate = fs.readFileSync(parentTemplatePath, "utf8");
+  
+      const banner = `${process.env.BACKENDURL}/images/xpay1024X500.png`
+      const logo = `${process.env.BACKENDURL}/images/xpaylogo.png`
+      console.log(banner)
+      console.log(logo)
+
+
+      const resend = Resend(process.env.RESEND_API_KEY);
+      const { data, error } = await resend.emails.send({
+          from: '"Customer Support" <ebusiness@xpay.ng>',
+          to: sender.email,
+          subject: "Debit Notification",
+          html: htmlTemplate
+              .replace("{{sender}}", currentUser.name)
+              .replace("{{banner}}", banner)
+              .replace("{{logo}}", logo)
+              .replace("{{amount}}", amount)
+              .replace("{{accountNumber}}", account_number)
+              .replace("{{bankName}}", bank_name)
+              .replace("{{transactionReference}}", transferResponse.data.reference)
+              .replace("{{description}}", description)
+
+        });
+  
+        if (error) {
+          console.error("Email sending failed:", error);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to send email"
+          });
+        }
 
     // send notification
-      await sendNotification(currentUser._id, `✅ Bank transfer successful: ₦${amount} to ${account_number}`, 'success');
+      await sendNotification(currentUser._id, "Withdrawal", `✅ Withdrawal successful: ₦${amount} to ${account_number}`, 'success');
 
 
     return res.status(200).json({

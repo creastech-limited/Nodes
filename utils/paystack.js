@@ -88,7 +88,7 @@ const createPaystackAccount = async ({
         });
 
         const customer = customerResponse.data.data;
-        console.log("Paystack customer created:", customer);
+        // console.log("Paystack customer created:", customer);
 
         // Step 2 - Create Dedicated Virtual Account
         const accountResponse = await paystack.post("/dedicated_account", {
@@ -125,10 +125,45 @@ const createPaystackAccount = async ({
         };
     }
 };
+const crypto = require("crypto");
 
+const verifyPaystackSignature = async (req, res, next) => {
+  try {
+    const signature = req.headers["x-paystack-signature"];
+
+    if (!signature) {
+      return res.status(401).json({
+        status: false,
+        message: "Missing Paystack signature",
+      });
+    }
+
+    const hash = crypto
+      .createHmac("sha512", process.env.PAYSTACK_SECRET_KEY)
+      .update(JSON.stringify(req.body))
+      .digest("hex");
+
+    if (hash !== signature) {
+      return res.status(401).json({
+        status: false,
+        message: "Invalid Paystack signature",
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error("Paystack Signature Error:", error);
+
+    return res.status(500).json({
+      status: false,
+      message: "Webhook verification failed",
+    });
+  }
+};
 
 
 module.exports = {
+  verifyPaystackSignature,
   createPaystackAccount,
   isDigitsOnly,
   getOrCreateRecipient,

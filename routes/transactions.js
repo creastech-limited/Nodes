@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { initiateTransaction, verifyTransaction,verifyPinAndTransfer, reverseUnloggedTransaction,getAllTransactions, getTransactionById, updateTransferMetadata,deleteTransaction, getAllWithdrawalTransactions, getAllTopupTransactions, verifyPinAndTransferToAgent, setDefaultLimitForAllStudents, getAllLimits, deleteAllTransactionLimits, getLimitById, updateTransactionLimit, createPaystackDedicatedAccount,listPaystackDedicatedAccounts, initiateNombaPayment, verifyNombaTransaction, logNombaTransaction, checkStudentTransactionLimits} = require('../Controllers/transactionController');
+const { initiateTransaction, verifyTransaction,verifyPinAndTransfer, reverseUnloggedTransaction,getAllTransactions, getTransactionById, updateTransferMetadata,deleteTransaction, getAllWithdrawalTransactions, getAllTopupTransactions, verifyPinAndTransferToAgent, setDefaultLimitForAllStudents, getAllLimits, deleteAllTransactionLimits, getLimitById, updateTransactionLimit, createPaystackDedicatedAccount,listPaystackDedicatedAccounts, initiateNombaPayment, verifyNombaTransaction, logNombaTransaction, checkStudentTransactionLimits, paystackWebhook} = require('../Controllers/transactionController');
 const verifyToken = require('./verifyToken');
+const {verifyPaystackSignature} = require('../utils/paystack');
 const { getBank, resolveAccountNumber, withdrawal, resolveAccount, reverseWithdrawal,validateWithdrawal } = require('../Controllers/withdrawal');
 // const {} = require('../Controllers/transactionController');
 
@@ -46,5 +47,5 @@ router.get('/listpaystackdedicatedaccounts', verifyToken, listPaystackDedicatedA
 router.post('/initiatenomba', verifyToken, initiateNombaPayment);
 router.post('/verifynomba/:reference', verifyToken, verifyNombaTransaction);
 router.post('/lognomba/:reference', verifyToken, logNombaTransaction);
-
+router.post('/paystackwebhook', verifyPaystackSignature, paystackWebhook);
 module.exports = router

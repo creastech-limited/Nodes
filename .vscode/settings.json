@@ -1,3 +1,4 @@
 {
-    "sarif-viewer.connectToGithubCodeScanning": "off"
+    "sarif-viewer.connectToGithubCodeScanning": "off",
+    "postman.settings.dotenv-detection-notification-visibility": false
 }

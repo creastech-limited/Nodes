@@ -410,6 +410,7 @@ async function updatePaystackDedicatedAccountForUser(req, res) {
 
   try {
     const user = await regUser.findById(userId);
+    console.log("Updating Paystack dedicated account for user:", user.accountNumber);
 
     if (!user) {
       return res.status(404).json({
@@ -433,9 +434,9 @@ async function updatePaystackDedicatedAccountForUser(req, res) {
       return res.status(409).json({
         message: "Dedicated account already exists",
         data: {
-          accountNumber: wallet.paystackAccountNumber,
-          accountName: wallet.paystackAccountName,
-          bankName: wallet.paystackBankName,
+          accountNumber: wallet.account_number,
+          accountName: wallet.account_name,
+          bankName: wallet.preferred_bank,
         },
       });
     }
@@ -452,10 +453,12 @@ async function updatePaystackDedicatedAccountForUser(req, res) {
         message: response.message,
       });
     }
-    console.log("Paystack account created for user:", response.data);
+    // console.log("Paystack account created for user:", response.data);
 
     // Copy every returned field onto the wallet
     Object.assign(wallet, response.data);
+    //add the accountNumber field from user wallet to the wallet schema
+    wallet.accountNumber = user.accountNumber || null;
 
     await wallet.save();
 
