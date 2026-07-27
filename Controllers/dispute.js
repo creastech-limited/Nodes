@@ -187,7 +187,7 @@ exports.createDispute = async (req, res) => {
     await sendNotification(user._id, 'Dispute creation', 'Dispute created successfully', 'success');
 
     //send email to Admins
-    const adminEmail = "itsupport@creastech" // Ensure this is set in your environment variables const templatePath = path.join(__dirname, "../Re_envrionment files/signup.html");
+    const adminEmail = "itsupport@creastech.com" // Ensure this is set in your environment variables const templatePath = path.join(__dirname, "../Re_envrionment files/signup.html");
       // const htmlTemplate = fs.readFileSync(templatePath, "utf8");
     
       // const banner = `${process.env.BACKENDURL}/images/xpay1024X500.png`
@@ -227,7 +227,7 @@ exports.createDispute = async (req, res) => {
     const { senderData, senderError } = await resend.emails.send({
         from: '"Customer Support" <ebusiness@xpay.ng>',
         to: user.email,
-        subject: "Activate Your Account",
+        subject: "New Dispute Created Successfully",
         html: `A new dispute has been created by ${user.name}. Dispute ID: ${savedDispute._id}. Kindly await the resolution of the dispute.`
       });
 
@@ -241,7 +241,7 @@ exports.createDispute = async (req, res) => {
       const { adminData, adminError } = await resend.emails.send({
         from: '"Customer Support" <ebusiness@xpay.ng>',
         to: adminEmail,
-        subject: "New Dispute Created",
+        subject: `New Dispute Created By ${user.name}`,
         html: `A new dispute has been created by ${user.name}. Dispute ID: ${savedDispute._id}. Please review it in the admin panel.`
       });
 

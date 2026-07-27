@@ -1066,7 +1066,7 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
     exports.updateUser = async (req, res) => {
       try {
-        const userId = req.params.userId; // Target user to update
+        const userId = req.params.id; // Target user to update
         
         const currentUserId = req.user?.id; // User making the request
     
