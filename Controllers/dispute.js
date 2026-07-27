@@ -6,6 +6,7 @@ const {Transaction} = require('../Models/transactionSchema'); // adjust to your 
 const { sendEmail } = require('../utils/email'); // adjust to your email utility path
 const {sendNotification} = require('../utils/notification'); // adjust to your notification utility path
 const { get } = require('mongoose');
+const {Resend} = require('resend');
 // const { now } = require('mongoose');
 // const { notify } = require('../routes/auth');
 
@@ -135,7 +136,7 @@ exports.createDispute = async (req, res) => {
     }
 
     // ✅ Check if the transaction exists
-    const transaction = await Transaction.findOne({ $or: [ { reference: transactionId }, { id: transactionId } ] });
+    const transaction = await Transaction.findOne({ $or: [ { reference: transactionId }, { _id: transactionId } ] });
     if (!transaction) {
       return res.status(404).json({ message: 'Transaction not found' });
     }
@@ -186,12 +187,76 @@ exports.createDispute = async (req, res) => {
     await sendNotification(user._id, 'Dispute creation', 'Dispute created successfully', 'success');
 
     //send email to Admins
-    const adminEmail = "itsupport@creastech" // Ensure this is set in your environment variables
-    await sendEmail(
-      adminEmail, 
-      'New Dispute Created', 
-      `A new dispute has been created by ${user.name}. Dispute ID: ${savedDispute._id}. Please review it in the admin panel.`
-    );
+    const adminEmail = "itsupport@creastech" // Ensure this is set in your environment variables const templatePath = path.join(__dirname, "../Re_envrionment files/signup.html");
+      // const htmlTemplate = fs.readFileSync(templatePath, "utf8");
+    
+      // const banner = `${process.env.BACKENDURL}/images/xpay1024X500.png`
+      //   const logo = `${process.env.BACKENDURL}/images/xpaylogo.png`
+      //   console.log(banner)
+      //   console.log(logo)
+          
+      //   const resend = new Resend(process.env.RESEND_API_KEY); 
+      //   const { data, error } = await resend.emails.send({
+      //       from: '"Customer Support" <ebusiness@xpay.ng>',
+      //       to: newUser.email,
+      //       subject: "Activate Your Account",
+      //       html: htmlTemplate
+      //           .replace("{{firstName}}", newUser.name)
+      //           .replace("{{banner}}", banner)
+      //           .replace("{{logo}}", logo)
+      //           .replace("{{newUser._id}}", newUser._id)
+      //           .replace("{{backendUrl}}", process.env.NGROK_URL)
+      //     });
+    
+      //     if (error) {
+      //       console.error("Email sending failed:", error);
+      //       return res.status(500).json({
+      //         success: false,
+      //         message: "Failed to send email"
+      //       });
+      //     }
+ const templatePath = path.join(__dirname, "../Re_envrionment files/signup.html");
+  const htmlTemplate = fs.readFileSync(templatePath, "utf8");
+
+  const banner = `${process.env.BACKENDURL}/images/xpay1024X500.png`
+    const logo = `${process.env.BACKENDURL}/images/xpaylogo.png`
+    console.log(banner)
+    console.log(logo)
+      
+    const resend = new Resend(process.env.RESEND_API_KEY); 
+    const { senderData, senderError } = await resend.emails.send({
+        from: '"Customer Support" <ebusiness@xpay.ng>',
+        to: newUser.email,
+        subject: "Activate Your Account",
+        html: `A new dispute has been created by ${user.name}. Dispute ID: ${savedDispute._id}. Kindly await the resolution of the dispute.`
+      });
+
+      if (senderError) {
+        console.error("Email sending failed:", senderError);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to send email"
+        });
+      }
+      const { adminData, adminError } = await resend.emails.send({
+        from: '"Customer Support" <ebusiness@xpay.ng>',
+        to: adminEmail,
+        subject: "New Dispute Created",
+        html: `A new dispute has been created by ${user.name}. Dispute ID: ${savedDispute._id}. Please review it in the admin panel.`
+      });
+
+      if (adminError) {
+        console.error("Email sending failed:", adminError);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to send email"
+        });
+      }
+    // await sendEmail(
+    //   adminEmail, 
+    //   'New Dispute Created', 
+    //   `A new dispute has been created by ${user.name}. Dispute ID: ${savedDispute._id}. Please review it in the admin panel.`
+    // );
     
 
     res.status(201).json({
