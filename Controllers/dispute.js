@@ -215,13 +215,13 @@ exports.createDispute = async (req, res) => {
       //         message: "Failed to send email"
       //       });
       //     }
- const templatePath = path.join(__dirname, "../Re_envrionment files/signup.html");
-  const htmlTemplate = fs.readFileSync(templatePath, "utf8");
+//  const templatePath = path.join(__dirname, "../Re_envrionment files/signup.html");
+//   const htmlTemplate = fs.readFileSync(templatePath, "utf8");
 
-  const banner = `${process.env.BACKENDURL}/images/xpay1024X500.png`
-    const logo = `${process.env.BACKENDURL}/images/xpaylogo.png`
-    console.log(banner)
-    console.log(logo)
+//   const banner = `${process.env.BACKENDURL}/images/xpay1024X500.png`
+//     const logo = `${process.env.BACKENDURL}/images/xpaylogo.png`
+//     console.log(banner)
+//     console.log(logo)
       
     const resend = new Resend(process.env.RESEND_API_KEY); 
     const { senderData, senderError } = await resend.emails.send({
