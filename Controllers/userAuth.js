@@ -1851,7 +1851,7 @@ if (roleLower === 'student') {
   //     ]
   // );
 
-    if (roleLower !== 'school'|| roleLower !== 'admin' || roleLower !== 'store'|| roleLower !== 'security'|| roleLower !== 'agent') {
+    if (roleLower !== 'school'|| roleLower !== 'admin' || roleLower !== 'security'|| roleLower !== 'agent') {
       const templatePath = path.join(__dirname, "../Re_envrionment files/signup.html");
   const htmlTemplate = fs.readFileSync(templatePath, "utf8");
 
