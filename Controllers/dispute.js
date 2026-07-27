@@ -226,7 +226,7 @@ exports.createDispute = async (req, res) => {
     const resend = new Resend(process.env.RESEND_API_KEY); 
     const { senderData, senderError } = await resend.emails.send({
         from: '"Customer Support" <ebusiness@xpay.ng>',
-        to: newUser.email,
+        to: user.email,
         subject: "Activate Your Account",
         html: `A new dispute has been created by ${user.name}. Dispute ID: ${savedDispute._id}. Kindly await the resolution of the dispute.`
       });
@@ -413,7 +413,8 @@ exports.getUserDisputes = async (req, res) => {
     // Return the disputes with user names
 
     res.status(200).json({
-      message: `$(disputesWithUserNames.lenght) Disputes fetched successfully`,
+      message: `${disputesWithUserNames.length} Disputes fetched successfully`,
+      disputeCount: disputesWithUserNames.length,
       disputes: disputesWithUserNames
         });
   } catch (error) {
