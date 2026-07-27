@@ -135,7 +135,7 @@ exports.createDispute = async (req, res) => {
     }
 
     // ✅ Check if the transaction exists
-    const transaction = await Transaction.findOne({ $or: [ { reference: transactionId }, { _id: transactionId } ] });
+    const transaction = await Transaction.findOne({ $or: [ { reference: transactionId }, { id: transactionId } ] });
     if (!transaction) {
       return res.status(404).json({ message: 'Transaction not found' });
     }
