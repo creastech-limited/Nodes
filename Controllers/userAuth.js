@@ -1851,7 +1851,7 @@ if (roleLower === 'student') {
   //     ]
   // );
 
-    if (roleLower !== 'school') {
+    if (roleLower !== 'school'|| roleLower !== 'admin' || roleLower !== 'store'|| roleLower !== 'security'|| roleLower !== 'agent') {
       const templatePath = path.join(__dirname, "../Re_envrionment files/signup.html");
   const htmlTemplate = fs.readFileSync(templatePath, "utf8");
 
@@ -1859,12 +1859,12 @@ if (roleLower === 'student') {
     const logo = `${process.env.BACKENDURL}/images/xpaylogo.png`
     console.log(banner)
     console.log(logo)
-
+      
     const resend = new Resend(process.env.RESEND_API_KEY); 
     const { data, error } = await resend.emails.send({
         from: '"Customer Support" <ebusiness@xpay.ng>',
         to: newUser.email,
-        subject: "Login Notification",
+        subject: "Activate Your Account",
         html: htmlTemplate
             .replace("{{firstName}}", newUser.name)
             .replace("{{banner}}", banner)
