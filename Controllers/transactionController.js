@@ -519,7 +519,9 @@ exports.initiateTransaction = async (req, res) => {
     //fetch system wallets
     const systemWallet = await Wallet.findById(systemWalletId);
     if (!systemWallet) {
-      return res.status(404).json({ message: 'System wallet not found' });
+      console.log("System wallet")
+      return res.status(404).json({ 
+        message: 'System wallet not found' });
     }
    
     // get charges for topup

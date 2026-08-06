@@ -675,6 +675,7 @@ exports.login = async (req, res) => {
     // console.log("User details:", {
     //   id: user._id,});
     // Send response
+    console.log("Login successful for Token:", accessToken, "User ID:", user._id, "Email:", user.email, "Role:", user.role, "First Name:", user.firstName, "Last Name:", user.lastName, "School Name:", user.schoolName, "School Address:", user.schoolAddress, "Store Name:", user.storeName, "Store Type:", user.storeType, "School ID:", user.schoolId, "Boarding:", user.boarding, "Date of Birth:", user.dateOfBirth, "Profile Picture:", user.profilePicture, "Phone:", user.phone, "Guardian:", user.guardian, "Academic Details:", user.academicDetails, "Class Admitted To:", user.classAdmittedTo, "School Registration Link:", user.schoolRegistrationLink, "Country:", user.country, "Ownership:", user.ownership, "Agent Name:", user.agentName, "Store ID:", user.store_id);
    return res.status(200).json({
       message: 'Login successful',
       accessToken,
@@ -1506,6 +1507,7 @@ exports.register = async (req, res) => {
       schoolRegistrationLink,
       refreshToken,
       status = 'Inactive',
+      isStandAlone,
       
     } = req.body;
 
@@ -1765,9 +1767,9 @@ if (roleLower === 'student') {
     }
 
 
-    // Create wallet if user is school, Students, agent, store parent
-    if(roleLower === 'student' || roleLower === 'school' || roleLower === 'agent' || roleLower === 'store' || roleLower === 'parent'){
-    await Wallet.create({
+    // Create wallet if user is school, Students, agent, store parent but standalone is false
+    if(roleLower === 'student' || roleLower === 'school' || roleLower === 'agent' || roleLower === 'store' || roleLower === 'parent') {
+    const wallet = await Wallet.create({
       userId: newUser._id,
       currency: 'NGN',
       type: 'user',
@@ -1779,6 +1781,29 @@ if (roleLower === 'student') {
       accountNumber: newUser.accountNumber
     });
     }
+    if(isStandAlone && (roleLower === 'agent')){
+      //create paystack wallet for standalone store
+      const response = await createPaystackAccount({
+      firstName: newUser.firstName,
+      lastName: newUser.lastName,
+      email: newUser.email,
+      phone: newUser.phone,
+    });
+
+    if (!response.status) {
+      return res.status(400).json({
+        message: response.message,
+      });
+    }
+     // Copy every returned field onto the wallet
+    Object.assign(wallet, response.data);
+    //add the accountNumber field from user wallet to the wallet schema
+    wallet.accountNumber = newUser.accountNumber || null;
+
+    await wallet.save();
+    console.log('Paystack account created successfully:', response.data);
+
+  }
 
     //set agent status to active
     if (roleLower === 'agent' || roleLower === 'school' || roleLower === 'security') {

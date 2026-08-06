@@ -92,7 +92,7 @@ exports.getOneWallet = async (req, res) => {
       if (!wallet) {
         return res.status(404).json({ status: false, message: 'Wallet not found' });
       }
-  
+      console.log("User wallet:", wallet); // Log the wallet for debugging
       res.status(200).json({ status: true, data: wallet });
     } catch (error) {
       console.error("Error fetching wallet:", error.message);
