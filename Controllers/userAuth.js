@@ -675,7 +675,7 @@ exports.login = async (req, res) => {
     // console.log("User details:", {
     //   id: user._id,});
     // Send response
-    console.log("Login successful for Token:", accessToken, "User ID:", user._id, "Email:", user.email, "Role:", user.role, "First Name:", user.firstName, "Last Name:", user.lastName, "School Name:", user.schoolName, "School Address:", user.schoolAddress, "Store Name:", user.storeName, "Store Type:", user.storeType, "School ID:", user.schoolId, "Boarding:", user.boarding, "Date of Birth:", user.dateOfBirth, "Profile Picture:", user.profilePicture, "Phone:", user.phone, "Guardian:", user.guardian, "Academic Details:", user.academicDetails, "Class Admitted To:", user.classAdmittedTo, "School Registration Link:", user.schoolRegistrationLink, "Country:", user.country, "Ownership:", user.ownership, "Agent Name:", user.agentName, "Store ID:", user.store_id);
+    // console.log("Login successful for Token:", accessToken, "User ID:", user._id, "Email:", user.email, "Role:", user.role, "First Name:", user.firstName, "Last Name:", user.lastName, "School Name:", user.schoolName, "School Address:", user.schoolAddress, "Store Name:", user.storeName, "Store Type:", user.storeType, "School ID:", user.schoolId, "Boarding:", user.boarding, "Date of Birth:", user.dateOfBirth, "Profile Picture:", user.profilePicture, "Phone:", user.phone, "Guardian:", user.guardian, "Academic Details:", user.academicDetails, "Class Admitted To:", user.classAdmittedTo, "School Registration Link:", user.schoolRegistrationLink, "Country:", user.country, "Ownership:", user.ownership, "Agent Name:", user.agentName, "Store ID:", user.store_id);
    return res.status(200).json({
       message: 'Login successful',
       accessToken,
